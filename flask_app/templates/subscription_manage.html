@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}My Subscription — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>🎯 My Subscription</h1>
+  <a class="btn accent" href="{{ url_for('main.pricing') }}">💳 {{ 'Change Plan' if active_sub else 'Get a Plan' }}</a>
+</div>
+
+<!-- Current plan status -->
+{% if active_sub %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:16px;">Current Plan</div>
+  <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:28px;font-weight:900;color:var(--accent);margin-bottom:4px;">
+        {{ active_sub.plan | capitalize }}
+      </div>
+      <div style="color:var(--slate-500);font-size:14px;margin-bottom:12px;">{{ active_sub.period_label }} subscription</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div><strong>Status:</strong> <span class="status-badge green">✅ Active</span></div>
+        <div><strong>Start date:</strong> {{ active_sub.start_date.strftime('%d %b %Y') if active_sub.start_date else '—' }}</div>
+        <div><strong>Expires:</strong> {{ active_sub.end_date.strftime('%d %b %Y') if active_sub.end_date else '—' }}</div>
+        <div><strong>Amount paid:</strong> ${{ "%.2f"|format(active_sub.price_paid_cents / 100) }}</div>
+        {% if active_sub.discount_pct %}
+        <div><strong>Discount applied:</strong> {{ active_sub.discount_pct }}% off</div>
+        {% endif %}
+      </div>
+    </div>
+    <div style="flex:1;min-width:180px;">
+      <div class="db-section-label" style="margin-bottom:12px;">Today's Usage</div>
+      {% if daily_limit %}
+        <div style="font-size:40px;font-weight:900;color:var(--accent);line-height:1;">{{ today_count }}<span style="font-size:18px;font-weight:400;color:var(--slate-500);">/{{ daily_limit }}</span></div>
+        <div style="color:var(--slate-500);font-size:13px;margin-top:4px;">assignments used today</div>
+        <div class="usage-bar-wrap" style="margin-top:10px;">
+          <div class="usage-bar">
+            <div class="usage-bar-fill" style="width:{{ [(today_count / daily_limit * 100)|int, 100]|min }}%;"></div>
+          </div>
+          <div style="font-size:12px;color:var(--slate-500);margin-top:4px;">
+            {{ [daily_limit - today_count, 0]|max }} remaining today — resets at midnight UTC
+          </div>
+        </div>
+      {% else %}
+        <div style="font-size:40px;font-weight:900;color:#22c55e;line-height:1;">∞</div>
+        <div style="color:var(--slate-500);font-size:13px;margin-top:4px;">Unlimited assignments per day</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-bottom:18px;text-align:center;padding:40px 24px;">
+  <div style="font-size:48px;margin-bottom:16px;">😔</div>
+  <h2 style="margin:0 0 8px;">No active subscription</h2>
+  <p style="color:var(--slate-500);margin:0 0 20px;">Subscribe to a plan to start generating academic assignments.</p>
+  <a class="btn accent" href="{{ url_for('main.pricing') }}">View Plans</a>
+</div>
+{% endif %}
+
+<!-- Plan features -->
+{% if plan_info %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:14px;">Your Plan Includes</div>
+  <ul style="margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:10px;">
+    <li style="color:var(--slate-600);font-size:14px;">✅ {{ plan_info.desc }}</li>
+    <li style="color:var(--slate-600);font-size:14px;">✅ All citation styles (APA, MLA, Chicago, Harvard…)</li>
+    <li style="color:var(--slate-600);font-size:14px;">✅ Real academic sources + annotations</li>
+    <li style="color:var(--slate-600);font-size:14px;">✅ Word document delivery</li>
+    <li style="color:var(--slate-600);font-size:14px;">✅ Humanizer tool — unlimited use</li>
+    <li style="color:var(--slate-600);font-size:14px;">✅ AI Checker tool — unlimited use</li>
+  </ul>
+</div>
+{% endif %}
+
+<!-- Plan comparison -->
+<div class="card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:14px;">Compare Plans</div>
+  <div class="pricing-grid-mini">
+    {% for pkey, pval in plans.items() %}
+    <div class="pm-card {% if active_sub and active_sub.plan == pkey %}pm-active{% endif %}">
+      <div class="pm-name">{{ pval.name }}</div>
+      <div class="pm-limit">
+        {% if pval.daily_limit %}{{ pval.daily_limit }} assignments/day{% else %}Unlimited/day{% endif %}
+      </div>
+      <div class="pm-price">${{ "%.2f"|format(pval.monthly) }}/mo</div>
+      {% if active_sub and active_sub.plan == pkey %}
+        <div class="pm-current-badge">Current</div>
+      {% else %}
+        <a class="btn ghost" style="font-size:12px;padding:6px 12px;" href="{{ url_for('main.pricing') }}">Upgrade</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Subscription history -->
+{% if all_subs %}
+<div class="card" style="margin-bottom:18px;padding:0;overflow:hidden;">
+  <div style="padding:18px 20px 12px;"><div class="db-section-label">Billing History</div></div>
+  <div class="asgn-table-wrap">
+    <table class="asgn-table">
+      <thead>
+        <tr><th>Date</th><th>Plan</th><th>Period</th><th>Amount</th><th>Status</th><th>Expires</th></tr>
+      </thead>
+      <tbody>
+        {% for s in all_subs %}
+        <tr class="asgn-row">
+          <td class="asgn-date">{{ s.created_at.strftime('%d %b %Y') }}</td>
+          <td><strong>{{ s.plan | capitalize }}</strong></td>
+          <td>{{ s.period_label }}</td>
+          <td>${{ "%.2f"|format(s.price_paid_cents / 100) }}</td>
+          <td>
+            {% if s.is_active %}<span class="status-badge green">Active</span>
+            {% elif s.status == 'pending' %}<span class="status-badge yellow">Pending</span>
+            {% elif s.status == 'expired' %}<span class="status-badge grey">Expired</span>
+            {% else %}<span class="status-badge grey">{{ s.status }}</span>{% endif %}
+          </td>
+          <td>{{ s.end_date.strftime('%d %b %Y') if s.end_date else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.usage-bar-wrap { }
+.usage-bar { height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+.usage-bar-fill { height:100%; background:var(--accent); border-radius:4px; transition:width .4s; }
+
+.pricing-grid-mini { display:flex; gap:12px; flex-wrap:wrap; }
+.pm-card { flex:1; min-width:140px; background:var(--surface-2); border-radius:12px; padding:16px 14px; text-align:center; border:2px solid transparent; }
+.pm-card.pm-active { border-color:var(--accent); }
+.pm-name { font-size:15px; font-weight:800; color:var(--navy-900); margin-bottom:4px; }
+.pm-limit { font-size:12px; color:var(--slate-500); margin-bottom:8px; }
+.pm-price { font-size:18px; font-weight:700; color:var(--accent); margin-bottom:12px; }
+.pm-current-badge { font-size:12px; font-weight:700; color:#22c55e; }
+
+</style>
+
+{% endblock %}

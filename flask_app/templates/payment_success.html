@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Payment Successful — Smart Study Guides{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+
+<div class="pay-success-page">
+  <div class="pay-success-icon">✅</div>
+  <h1 class="pay-success-title">Payment Successful!</h1>
+  <p class="pay-success-sub">Your credits have been added instantly to your account.</p>
+
+  <div class="pay-receipt-card card">
+    <div class="pay-receipt-row">
+      <span>Amount paid</span>
+      <strong>${{ "%.2f"|format(amount_usd) }}</strong>
+    </div>
+    <div class="pay-receipt-row">
+      <span>Payment method</span>
+      <strong>{{ payment_method | capitalize }}</strong>
+    </div>
+    <div class="pay-receipt-row">
+      <span>Transaction ID</span>
+      <code class="pay-receipt-code">{{ session_id[:24] }}…</code>
+    </div>
+    <div class="pay-receipt-row highlight">
+      <span>Credits added</span>
+      <strong class="pay-credits-big">⚡ {{ "{:,}".format(credits) }}</strong>
+    </div>
+    <div class="pay-receipt-row">
+      <span>New balance</span>
+      <strong>⚡ {{ "{:,}".format(new_balance) }} credits</strong>
+    </div>
+  </div>
+
+  <div class="pay-success-actions">
+    <a class="btn accent full" href="{{ url_for('main.dashboard') }}">Go to Dashboard</a>
+    <a class="btn ghost full" href="{{ url_for('main.transactions') }}">View All Transactions</a>
+  </div>
+
+  <p class="pay-success-note">
+    A confirmation has been recorded in your transaction history. Credits never expire.
+  </p>
+</div>
+
+<style>
+.pay-success-page {
+  max-width: 460px; margin: 0 auto; text-align: center; padding: 20px 0 40px;
+}
+.pay-success-icon { font-size: 60px; margin-bottom: 16px; animation: popIn .4s ease; }
+@keyframes popIn { from { transform: scale(.5); opacity:0; } to { transform: scale(1); opacity:1; } }
+.pay-success-title { font-size: 26px; font-weight: 800; color: #15803d; margin: 0 0 8px; }
+.pay-success-sub { color: var(--slate-500); font-size: 15px; margin: 0 0 28px; }
+
+.pay-receipt-card { padding: 0; overflow: hidden; margin-bottom: 24px; text-align: left; }
+.pay-receipt-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 20px; font-size: 14px; color: var(--slate-500);
+  border-bottom: 1px solid var(--surface-2);
+}
+.pay-receipt-row:last-child { border-bottom: none; }
+.pay-receipt-row strong { color: var(--navy-900); font-weight: 600; }
+.pay-receipt-row.highlight { background: #f0fdf4; }
+.pay-receipt-row.highlight strong { color: #15803d; }
+.pay-credits-big { font-size: 20px; font-weight: 800; }
+.pay-receipt-code {
+  background: var(--surface-2); padding: 2px 8px;
+  border-radius: 6px; font-size: 11px; word-break: break-all;
+}
+.pay-success-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.pay-success-note { font-size: 12px; color: var(--slate-400); line-height: 1.6; }
+</style>
+
+{% endblock %}

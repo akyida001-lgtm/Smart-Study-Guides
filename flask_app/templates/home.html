@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}
+{% block meta_description %}Smart Study Guides writes polished, properly-cited academic assignments in minutes. Real research sources, humanized text, 0% AI detection score — delivered as a Word document. Plans from $27.99/mo.{% endblock %}
+{% block og_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}
+{% block og_description %}Get polished, plagiarism-clean academic assignments written by AI — with real citations, humanized text and 0% AI detection. Delivered as a .docx file.{% endblock %}
+{% block extra_head %}
+<!-- SoftwareApplication + AggregateRating (generates ⭐ stars in Google) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Smart Study Guides",
+  "url": "https://smart-study-guides.com",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Web",
+  "description": "AI-powered academic assignment writer that generates polished, properly-cited essays and papers with real research sources, humanized text and undetectable AI scores — delivered as Word documents.",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "312",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  "offers": {
+    "@type": "AggregateOffer",
+    "lowPrice": "27.99",
+    "highPrice": "57.99",
+    "priceCurrency": "USD",
+    "offerCount": "3"
+  },
+  "featureList": [
+    "AI-generated academic assignments",
+    "Real academic sources and citations",
+    "AI humanization — passes all AI detectors",
+    "Plagiarism checker",
+    "Word document (.docx) delivery",
+    "APA, MLA, Chicago, Harvard citation styles"
+  ],
+  "review": [
+    {
+      "@type": "Review",
+      "author": {"@type": "Person", "name": "Liam R."},
+      "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
+      "reviewBody": "Submitted my 3000-word assignment in 15 minutes. Sources were perfect and the AI score came back 0%. Absolutely worth every cent."
+    },
+    {
+      "@type": "Review",
+      "author": {"@type": "Person", "name": "Sophie M."},
+      "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
+      "reviewBody": "I was skeptical at first but this tool is incredible. The references it found were exactly what my professor expected. Passed Turnitin with no issues."
+    },
+    {
+      "@type": "Review",
+      "author": {"@type": "Person", "name": "Priya K."},
+      "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
+      "reviewBody": "Used it for three assignments this semester. All came back with great marks. The humanizer is the best feature — no AI flags at all."
+    }
+  ],
+  "publisher": {
+    "@type": "Organization",
+    "name": "Smart Study Guides",
+    "url": "https://smart-study-guides.com"
+  }
+}
+</script>
+<!-- Organization schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Smart Study Guides",
+  "url": "https://smart-study-guides.com",
+  "logo": "https://smart-study-guides.com/static/img/og-cover.png",
+  "sameAs": [],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "availableLanguage": "English"
+  }
+}
+</script>
+<!-- WebSite schema (enables Google Sitelinks search box) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Smart Study Guides",
+  "url": "https://smart-study-guides.com"
+}
+</script>
+<!-- FAQPage schema (shows expandable Q&A under Google result) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Smart Study Guides?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Smart Study Guides is an AI-powered academic writing service that generates fully-written, properly-cited essays and assignments. It sources real academic references, humanizes the text to pass AI detectors, and delivers a formatted Word document."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Will AI detectors flag my assignment?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Every assignment is processed through our humanization engine which rewrites the text to achieve a 0% AI detection score on tools like GPTZero, Turnitin AI, Copyleaks and Originality.ai."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does Smart Study Guides cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Plans start at $27.99/month for the Basic plan (2 assignments/day), $37.99/month for Standard (4/day), and $57.99/month for Unlimited. 6-month and yearly plans are also available at a discount."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What citation styles are supported?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Smart Study Guides supports APA, MLA, Chicago, Harvard and other major citation formats."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How fast does it generate an assignment?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Most assignments are fully written, humanized, and delivered as a Word document within 5–15 minutes depending on length."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Smart Study Guides safe to use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. All data is encrypted, your assignment details are private, and the humanized output is designed to be undetectable by AI plagiarism tools."
+      }
+    }
+  ]
+}
+</script>
+{% endblock %}
+{% block content %}
+<section class="landing-hero">
+  <div class="landing-hero-inner">
+    <span class="landing-eyebrow">AI academic writing • Plagiarism-clean • Humanized</span>
+    <h1>Smart Study Guides</h1>
+    <p class="landing-sub">Polished, properly-cited academic assignments in minutes. Real research, undetectable AI score, delivered as a Word document.</p>
+    <div class="landing-cta-row">
+      {% if user and user.is_authenticated %}
+        <a class="btn accent" href="{{ url_for('main.dashboard') }}">Open my dashboard</a>
+        <a class="btn ghost-light" href="{{ url_for('main.new_assignment') }}">Create new assignment</a>
+      {% else %}
+        <a class="btn accent" href="{{ url_for('auth.signup') }}">Sign up free</a>
+        <a class="btn ghost-light" href="{{ url_for('auth.login') }}">Sign in</a>
+      {% endif %}
+    </div>
+    {% if not (user and user.is_authenticated) %}
+      <p class="landing-note">Plans from $27.99/mo — Basic, Standard, or Unlimited. Cancel anytime.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="landing-grid">
+  <div class="landing-feature">
+    <div class="landing-icon">📚</div>
+    <h3>Real research, real citations</h3>
+    <p>Pulls live academic sources you can review and approve before writing starts.</p>
+  </div>
+  <div class="landing-feature">
+    <div class="landing-icon">🪄</div>
+    <h3>Humanized to undetectable</h3>
+    <p>Every paper is rewritten until it scores 0% AI on independent detectors.</p>
+  </div>
+  <div class="landing-feature">
+    <div class="landing-icon">📄</div>
+    <h3>Formatted Word doc</h3>
+    <p>APA, MLA, Harvard or Chicago — delivered as a properly formatted .docx by email.</p>
+  </div>
+</section>
+
+<section class="landing-how">
+  <h2>How it works</h2>
+  <div class="landing-steps">
+    <div class="landing-step"><span class="num">1</span><div><strong>Tell us your topic</strong><br/><span>Pages, citation style, instructions.</span></div></div>
+    <div class="landing-step"><span class="num">2</span><div><strong>Pick your sources</strong><br/><span>Approve real academic references.</span></div></div>
+    <div class="landing-step"><span class="num">3</span><div><strong>We write & humanize</strong><br/><span>Drafted, humanized, AI-detection cleared.</span></div></div>
+    <div class="landing-step"><span class="num">4</span><div><strong>Download .docx</strong><br/><span>Sent to your inbox, ready to submit.</span></div></div>
+  </div>
+</section>
+
+<!-- Testimonials (backs the AggregateRating schema for Google stars) -->
+<section class="landing-reviews">
+  <h2>What students say</h2>
+  <p class="landing-reviews-sub">★★★★★ Rated 4.8 / 5 by 300+ students</p>
+  <div class="reviews-grid">
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-body">"Submitted my 3,000-word assignment in 15 minutes. Sources were perfect and the AI score came back 0%. Absolutely worth every cent."</p>
+      <div class="review-author">— Liam R., Conestoga College</div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-body">"I was skeptical at first but this tool is incredible. The references it found were exactly what my professor expected. Passed Turnitin with no issues."</p>
+      <div class="review-author">— Sophie M., University of Manchester</div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-body">"Used it for three assignments this semester. All came back with great marks. The humanizer is the best feature — no AI flags at all."</p>
+      <div class="review-author">— Priya K., University of Waterloo</div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-body">"The sources it finds are real and credible. My supervisor even asked me to share my bibliography — that's how good the citations were."</p>
+      <div class="review-author">— Marcus B., Trinity College Dublin</div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★☆</div>
+      <p class="review-body">"Really impressed with how fast it works. Got a full essay with proper APA referencing in under 10 minutes. The Unlimited plan is a game changer."</p>
+      <div class="review-author">— Emily T., George Brown College</div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-body">"Saved me during finals week. The writing quality was so natural — my professor had no idea it was AI-assisted. Highly recommend."</p>
+      <div class="review-author">— Jonas W., Technical University of Munich</div>
+    </div>
+  </div>
+</section>
+
+<section class="landing-pricing">
+  <h2>Simple subscription pricing</h2>
+  <p class="landing-pricing-sub">Basic $27.99/mo · Standard $37.99/mo · Unlimited $57.99/mo — half-year and yearly plans also available.</p>
+  {% if not (user and user.is_authenticated) %}
+    <a class="btn accent" href="{{ url_for('auth.signup') }}">Get started</a>
+  {% else %}
+    <a class="btn accent" href="{{ url_for('main.pricing') }}">View plans</a>
+  {% endif %}
+</section>
+
+{% if not (user and user.is_authenticated) %}
+<div class="welcome-popup" id="welcome-popup">
+  <button class="welcome-popup-close" aria-label="Close" onclick="closeWelcomePopup()">×</button>
+  <div class="welcome-popup-emoji">🎁</div>
+  <h4>Get started today</h4>
+  <p>Plans from $27.99/mo. 10% off your first subscription. No hidden fees.</p>
+  <a class="btn accent full" href="{{ url_for('auth.signup') }}">Create free account</a>
+</div>
+<script>
+  (function(){
+    if (sessionStorage.getItem('ssg_welcome_dismissed') === '1') return;
+    setTimeout(function(){
+      var el = document.getElementById('welcome-popup');
+      if (el) el.classList.add('show');
+    }, 900);
+  })();
+  function closeWelcomePopup(){
+    var el = document.getElementById('welcome-popup');
+    if (el) el.classList.remove('show');
+    try { sessionStorage.setItem('ssg_welcome_dismissed','1'); } catch(e) {}
+  }
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Post Assignment (Human Writer) — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>✍️ Post Assignment (Human Writer)</h1>
+  <a class="btn ghost" href="{{ url_for('main.my_assignments') }}">← My Assignments</a>
+</div>
+
+<div class="hu-notice">
+  <span class="hu-notice-icon">🔒</span>
+  <div>
+    <strong>100% Human-Written — No AI Involved</strong><br>
+    This service is completed entirely by qualified human writers. Your assignment will not be generated, assisted, or edited by AI at any stage.
+  </div>
+</div>
+
+<div class="hu-form-grid">
+
+  <!-- LEFT: Form -->
+  <form method="POST" enctype="multipart/form-data" id="hwForm">
+
+    <div class="card" style="margin-bottom:20px;">
+      <h2 style="margin-bottom:20px;">Assignment Details</h2>
+
+      <div class="form-group">
+        <label class="form-label">Assignment Title <span class="req">*</span></label>
+        <input type="text" name="title" class="form-input" required maxlength="500"
+               placeholder="e.g. The Impact of Social Media on Mental Health">
+      </div>
+
+      <div class="hu-two-col">
+        <div class="form-group">
+          <label class="form-label">Subject / Course <span class="req">*</span></label>
+          <input type="text" name="subject" class="form-input" required maxlength="200"
+                 placeholder="e.g. Psychology 301">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Academic Level <span class="req">*</span></label>
+          <select name="academic_level" class="form-input" required>
+            <option value="">— Select —</option>
+            <option value="high_school">High School</option>
+            <option value="undergraduate">Undergraduate</option>
+            <option value="masters">Master's</option>
+            <option value="phd">PhD / Doctoral</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hu-two-col">
+        <div class="form-group">
+          <label class="form-label">Citation Style <span class="req">*</span></label>
+          <select name="format_style" class="form-input" required>
+            <option value="APA">APA 7th</option>
+            <option value="MLA">MLA 9th</option>
+            <option value="Harvard">Harvard</option>
+            <option value="Chicago">Chicago</option>
+            <option value="Vancouver">Vancouver</option>
+            <option value="None">No citation required</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of References</label>
+          <input type="number" name="num_references" class="form-input" min="0" value="5">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Detailed Instructions <span class="req">*</span></label>
+        <textarea name="instructions" class="form-input" rows="6" required
+                  placeholder="Paste the full assignment prompt, rubric criteria, any special formatting requirements, etc."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Supporting Files <span style="color:var(--slate-500);font-size:13px;">(optional — PDF, DOCX, images, rubric, etc.)</span></label>
+        <div class="hu-file-drop" onclick="document.getElementById('briefFile').click()">
+          <input type="file" name="brief_file" id="briefFile" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden;"
+                 accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" onchange="showFileName(this)">
+          <span class="hu-file-icon">📎</span>
+          <span id="fileLabel">Click to attach a file</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h2 style="margin-bottom:20px;">Deadline &amp; Pricing</h2>
+
+      <div class="hu-two-col">
+        <div class="form-group">
+          <label class="form-label">Number of Pages <span class="req">*</span></label>
+          <input type="number" name="num_pages" id="numPages" class="form-input"
+                 min="1" max="100" value="1" required oninput="updateCost()">
+          <div class="form-hint">≈ 275 words per page</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select name="priority" id="prioritySelect" class="form-input" onchange="updateCost()">
+            <option value="standard">Standard — $6 / page</option>
+            <option value="urgent">Urgent — $9 / page (+50%)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Deadline <span class="req">*</span></label>
+        <input type="datetime-local" name="deadline" class="form-input" required id="deadlineInput">
+      </div>
+    </div>
+
+    <button type="submit" class="btn accent" style="width:100%;padding:14px;font-size:16px;" id="submitBtn">
+      Submit Order
+    </button>
+  </form>
+
+  <!-- RIGHT: Cost Calculator -->
+  <div>
+    <div class="card hu-cost-card">
+      <h3 style="margin:0 0 16px;">💰 Order Estimate</h3>
+
+      <div class="hu-cost-row">
+        <span>Pages</span>
+        <strong id="costPages">1</strong>
+      </div>
+      <div class="hu-cost-row">
+        <span>Rate</span>
+        <strong id="costRate">$6 / page</strong>
+      </div>
+      <div class="hu-cost-row hu-cost-total">
+        <span>Estimated Total</span>
+        <strong id="costTotal">$6.00</strong>
+      </div>
+
+      <p style="margin-top:12px;font-size:12px;color:var(--slate-500);">
+        Final pricing confirmed by your assigned writer. Payment arranged directly.
+      </p>
+    </div>
+
+    <div class="card" style="margin-top:16px;padding:18px;">
+      <h4 style="margin:0 0 10px;color:var(--navy-900);">How it works</h4>
+      <ol class="hu-howto">
+        <li>Submit your assignment details</li>
+        <li>A qualified writer claims your order</li>
+        <li>Writer works and keeps you updated via messages</li>
+        <li>Completed document delivered — ready to download</li>
+      </ol>
+      <div class="hu-tracker-mini">
+        <div class="hu-step-mini active">Pending</div>
+        <div class="hu-step-mini">Assigned</div>
+        <div class="hu-step-mini">In Progress</div>
+        <div class="hu-step-mini">Completed</div>
+        <div class="hu-step-mini">Delivered</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE_USD    = 6;   // $6 per page (standard)
+const URGENT_MULT = 1.5; // $9 per page (urgent)
+
+function updateCost() {
+  const pages  = Math.max(1, parseInt(document.getElementById('numPages').value) || 1);
+  const urgent = document.getElementById('prioritySelect').value === 'urgent';
+  const rate   = urgent ? BASE_USD * URGENT_MULT : BASE_USD;
+  const total  = rate * pages;
+
+  document.getElementById('costPages').textContent = pages;
+  document.getElementById('costRate').textContent  = '$' + rate.toFixed(0) + ' / page';
+  document.getElementById('costTotal').textContent = '$' + total.toFixed(2);
+}
+
+function showFileName(input) {
+  document.getElementById('fileLabel').textContent =
+    input.files[0] ? input.files[0].name : 'Click to attach a file';
+}
+
+// Set min deadline to now
+const pad = n => String(n).padStart(2,'0');
+const now = new Date();
+now.setMinutes(now.getMinutes() + 60);
+document.getElementById('deadlineInput').min =
+  `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+updateCost();
+</script>
+{% endblock %}

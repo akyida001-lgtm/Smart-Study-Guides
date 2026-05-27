@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}Annotate Sources — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📝 Create Assignment</h1>
+</div>
+
+<div class="wizard-steps">
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Details</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Sources</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep active"><span class="wstep-num">3</span><span class="wstep-label">Annotate</span></div>
+  <div class="wstep-line"></div>
+  <div class="wstep"><span class="wstep-num">4</span><span class="wstep-label">Preview</span></div>
+</div>
+
+<div class="card wizard-card">
+  <div class="wizard-card-title">Source Annotations</div>
+  <div class="wizard-card-sub">
+    Generating {{ a.style }} citations and formal academic paragraphs for each of your
+    {{ sources|length }} source{{ 's' if sources|length != 1 else '' }}.
+    You can edit the paragraph before continuing.
+  </div>
+
+  <!-- Generating state (skeletons) -->
+  <div id="ann-generating" style="margin-top:18px;">
+    <div class="src-search-anim">
+      <div class="src-search-icon">✍️</div>
+      <div class="src-search-text">Generating annotations…</div>
+      <div class="src-search-sub">Writing {{ a.style }} citations and 200-word formal paragraphs</div>
+      <div class="src-dots"><div class="src-dot"></div><div class="src-dot"></div><div class="src-dot"></div></div>
+    </div>
+    {% for s in sources %}
+    <div class="ann-skeleton" style="margin-top:14px;">
+      <div class="ann-sk-bar w45"></div>
+      <div class="ann-sk-bar w70" style="margin-top:8px;height:11px;"></div>
+      <div class="ann-sk-bar w90" style="margin-top:6px;height:11px;"></div>
+      <div class="ann-sk-block" style="margin-top:12px;"></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Error -->
+  <div id="ann-error" style="display:none;margin-top:16px;">
+    <div class="flash error">⚠️ Could not generate annotations. Please try again.</div>
+    <button class="btn ghost" type="button" onclick="generate()" style="margin-top:10px;">Retry</button>
+  </div>
+
+  <!-- Results -->
+  <div id="ann-results" style="display:none;margin-top:8px;">
+    <div id="ann-cards"></div>
+
+    <div id="ann-save-error" class="flash error" style="display:none;margin-top:12px;"></div>
+
+    <div class="wf-actions" style="margin-top:24px;">
+      <a class="btn ghost" href="{{ url_for('main.assignment_sources', aid=a.id) }}">← Back to Sources</a>
+      <button class="btn accent" type="button" id="ann-continue-btn" onclick="saveAndContinue()">
+        Continue to Preview →
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Skeleton ── */
+.ann-skeleton {
+  background: #f8f9fd; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 18px 20px; overflow: hidden;
+}
+.ann-sk-bar {
+  height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s infinite;
+}
+.ann-sk-block {
+  height: 88px; border-radius: 8px; margin-top: 10px;
+  background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s infinite;
+}
+.ann-sk-bar.w45 { width: 45%; }
+.ann-sk-bar.w70 { width: 70%; }
+.ann-sk-bar.w90 { width: 90%; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── Annotation card ── */
+.ann-card {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 14px; padding: 0; margin-top: 18px;
+  border-left: 4px solid #4f46e5; overflow: hidden;
+}
+.ann-card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ann-card-num {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: #4f46e5; color: #fff; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.ann-card-title {
+  font-size: 14px; font-weight: 700; color: #1e293b; line-height: 1.4;
+}
+
+/* ── Rows ── */
+.ann-row {
+  display: grid; grid-template-columns: 160px 1fr;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: stretch;
+}
+.ann-row:last-child { border-bottom: none; }
+
+.ann-row-label {
+  padding: 12px 14px 12px 18px;
+  font-size: 11.5px; font-weight: 700; color: #6366f1;
+  text-transform: uppercase; letter-spacing: .5px;
+  background: #fafafa; border-right: 1px solid #f1f5f9;
+  display: flex; align-items: flex-start; padding-top: 14px;
+  white-space: nowrap;
+}
+.ann-row-value {
+  padding: 12px 16px;
+  font-size: 13.5px; color: #334155; line-height: 1.7;
+  word-break: break-word; overflow-wrap: break-word;
+}
+.ann-row-value.mono {
+  font-family: 'Courier New', monospace; font-size: 12.5px;
+  color: #1e293b; word-break: break-all; overflow-wrap: anywhere;
+}
+
+/* ── Editable paragraph ── */
+.ann-para-row { align-items: flex-start; }
+.ann-para-wrap { padding: 10px 16px 12px; flex: 1; }
+.ann-para-textarea {
+  width: 100%; min-height: 140px; font-size: 13.5px; color: #334155;
+  line-height: 1.75; background: #f8f9fd;
+  border: 1.5px solid #e2e8f0; border-radius: 8px;
+  padding: 10px 12px; resize: vertical; font-family: inherit;
+  box-sizing: border-box; transition: border-color .15s;
+}
+.ann-para-textarea:focus { outline: none; border-color: #6366f1; background: #fff; }
+.ann-wc {
+  font-size: 11px; color: #94a3b8; text-align: right; margin-top: 4px;
+}
+.ann-wc.ok   { color: #16a34a; font-weight: 600; }
+.ann-wc.warn { color: #d97706; }
+
+@media (max-width: 600px) {
+  .ann-row { grid-template-columns: 1fr; }
+  .ann-row-label { border-right: none; border-bottom: 1px solid #f1f5f9;
+                   padding: 10px 16px 6px; }
+}
+</style>
+
+<script>
+const AID       = {{ a.id }};
+const STYLE     = {{ a.style | tojson }};
+const PREVIEW_URL = "{{ url_for('main.assignment_preview', aid=a.id) }}";
+let annotationData = [];
+
+async function generate() {
+  document.getElementById('ann-generating').style.display = 'block';
+  document.getElementById('ann-error').style.display     = 'none';
+  document.getElementById('ann-results').style.display   = 'none';
+
+  try {
+    const r = await fetch(`/api/assignments/${AID}/generate-annotations`, {method: 'POST'});
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || ('Server error ' + r.status));
+    if (!Array.isArray(data) || !data.length) throw new Error('Empty response from server');
+    annotationData = data;
+    renderCards(data);
+    document.getElementById('ann-generating').style.display = 'none';
+    document.getElementById('ann-results').style.display   = 'block';
+  } catch(e) {
+    document.getElementById('ann-generating').style.display = 'none';
+    const errDiv = document.getElementById('ann-error');
+    errDiv.style.display = 'block';
+    const errMsg = errDiv.querySelector('.flash.error');
+    if (errMsg) errMsg.textContent = '⚠️ ' + (e.message || 'Could not generate annotations. Please try again.');
+  }
+}
+
+function renderCards(items) {
+  const container = document.getElementById('ann-cards');
+  container.innerHTML = '';
+
+  items.forEach(function(item, i) {
+    const card = document.createElement('div');
+    card.className = 'ann-card';
+    card.dataset.id = item.id;
+
+    const paraId = 'para-' + item.id;
+    const wcId   = 'wc-'   + item.id;
+    const para   = esc(item.paragraph || '');
+
+    card.innerHTML = `
+      <div class="ann-card-header">
+        <div class="ann-card-num">${i + 1}</div>
+        <div class="ann-card-title">${esc(item.topic || item.title || 'Untitled')}</div>
+      </div>
+
+      <div class="ann-row">
+        <div class="ann-row-label">Article Topic</div>
+        <div class="ann-row-value">${esc(item.topic || item.title || '')}</div>
+      </div>
+
+      <div class="ann-row">
+        <div class="ann-row-label">In-text Citation</div>
+        <div class="ann-row-value mono">${esc(item.intext || '')}</div>
+      </div>
+
+      <div class="ann-row">
+        <div class="ann-row-label">Full Reference + URL</div>
+        <div class="ann-row-value mono">${esc(item.reference || '')}</div>
+      </div>
+
+      <div class="ann-row ann-para-row">
+        <div class="ann-row-label" style="padding-top:16px;">
+          Paragraph
+          <span style="font-weight:400;font-size:10px;color:#94a3b8;display:block;text-transform:none;letter-spacing:0;margin-top:2px;">editable</span>
+        </div>
+        <div class="ann-para-wrap">
+          <textarea class="ann-para-textarea" id="${paraId}"
+            oninput="updateWC(this,'${wcId}')"
+          >${para}</textarea>
+          <div class="ann-wc" id="${wcId}"></div>
+        </div>
+      </div>
+
+      ${window.IS_ADMIN ? `
+      <div class="ann-row" style="background:rgba(99,102,241,.04);">
+        <div class="ann-row-label" style="color:#6366f1;">Admin Copy</div>
+        <div class="ann-row-value" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;">
+          <button class="admin-copy-btn" onclick="adminCopy(${JSON.stringify(item.intext||'')},this)">📋 In-text citation</button>
+          <button class="admin-copy-btn" onclick="adminCopy(${JSON.stringify(item.reference||'')},this)">📋 Full reference</button>
+          <button class="admin-copy-btn" onclick="adminCopy(document.getElementById('${paraId}').value,this)">📋 Paragraph</button>
+          <button class="admin-copy-btn" onclick="adminCopy([${JSON.stringify(item.intext||'')},${JSON.stringify(item.reference||'')},document.getElementById('${paraId}').value].join('\\n\\n'),this)">📋 Copy all</button>
+        </div>
+      </div>` : ''}
+    `;
+
+    container.appendChild(card);
+    const ta = document.getElementById(paraId);
+    if (ta) updateWC(ta, wcId);
+  });
+}
+
+function updateWC(ta, wcId) {
+  const words = ta.value.trim().split(/\s+/).filter(Boolean).length;
+  const el = document.getElementById(wcId);
+  if (!el) return;
+  el.textContent = words + ' words';
+  el.className   = 'ann-wc ' + (words >= 170 && words <= 240 ? 'ok' : 'warn');
+}
+
+async function saveAndContinue() {
+  const btn = document.getElementById('ann-continue-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Saving…';
+
+  const edits = {};
+  annotationData.forEach(function(item) {
+    const ta = document.getElementById('para-' + item.id);
+    if (ta) edits[String(item.id)] = ta.value;
+  });
+
+  try {
+    const r = await fetch(`/api/assignments/${AID}/save-annotations`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({edits}),
+    });
+    if (!r.ok) throw new Error();
+    window.location.href = PREVIEW_URL;
+  } catch(e) {
+    const errEl = document.getElementById('ann-save-error');
+    errEl.textContent    = 'Could not save. Please try again.';
+    errEl.style.display  = 'block';
+    btn.disabled         = false;
+    btn.textContent      = 'Continue to Preview →';
+  }
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', generate);
+</script>
+{% endblock %}

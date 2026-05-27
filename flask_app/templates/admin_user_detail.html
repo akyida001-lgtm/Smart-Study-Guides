@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block title %}{{ target.display_name }} — User Detail{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom:24px;">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="{{ url_for('main.admin_users') }}" class="btn ghost" style="padding:7px 14px;">← Back</a>
+    {% if target.profile_image_url %}
+    <img src="{{ target.profile_image_url }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" alt="">
+    {% else %}
+    <div style="width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;">
+      {{ (target.first_name or target.email or '?')[0].upper() }}
+    </div>
+    {% endif %}
+    <div>
+      <h1 style="margin:0;font-size:22px;">{{ target.display_name }}</h1>
+      <div style="font-size:13px;color:var(--slate-500);">{{ target.email }}</div>
+    </div>
+    <span class="um-badge um-badge--{{ target.account_status }}" style="margin-left:8px;">
+      {{ target.account_status.title() }}
+    </span>
+    {% if target.is_writer %}
+    <span style="font-size:11px;font-weight:700;background:#059669;color:#fff;border-radius:6px;padding:3px 10px;margin-left:6px;">✍️ WRITER</span>
+    {% endif %}
+    {% if target.is_staff %}
+    <span style="font-size:11px;font-weight:700;background:#7c3aed;color:#fff;border-radius:6px;padding:3px 10px;margin-left:6px;">👑 ADMIN</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Profile cards row ── -->
+<div class="ud-meta-row">
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Plan</div>
+    <div class="ud-meta-val" style="font-size:13px;">{{ target.active_plan_name or '—' }}</div>
+  </div>
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Total Spent</div>
+    <div class="ud-meta-val">${{ '%.2f'|format(total_spent / 100) }}</div>
+  </div>
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Assignments</div>
+    <div class="ud-meta-val">{{ assignments|length }}+</div>
+  </div>
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Career Docs</div>
+    <div class="ud-meta-val">{{ job_docs|length }}+</div>
+  </div>
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Auth Provider</div>
+    <div class="ud-meta-val">{{ target.auth_provider or 'email' }}</div>
+  </div>
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Phone</div>
+    <div class="ud-meta-val" style="font-size:14px;">
+      {% if target.phone %}
+        📱 {{ target.phone }}
+      {% else %}
+        <span style="color:var(--slate-500);font-size:13px;">Not set</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card ud-meta-card">
+    <div class="ud-meta-label">Joined</div>
+    <div class="ud-meta-val">{{ target.created_at.strftime('%d %b %Y') }}</div>
+  </div>
+</div>
+
+<!-- ── Flag reason banner ── -->
+{% if target.flag_reason %}
+<div class="ud-flag-banner">
+  <strong>⚑ Note:</strong> {{ target.flag_reason }}
+</div>
+{% endif %}
+
+<!-- ── Action buttons ── -->
+<div class="card" style="padding:18px 22px;margin-bottom:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+  <div style="font-size:13px;font-weight:700;color:var(--navy-900);flex:1;">Account Actions</div>
+
+  {% if target.id == user.id %}
+    <span style="font-size:13px;color:var(--slate-500);font-style:italic;">You cannot modify your own account.</span>
+  {% else %}
+    <button class="btn ghost" style="color:#3b82f6;" onclick="openMsgModal()">🔔 Send Notification</button>
+    <div style="width:1px;height:24px;background:var(--surface-2);"></div>
+    {% if target.account_status == 'active' %}
+    <button class="btn ghost ud-act-btn" style="color:#f59e0b;" data-action="flag">⚑ Flag (Warning)</button>
+    <button class="btn ghost ud-act-btn" style="color:#e67e22;" data-action="suspend">⏸ Suspend</button>
+    <button class="btn ghost ud-act-btn" style="color:#e74c3c;" data-action="terminate">🚫 Terminate</button>
+    {% elif target.account_status in ('flagged','suspended') %}
+    <button class="btn ghost ud-act-btn" style="color:#27ae60;" data-action="restore">✓ Restore</button>
+    <button class="btn ghost ud-act-btn" style="color:#e74c3c;" data-action="terminate">🚫 Terminate</button>
+    {% elif target.account_status == 'terminated' %}
+    <button class="btn ghost ud-act-btn" style="color:#27ae60;" data-action="restore">↩ Restore Account</button>
+    {% endif %}
+    <div style="width:1px;height:24px;background:var(--surface-2);"></div>
+    {% if not target.is_staff %}
+    <div style="width:1px;height:24px;background:var(--surface-2);"></div>
+    {% if target.is_writer %}
+    <button class="btn ghost" id="ud-writer-btn" style="font-size:13px;color:#059669;"
+            onclick="toggleWriter(false)">✍️ Remove Writer Role</button>
+    {% else %}
+    <button class="btn ghost" id="ud-writer-btn" style="font-size:13px;color:#059669;"
+            onclick="toggleWriter(true)">✍️ Grant Writer Role</button>
+    {% endif %}
+    {% endif %}
+  {% endif %}
+</div>
+
+<!-- ── Notification modal ── -->
+<div class="um-modal-backdrop" id="ud-msg-modal" style="display:none;">
+  <div class="um-modal-box">
+    <div class="um-modal-title">🔔 Send Notification to {{ target.display_name }}</div>
+    <div class="um-modal-sub" style="margin-bottom:10px;">Delivered to their notification bell, email, and SMS (if set). Read-only — the user cannot reply to this.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+      <button class="um-tpl-btn" data-tpl="warning">⚠️ Suspicious Activity Warning</button>
+      <button class="um-tpl-btn" data-tpl="violation">🚫 Policy Violation Notice</button>
+      <button class="um-tpl-btn" data-tpl="review">📋 Account Under Review</button>
+      <button class="um-tpl-btn" data-tpl="custom">✏️ Custom Message</button>
+    </div>
+    <textarea class="um-modal-reason" id="ud-msg-text" rows="6" placeholder="Type your message…"></textarea>
+    <div class="um-modal-btns">
+      <button class="btn ghost" onclick="closeMsgModal()">Cancel</button>
+      <button class="btn accent" id="ud-msg-send">Send Notification</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Two-column detail ── -->
+<div class="ud-grid">
+
+  <!-- Assignments -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="ud-section-header">📝 Recent Assignments ({{ assignments|length }})</div>
+    {% if assignments %}
+    <div style="overflow-x:auto;">
+      <table class="um-table">
+        <thead><tr><th>Topic</th><th>Style</th><th>Status</th><th>Pages</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for a in assignments %}
+          <tr>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ a.topic }}">{{ a.topic[:50] }}{% if a.topic|length > 50 %}…{% endif %}</td>
+            <td>{{ a.style }}</td>
+            <td><span class="um-badge um-badge--{{ 'active' if a.status == 'completed' else 'flagged' if a.status == 'error' else 'suspended' }}">{{ a.status }}</span></td>
+            <td>{{ a.num_pages }} pg</td>
+            <td style="white-space:nowrap;font-size:12px;color:var(--slate-500);">{{ a.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:28px;text-align:center;color:var(--slate-500);font-size:13px;">No assignments yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- Transactions -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="ud-section-header">💳 Recent Transactions ({{ transactions|length }})</div>
+    {% if transactions %}
+    <div style="overflow-x:auto;">
+      <table class="um-table">
+        <thead><tr><th>Amount</th><th>Credits</th><th>Provider</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for t in transactions %}
+          <tr>
+            <td style="font-weight:700;">${{ '%.2f'|format(t.amount_usd_cents/100) }}</td>
+            <td>{{ '{:,}'.format(t.credits) }}</td>
+            <td><span class="um-provider">{{ t.provider }}</span></td>
+            <td><span class="um-badge um-badge--{{ 'active' if t.status == 'completed' else 'flagged' }}">{{ t.status }}</span></td>
+            <td style="white-space:nowrap;font-size:12px;color:var(--slate-500);">{{ t.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:28px;text-align:center;color:var(--slate-500);font-size:13px;">No transactions yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- Career Docs -->
+  <div class="card" style="padding:0;overflow:hidden;grid-column:1/-1;">
+    <div class="ud-section-header">💼 Career Documents ({{ job_docs|length }})</div>
+    {% if job_docs %}
+    <div style="overflow-x:auto;">
+      <table class="um-table">
+        <thead><tr><th>Document Type</th><th>Label</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for j in job_docs %}
+          <tr>
+            <td>{{ j.doc_type }}</td>
+            <td>{{ j.doc_label }}</td>
+            <td><span class="um-badge um-badge--{{ 'active' if j.status == 'completed' else 'suspended' }}">{{ j.status }}</span></td>
+            <td style="white-space:nowrap;font-size:12px;color:var(--slate-500);">{{ j.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:28px;text-align:center;color:var(--slate-500);font-size:13px;">No career documents yet.</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ── Action modal ── -->
+<div class="um-modal-backdrop" id="ud-modal" style="display:none;">
+  <div class="um-modal-box">
+    <div class="um-modal-title" id="ud-modal-title">Confirm Action</div>
+    <div class="um-modal-sub">Provide a reason — this is stored and visible in the user list:</div>
+    <textarea class="um-modal-reason" id="ud-modal-reason" rows="3" placeholder="Reason for this action…"></textarea>
+    <div class="um-modal-btns">
+      <button class="btn ghost" onclick="closeUdModal()">Cancel</button>
+      <button class="btn accent" id="ud-modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+
+<style>
+.ud-meta-row { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.ud-meta-card { flex:1; min-width:110px; padding:16px 18px; }
+.ud-meta-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--slate-500); margin-bottom:6px; }
+.ud-meta-val   { font-size:20px; font-weight:800; color:var(--navy-900); }
+.ud-flag-banner {
+  background:rgba(245,158,11,.1); border:1.5px solid rgba(245,158,11,.3);
+  border-radius:10px; padding:12px 18px; font-size:13px; color:#92400e;
+  margin-bottom:16px;
+}
+
+.ud-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:780px) { .ud-grid { grid-template-columns:1fr; } .ud-grid > .card:last-child { grid-column:1; } }
+.ud-section-header {
+  padding:14px 18px; font-size:13px; font-weight:700; color:var(--navy-900);
+  border-bottom:1.5px solid var(--surface-2); background:var(--surface-2);
+}
+</style>
+
+<script>
+/* ── Message modal ── */
+var TEMPLATES = {
+  warning:   "⚠️ Important Notice — Suspicious Activity Detected\n\nHi there,\n\nWe have detected unusual activity on your Smart Study Guides account that may violate our Terms and Conditions. This is a formal warning.\n\nPlease review our Terms & Conditions at /terms. Continued suspicious behaviour may result in your account being temporarily suspended or permanently terminated.\n\nIf you believe this is a mistake, please reply to this message and our team will review your case.\n\nSmart Study Guides Team",
+  violation: "🚫 Policy Violation Notice\n\nHi there,\n\nWe have identified activity on your account that is in breach of our platform policies. This behaviour is not permitted under our Terms and Conditions.\n\nAs a result, your account is currently under review. Further violations may lead to account suspension or termination without notice.\n\nIf you have any questions, please reply to this message.\n\nSmart Study Guides Team",
+  review:    "📋 Account Review Notice\n\nHi there,\n\nYour Smart Study Guides account has been flagged for a routine security review. This is a precautionary measure and does not mean your account has been suspended.\n\nYour access remains active while the review is in progress. We will update you once the review is complete, typically within 24–48 hours.\n\nThank you for your patience.\n\nSmart Study Guides Team",
+  custom:    ""
+};
+
+function openMsgModal() {
+  document.getElementById('ud-msg-text').value = '';
+  document.querySelectorAll('.um-tpl-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ud-msg-modal').style.display = 'flex';
+}
+function closeMsgModal() { document.getElementById('ud-msg-modal').style.display = 'none'; }
+
+document.getElementById('ud-msg-modal').addEventListener('click', function(e){ if(e.target===this) closeMsgModal(); });
+
+document.querySelectorAll('.um-tpl-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.um-tpl-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('ud-msg-text').value = TEMPLATES[this.dataset.tpl] || '';
+    document.getElementById('ud-msg-text').focus();
+  });
+});
+
+document.getElementById('ud-msg-send').addEventListener('click', function() {
+  var msg = document.getElementById('ud-msg-text').value.trim();
+  if (!msg) { alert('Please enter a message.'); return; }
+  this.disabled = true; this.textContent = 'Sending…';
+  fetch('/api/admin/users/{{ target.id }}/message', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ message: msg })
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      closeMsgModal();
+      var parts = ['🔔 Notification delivered'];
+      if (d.email_sent) parts.push('📧 Email sent');
+      if (d.sms_sent) parts.push('📱 SMS sent');
+      var t = document.createElement('div');
+      t.textContent = parts.join(' · ');
+      t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1e2a3a;color:#e2e8f4;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.25);z-index:9999;white-space:nowrap;';
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 4000);
+    } else { alert(d.error || 'Error sending message.'); }
+    document.getElementById('ud-msg-send').disabled = false;
+    document.getElementById('ud-msg-send').textContent = 'Send Notification';
+  });
+});
+
+/* ── styles for template buttons ── */
+var s = document.createElement('style');
+s.textContent = '.um-tpl-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;border:1.5px solid var(--surface-2);background:var(--surface-2);color:var(--navy-800);cursor:pointer;transition:all .15s;}.um-tpl-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(122,162,255,.07);}.um-tpl-btn.active{border-color:var(--accent);background:var(--accent);color:#fff;}';
+document.head.appendChild(s);
+
+var _action = null, _dir = 0;
+
+document.querySelectorAll('.ud-act-btn').forEach(function(b) {
+  b.addEventListener('click', function() {
+    _action = this.dataset.action;
+    var labels = { flag:'⚑ Flag Account (Warning)', suspend:'⏸ Suspend Account',
+                   terminate:'🚫 Terminate Account', restore:'✓ Restore Account' };
+    document.getElementById('ud-modal-title').textContent = labels[_action] || 'Confirm';
+    document.getElementById('ud-modal-reason').value = '';
+    document.getElementById('ud-modal').style.display = 'flex';
+  });
+});
+
+document.getElementById('ud-modal-confirm').addEventListener('click', function() {
+  var reason = document.getElementById('ud-modal-reason').value;
+  fetch('/api/admin/users/{{ target.id }}/action', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action: _action, reason: reason })
+  }).then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); else alert(d.error||'Error'); });
+});
+
+document.getElementById('ud-modal').addEventListener('click', function(e){ if(e.target===this) closeUdModal(); });
+function closeUdModal() { document.getElementById('ud-modal').style.display='none'; }
+
+function toggleWriter(makeWriter) {
+  if (!confirm(makeWriter ? 'Grant writer role to this user? They will only see writer portal pages.' : 'Remove writer role? User will return to the normal student experience.')) return;
+  var btn = document.getElementById('ud-writer-btn');
+  btn.disabled = true;
+  fetch('/api/admin/users/{{ target.id }}/set-writer', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ is_writer: makeWriter })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) { location.reload(); }
+    else { alert(d.error || 'Error'); btn.disabled = false; }
+  });
+}
+
+</script>
+
+{% endblock %}

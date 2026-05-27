@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Writers Dashboard — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📋 Writers Dashboard</h1>
+</div>
+
+<!-- Stats row -->
+<div class="hu-stats-row">
+  <div class="hu-stat-card pending">
+    <div class="hu-stat-num">{{ counts.pending }}</div>
+    <div class="hu-stat-label">Pending</div>
+  </div>
+  <div class="hu-stat-card assigned">
+    <div class="hu-stat-num">{{ counts.assigned }}</div>
+    <div class="hu-stat-label">Assigned</div>
+  </div>
+  <div class="hu-stat-card in_progress">
+    <div class="hu-stat-num">{{ counts.in_progress }}</div>
+    <div class="hu-stat-label">In Progress</div>
+  </div>
+  <div class="hu-stat-card completed">
+    <div class="hu-stat-num">{{ counts.completed }}</div>
+    <div class="hu-stat-label">Completed</div>
+  </div>
+  <div class="hu-stat-card delivered">
+    <div class="hu-stat-num">{{ counts.delivered }}</div>
+    <div class="hu-stat-label">Delivered</div>
+  </div>
+</div>
+
+<!-- Filter tabs -->
+<div class="hu-filter-tabs">
+  <a class="hu-tab {% if not status_filter %}active{% endif %}" href="{{ url_for('main.writers_dashboard') }}">All</a>
+  <a class="hu-tab {% if status_filter == 'pending' %}active{% endif %}" href="?status=pending">⏳ Pending</a>
+  <a class="hu-tab {% if status_filter == 'assigned' %}active{% endif %}" href="?status=assigned">👤 Assigned</a>
+  <a class="hu-tab {% if status_filter == 'in_progress' %}active{% endif %}" href="?status=in_progress">✏️ In Progress</a>
+  <a class="hu-tab {% if status_filter == 'completed' %}active{% endif %}" href="?status=completed">✔ Completed</a>
+  <a class="hu-tab {% if status_filter == 'delivered' %}active{% endif %}" href="?status=delivered">✅ Delivered</a>
+</div>
+
+{% if orders %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div class="asgn-table-wrap">
+    <table class="asgn-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Title</th>
+          <th>Student</th>
+          <th>Pages</th>
+          <th>Priority</th>
+          <th>Deadline</th>
+          <th>Status</th>
+          <th>Writer</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td style="color:var(--slate-500);font-size:13px;">{{ o.id }}</td>
+          <td class="asgn-topic">{{ o.title[:60] }}{% if o.title|length > 60 %}…{% endif %}</td>
+          <td>{{ o.student.display_name }}</td>
+          <td>{{ o.num_pages }}pg</td>
+          <td>
+            {% if o.priority == 'urgent' %}
+              <span class="status-badge red">🚨 Urgent</span>
+            {% else %}
+              <span class="status-badge grey">Std</span>
+            {% endif %}
+          </td>
+          <td class="asgn-date">{{ o.deadline.strftime('%d %b %Y') }}</td>
+          <td>
+            {% if o.status == 'delivered' %}<span class="status-badge green">✅ Delivered</span>
+            {% elif o.status == 'in_progress' %}<span class="status-badge blue">✏️ In Progress</span>
+            {% elif o.status == 'assigned' %}<span class="status-badge blue">👤 Assigned</span>
+            {% elif o.status == 'completed' %}<span class="status-badge yellow">✔ Completed</span>
+            {% else %}<span class="status-badge grey">⏳ Pending</span>{% endif %}
+          </td>
+          <td>{{ o.writer.display_name if o.writer else '—' }}</td>
+          <td style="text-align:right;">
+            {% if o.status == 'pending' %}
+            <button class="btn-sm accent" onclick="claimOrder({{ o.id }}, this)">Claim</button>
+            {% endif %}
+            <a class="btn-sm ghost" href="{{ url_for('main.writer_order_detail', oid=o.id) }}" style="margin-left:4px;">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="asgn-summary">{{ orders|length }} order{{ 's' if orders|length != 1 else '' }}</div>
+{% else %}
+<div class="card empty-state">
+  <div class="empty-icon">✍️</div>
+  <h3>No orders{{ ' in this filter' if status_filter else '' }}</h3>
+  <p>{% if status_filter %}Try viewing all orders.{% else %}Student orders will appear here once submitted.{% endif %}</p>
+  {% if status_filter %}<a class="btn ghost" href="{{ url_for('main.writers_dashboard') }}">View All</a>{% endif %}
+</div>
+{% endif %}
+
+<script>
+async function claimOrder(oid, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Claiming…';
+  const res = await fetch(`/api/human-orders/${oid}/claim`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) {
+    location.href = `/writers/${oid}`;
+  } else {
+    alert(data.error || 'Could not claim this order.');
+    btn.disabled = false;
+    btn.textContent = 'Claim';
+  }
+}
+</script>
+{% endblock %}

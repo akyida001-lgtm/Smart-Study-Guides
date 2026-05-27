@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="hero">
+  <h1>Welcome back, {{ user.display_name }} 👋</h1>
+  <p>Here's your Smart Study Guides dashboard. Manage your plan, create assignments, and track your work.</p>
+</div>
+
+<!-- Subscription Status + Quick Actions -->
+<div class="db-top-row">
+  <div class="card db-balance-card">
+    {% if active_sub %}
+      <div class="db-section-label">Your Plan</div>
+      <div class="db-balance-amount plan-name-{{ active_sub.plan }}">
+        {{ active_sub.plan | capitalize }}
+        <span>{{ plan_info.get('desc', '') }}</span>
+      </div>
+      <div class="db-balance-sub">
+        Active until {{ active_sub.end_date.strftime('%d %b %Y') }}
+        {% if daily_limit %}
+          · {{ today_count }}/{{ daily_limit }} assignments today
+        {% else %}
+          · Unlimited assignments
+        {% endif %}
+      </div>
+      <a class="btn accent" href="{{ url_for('main.subscription_manage') }}" style="margin-top:8px;">Manage Plan</a>
+    {% else %}
+      <div class="db-section-label">Your Plan</div>
+      <div class="db-balance-amount" style="color:var(--slate-400);font-size:22px;">No active plan</div>
+      <div class="db-balance-sub" style="margin-bottom:16px;">Subscribe to start generating assignments.</div>
+      <a class="btn accent" href="{{ url_for('main.pricing') }}">View Plans</a>
+    {% endif %}
+  </div>
+
+  <div class="card db-actions-card">
+    <div class="db-section-label">Quick Actions</div>
+    <div class="db-actions-list">
+      <a class="db-action-btn" href="{{ url_for('main.new_assignment') }}">
+        <span class="db-action-icon">✍️</span>
+        <div><strong>Create Assignment</strong><br/><small>Start a new academic paper</small></div>
+      </a>
+      <a class="db-action-btn" href="{{ url_for('main.pricing') }}">
+        <span class="db-action-icon">💳</span>
+        <div><strong>{{ 'Upgrade Plan' if active_sub else 'Get a Plan' }}</strong><br/><small>{{ 'More assignments per day' if active_sub else 'Subscribe to generate papers' }}</small></div>
+      </a>
+      {% if referral_link %}
+      <button class="db-action-btn" type="button"
+        onclick="navigator.clipboard.writeText('{{ referral_link }}');this.querySelector('strong').textContent='Link copied!';setTimeout(()=>this.querySelector('strong').textContent='Refer a Friend',1800);">
+        <span class="db-action-icon">🎁</span>
+        <div><strong>Refer a Friend</strong><br/><small>Friends get 10% off their first plan</small></div>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:16px;">Your Stats</div>
+  <div class="db-stats-grid">
+    <div class="db-stat">
+      <div class="db-stat-num">{{ total_pages }}</div>
+      <div class="db-stat-lbl">Total Pages Generated</div>
+    </div>
+    <div class="db-stat">
+      <div class="db-stat-num">{{ today_count }}</div>
+      <div class="db-stat-lbl">Assignments Today</div>
+    </div>
+    <div class="db-stat">
+      <div class="db-stat-num">
+        {% if active_sub %}
+          {% if daily_limit %}{{ daily_limit - today_count }} left{% else %}∞{% endif %}
+        {% else %}—{% endif %}
+      </div>
+      <div class="db-stat-lbl">Remaining Today</div>
+    </div>
+    <div class="db-stat">
+      <div class="db-stat-num">{{ in_progress }}</div>
+      <div class="db-stat-lbl">Assignments In Progress</div>
+    </div>
+  </div>
+</div>
+
+<!-- Daily Motivation Quote -->
+<div class="card dq-card" style="margin-bottom:18px;">
+  <div class="dq-label">Daily Motivation</div>
+  <blockquote class="dq-text">"{{ daily_quote.text }}"</blockquote>
+  <div class="dq-author">— {{ daily_quote.author }}</div>
+</div>
+
+<!-- Recent Assignments -->
+<div class="card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:16px;">Recent Assignments</div>
+  <div class="sub" style="margin-bottom:14px;">Your generated papers and their current status.</div>
+  {% if assignments %}
+    <div class="history-wrap">
+    <table class="history">
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Pages</th>
+          <th>Style</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr>
+          <td style="max-width:340px;">{{ a.topic[:90] }}{% if a.topic|length > 90 %}…{% endif %}</td>
+          <td>{{ a.pages }}</td>
+          <td>{{ a.style }}</td>
+          <td><span class="badge {{ a.status }}">{{ a.status }}</span></td>
+          <td>{{ a.created_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            {% if a.status == 'complete' and a.docx_url %}
+              <a class="btn ghost" href="{{ a.docx_url }}" download>Download</a>
+            {% elif a.status in ('queued','running') %}
+              <a class="btn ghost" href="{{ url_for('main.assignment_progress', aid=a.id) }}">View</a>
+            {% elif a.status == 'failed' %}
+              <a class="btn ghost" href="{{ url_for('main.assignment_progress', aid=a.id) }}">Details</a>
+            {% else %}
+              <a class="btn ghost" href="{{ url_for('main.assignment_sources', aid=a.id) }}">Continue</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <div class="empty">No assignments yet — click <strong>Create Assignment</strong> above to get started.</div>
+  {% endif %}
+</div>
+
+{% if referral_link %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:8px;">Refer friends, earn rewards</div>
+  <div class="sub">Share your link. When a friend signs up and subscribes, they get 10% off their first plan.</div>
+  <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+    <input id="ref-link" type="text" readonly value="{{ referral_link }}"
+           style="flex:1;min-width:260px;padding:12px 14px;border-radius:8px;border:1px solid #d8def0;font-family:monospace;font-size:13px;background:#f5f7fb;color:#06112b;" />
+    <button class="btn" type="button"
+      onclick="navigator.clipboard.writeText(document.getElementById('ref-link').value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy link',1800);">Copy link</button>
+  </div>
+</div>
+{% endif %}
+
+<!-- Reviews -->
+<div class="card db-reviews-card" style="margin-bottom:18px;">
+  <div class="db-section-label" style="margin-bottom:18px;">What Students Are Saying ⭐</div>
+  <div class="db-reviews-track" id="reviews-track">
+
+    <div class="db-review">
+      <div class="db-review-stars">★★★★★</div>
+      <p class="db-review-quote">"Got my assignment in minutes and it was completely undetectable. The sources were real and the formatting was exactly what my lecturer required. Highly recommend!"</p>
+      <div class="db-review-author">— Student, United Kingdom</div>
+    </div>
+
+    <div class="db-review">
+      <div class="db-review-stars">★★★★★</div>
+      <p class="db-review-quote">"Saved me so much time during exam season. The paper was well-structured, the citations were proper, and I submitted it with full confidence. Truly a lifesaver."</p>
+      <div class="db-review-author">— Student, Germany</div>
+    </div>
+
+    <div class="db-review">
+      <div class="db-review-stars">★★★★★</div>
+      <p class="db-review-quote">"Worth every penny. The writing felt completely natural and my professor had no suspicion whatsoever. I'll definitely be back for my next assignment."</p>
+      <div class="db-review-author">— Student, United States</div>
+    </div>
+
+    <div class="db-review">
+      <div class="db-review-stars">★★★★★</div>
+      <p class="db-review-quote">"I was skeptical at first, but the quality blew me away. Proper academic tone, in-text citations in APA style, and delivered in minutes. This is the real deal."</p>
+      <div class="db-review-author">— Student, Australia</div>
+    </div>
+
+    <div class="db-review">
+      <div class="db-review-stars">★★★★★</div>
+      <p class="db-review-quote">"Fast, clean, undetectable. I ran it through two AI detectors and it passed both. The writing quality is genuinely impressive for the price."</p>
+      <div class="db-review-author">— Student, Canada</div>
+    </div>
+
+  </div>
+  <div class="db-reviews-dots" id="reviews-dots"></div>
+</div>
+
+<script>
+(function(){
+  var track = document.getElementById('reviews-track');
+  var dotsEl = document.getElementById('reviews-dots');
+  if (!track) return;
+  var reviews = track.querySelectorAll('.db-review');
+  var current = 0;
+  var total = reviews.length;
+  var timer;
+
+  function show(idx){
+    reviews.forEach(function(r,i){ r.classList.toggle('active', i === idx); });
+    dotsEl.querySelectorAll('.db-dot').forEach(function(d,i){ d.classList.toggle('on', i === idx); });
+    current = idx;
+  }
+
+  for (var i = 0; i < total; i++){
+    (function(i){
+      var d = document.createElement('button');
+      d.className = 'db-dot';
+      d.setAttribute('aria-label','Review '+(i+1));
+      d.onclick = function(){ clearInterval(timer); show(i); startTimer(); };
+      dotsEl.appendChild(d);
+    })(i);
+  }
+
+  function startTimer(){
+    timer = setInterval(function(){ show((current+1) % total); }, 4000);
+  }
+
+  show(0);
+  startTimer();
+})();
+</script>
+
+{% if show_review %}
+<!-- ── Review prompt modal ── -->
+<div id="review-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--card-bg);border-radius:18px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">🎉</div>
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy-900);margin:0 0 8px;">How was your experience?</h2>
+    <p style="font-size:14px;color:var(--slate-500);margin:0 0 24px;line-height:1.5;">Your first assignment is ready. We'd love to hear how it went — takes 10 seconds.</p>
+
+    <!-- Star rating -->
+    <div id="star-row" style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;font-size:32px;">
+      {% for i in range(1,6) %}
+      <span class="rv-star" data-v="{{ i }}" style="cursor:pointer;opacity:.35;transition:.15s;" onclick="setRating({{ i }})">★</span>
+      {% endfor %}
+    </div>
+
+    <textarea id="rv-comment" placeholder="Optional — tell us more (what worked, what could be better)" rows="3"
+      style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--navy-900);background:var(--surface-2);resize:none;margin-bottom:16px;"></textarea>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="submitReview()" class="btn accent" style="flex:1;padding:11px;">Submit Review</button>
+      <button onclick="dismissReview()" class="btn" style="padding:11px 16px;color:var(--slate-500);">Skip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _rv_rating = 0;
+function setRating(v){
+  _rv_rating = v;
+  document.querySelectorAll('.rv-star').forEach(function(s){
+    s.style.opacity = parseInt(s.dataset.v) <= v ? '1' : '.35';
+    s.style.color   = parseInt(s.dataset.v) <= v ? '#f59e0b' : '';
+  });
+}
+function dismissReview(){
+  fetch('/api/review/dismiss', {method:'POST', headers:{'Content-Type':'application/json'}});
+  document.getElementById('review-overlay').style.display='none';
+}
+function submitReview(){
+  if(!_rv_rating){ alert('Please select a star rating.'); return; }
+  var comment = document.getElementById('rv-comment').value;
+  fetch('/api/review/submit', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({rating: _rv_rating, comment: comment})
+  }).then(function(){ document.getElementById('review-overlay').style.display='none'; });
+}
+</script>
+{% endif %}
+
+{% endblock %}

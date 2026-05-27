@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}AI Removal Status — {{ a.topic[:50] }} — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>✍️ AI Removal Status</h1>
+  <p style="color:var(--slate-400);margin-top:6px;">{{ a.topic }}</p>
+</div>
+
+<!-- Status card -->
+<div class="card" style="max-width:680px;margin:0 auto 24px;">
+
+  <!-- Status banner -->
+  {% if job.status == 'completed' %}
+  <div style="background:linear-gradient(135deg,#16a34a,#15803d);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+    <span style="font-size:36px;">✅</span>
+    <div>
+      <div style="color:#fff;font-size:18px;font-weight:700;">Your paper is ready!</div>
+      <div style="color:#bbf7d0;font-size:13px;margin-top:2px;">Our writer has completed the AI removal. Download below.</div>
+    </div>
+  </div>
+  {% elif job.status == 'assigned' %}
+  <div style="background:linear-gradient(135deg,#1d4ed8,#1e40af);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+    <span style="font-size:36px;">✍️</span>
+    <div>
+      <div style="color:#fff;font-size:18px;font-weight:700;">Writer is working on your paper</div>
+      <div style="color:#bfdbfe;font-size:13px;margin-top:2px;">A writer has been assigned and is currently rewriting your paper.</div>
+    </div>
+  </div>
+  {% else %}
+  <div style="background:linear-gradient(135deg,#92400e,#78350f);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+    <span style="font-size:36px;">⏳</span>
+    <div>
+      <div style="color:#fff;font-size:18px;font-weight:700;">Waiting for a writer</div>
+      <div style="color:#fde68a;font-size:13px;margin-top:2px;">Your job is in the queue. Our team will assign a writer shortly.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Job details -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+    <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;">
+      <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Original AI Score</div>
+      <div style="font-size:22px;font-weight:800;color:#ff6b6b;">{{ job.original_ai_score }}%</div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;">
+      <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Deadline</div>
+      <div style="font-size:15px;font-weight:700;color:{% if job.is_overdue %}#ff6b6b{% else %}#ffd166{% endif %};">
+        {{ job.deadline.strftime('%H:%M, %d %b') }}
+        {% if not job.is_overdue %}<span style="font-size:12px;font-weight:400;color:var(--slate-400);">({{ job.deadline_minutes }} min left)</span>{% else %}<span style="font-size:12px;color:#ff6b6b;"> (overdue)</span>{% endif %}
+      </div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;">
+      <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Status</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);">{{ job.STATUS_LABELS.get(job.status, job.status) }}</div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;">
+      <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Submitted</div>
+      <div style="font-size:14px;color:var(--text);">{{ job.submitted_at.strftime('%H:%M, %d %b') }}</div>
+    </div>
+  </div>
+
+  {% if job.status == 'completed' %}
+  <!-- Final score -->
+  <div style="background:linear-gradient(135deg,#052e16,#14532d);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:24px;">
+    <div style="text-align:center;">
+      <div style="font-size:40px;font-weight:900;color:#4ade80;">{{ job.final_ai_score }}%</div>
+      <div style="font-size:12px;color:#86efac;">AI Detected</div>
+    </div>
+    <div style="width:1px;background:#166534;align-self:stretch;"></div>
+    <div style="text-align:center;">
+      <div style="font-size:40px;font-weight:900;color:#4ade80;">{{ (100 - job.final_ai_score)|round(1) }}%</div>
+      <div style="font-size:12px;color:#86efac;">Human Written</div>
+    </div>
+    <div style="margin-left:auto;">
+      <div style="font-size:12px;color:#86efac;margin-bottom:4px;">Verified by Ryter Pro</div>
+      <div style="font-size:11px;color:#4ade80;">✅ Passes AI detection</div>
+    </div>
+  </div>
+
+  <!-- Download button -->
+  {% if job.final_file_url %}
+  <a href="{{ job.final_file_url }}" class="btn accent" style="display:block;text-align:center;padding:16px;font-size:16px;font-weight:700;border-radius:12px;margin-bottom:12px;">
+    ⬇ Download Your Paper
+  </a>
+  {% endif %}
+  <a href="{{ url_for('main.my_assignments') }}" class="btn ghost" style="display:block;text-align:center;padding:12px;">
+    📂 My Assignments
+  </a>
+
+  {% else %}
+  <!-- Auto-refresh progress -->
+  <div style="background:var(--surface-2);border-radius:10px;padding:16px 18px;margin-bottom:16px;text-align:center;" id="refresh-note">
+    <span class="lv-spin" style="display:inline-block;margin-right:8px;"></span>
+    <span style="color:var(--slate-400);font-size:14px;">This page refreshes automatically every 30 seconds…</span>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="{{ url_for('main.my_assignments') }}" class="btn ghost" style="flex:1;text-align:center;padding:12px;">📂 My Assignments</a>
+    <a href="{{ url_for('main.chat_page') }}" class="btn ghost" style="flex:1;text-align:center;padding:12px;">💬 Chat Support</a>
+  </div>
+
+  <script>
+    setTimeout(function(){ location.reload(); }, 30000);
+  </script>
+  {% endif %}
+</div>
+
+{% endblock %}

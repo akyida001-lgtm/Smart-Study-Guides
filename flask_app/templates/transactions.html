@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Billing History — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>🧾 Billing History</h1>
+  <a class="btn accent" href="{{ url_for('main.pricing') }}">💳 View Plans</a>
+</div>
+
+{% if subscriptions %}
+
+<div class="txn-stats">
+  <div class="card txn-stat-card">
+    <div class="txn-stat-label">Total spent</div>
+    <div class="txn-stat-val">${{ "%.2f"|format(subscriptions|selectattr('status','equalto','active')|sum(attribute='price_paid_cents') / 100) }}</div>
+  </div>
+  <div class="card txn-stat-card">
+    <div class="txn-stat-label">Active plan</div>
+    <div class="txn-stat-val">
+      {% set act = subscriptions | selectattr('status','equalto','active') | list | first %}
+      {% if act %}{{ act.plan | capitalize }}{% else %}None{% endif %}
+    </div>
+  </div>
+  <div class="card txn-stat-card">
+    <div class="txn-stat-label">Subscriptions</div>
+    <div class="txn-stat-val">{{ subscriptions|length }}</div>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <div class="asgn-table-wrap">
+    <table class="asgn-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Plan</th>
+          <th>Period</th>
+          <th>Amount</th>
+          <th>Discount</th>
+          <th>Status</th>
+          <th>Expires</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in subscriptions %}
+        <tr class="asgn-row">
+          <td class="asgn-date">{{ s.created_at.strftime('%d %b %Y') }}</td>
+          <td><strong>{{ s.plan | capitalize }}</strong></td>
+          <td>{{ s.period_label }}</td>
+          <td><strong>${{ "%.2f"|format(s.price_paid_cents / 100) }}</strong></td>
+          <td>
+            {% if s.discount_pct %}
+              <span class="status-badge green">{{ s.discount_pct }}% off</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if s.status == 'active' and s.end_date %}
+              <span class="status-badge green">✅ Active</span>
+            {% elif s.status == 'pending' %}
+              <span class="status-badge yellow">🕐 Pending</span>
+            {% elif s.status == 'expired' %}
+              <span class="status-badge grey">Expired</span>
+            {% elif s.status == 'cancelled' %}
+              <span class="status-badge red">Cancelled</span>
+            {% else %}
+              <span class="status-badge grey">{{ s.status }}</span>
+            {% endif %}
+          </td>
+          <td>{{ s.end_date.strftime('%d %b %Y') if s.end_date else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="card empty-state">
+  <div class="empty-icon">🧾</div>
+  <h3>No billing history yet</h3>
+  <p>Your subscription history will appear here once you subscribe to a plan.</p>
+  <a class="btn accent" href="{{ url_for('main.pricing') }}">View Plans →</a>
+</div>
+{% endif %}
+
+{% endblock %}

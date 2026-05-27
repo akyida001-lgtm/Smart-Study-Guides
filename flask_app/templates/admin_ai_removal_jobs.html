@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}AI Removal Jobs — Admin{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1>✍️ AI Removal Jobs</h1>
+    <p style="color:var(--slate-400);margin-top:4px;">{{ jobs|length }} total · {{ jobs|selectattr('status','eq','pending')|list|length }} pending</p>
+  </div>
+  <a href="{{ url_for('main.admin_users') }}" class="btn ghost">← Admin</a>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+  <div class="flash {{ cat }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+{% if not jobs %}
+<div class="card" style="text-align:center;padding:40px;color:var(--slate-400);">No AI removal jobs yet.</div>
+{% else %}
+
+{% for job in jobs %}
+<div class="card" style="margin-bottom:16px;{% if job.is_overdue and job.status != 'completed' %}border-left:4px solid #ff6b6b;{% elif job.status == 'completed' %}border-left:4px solid #16a34a;{% else %}border-left:4px solid #ffd166;{% endif %}">
+
+  <!-- Header row -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);">{{ job.assignment.topic[:80] }}</div>
+      <div style="font-size:13px;color:var(--slate-400);margin-top:2px;">
+        Student: <strong style="color:var(--text);">{{ job.student.display_name }}</strong> ({{ job.student.email or '—' }}) ·
+        Submitted: {{ job.submitted_at.strftime('%H:%M %d %b') }}
+      </div>
+    </div>
+    <!-- Status badge -->
+    <span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;
+      {% if job.status == 'completed' %}background:#14532d;color:#4ade80;
+      {% elif job.status == 'assigned' %}background:#1e3a8a;color:#93c5fd;
+      {% else %}background:#451a03;color:#fbbf24;{% endif %}">
+      {{ job.STATUS_LABELS.get(job.status, job.status) }}
+    </span>
+  </div>
+
+  <!-- Score + deadline row -->
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+    <div style="background:var(--surface-2);border-radius:8px;padding:10px 16px;">
+      <div style="font-size:11px;color:var(--slate-400);margin-bottom:2px;">Original AI Score</div>
+      <div style="font-size:20px;font-weight:800;color:#ff6b6b;">{{ job.original_ai_score }}%</div>
+    </div>
+    {% if job.final_ai_score is not none %}
+    <div style="background:var(--surface-2);border-radius:8px;padding:10px 16px;">
+      <div style="font-size:11px;color:var(--slate-400);margin-bottom:2px;">Final AI Score</div>
+      <div style="font-size:20px;font-weight:800;color:#4ade80;">{{ job.final_ai_score }}%</div>
+    </div>
+    {% endif %}
+    <div style="background:var(--surface-2);border-radius:8px;padding:10px 16px;">
+      <div style="font-size:11px;color:var(--slate-400);margin-bottom:2px;">Deadline</div>
+      <div style="font-size:15px;font-weight:700;color:{% if job.is_overdue %}#ff6b6b{% else %}#ffd166{% endif %};">
+        {{ job.deadline.strftime('%H:%M, %d %b') }}
+        {% if job.status != 'completed' %}
+          {% if job.is_overdue %}<span style="font-size:12px;"> (overdue)</span>
+          {% else %}<span style="font-size:12px;font-weight:400;color:var(--slate-400);"> ({{ job.deadline_minutes }} min)</span>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    <div style="background:var(--surface-2);border-radius:8px;padding:10px 16px;">
+      <div style="font-size:11px;color:var(--slate-400);margin-bottom:2px;">Words</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);">{{ (job.word_count or 0)|int }}</div>
+    </div>
+  </div>
+
+  {% if job.student_notes %}
+  <div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--slate-300);">
+    <strong style="color:var(--slate-400);">Student notes:</strong> {{ job.student_notes }}
+  </div>
+  {% endif %}
+
+  <!-- Original text preview -->
+  <details style="margin-bottom:14px;">
+    <summary style="cursor:pointer;font-size:13px;color:var(--slate-400);padding:8px 0;">📄 View original text ({{ (job.word_count or 0)|int }} words)</summary>
+    <div style="background:var(--surface-2);border-radius:8px;padding:14px;margin-top:8px;max-height:200px;overflow-y:auto;">
+      <pre style="white-space:pre-wrap;font-size:13px;color:var(--slate-300);font-family:inherit;margin:0;">{{ job.original_text[:2000] }}{% if job.original_text|length > 2000 %}…{% endif %}</pre>
+    </div>
+  </details>
+
+  <!-- Actions -->
+  {% if job.status != 'completed' %}
+  <form method="POST" action="{{ url_for('main.admin_assign_ai_removal', job_id=job.id) }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+    <select name="writer_id" style="flex:1;min-width:180px;padding:10px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:14px;">
+      <option value="">— Select writer —</option>
+      {% for w in writers %}
+      <option value="{{ w.id }}" {% if job.writer_id == w.id %}selected{% endif %}>
+        {{ w.display_name }} ({{ w.email or 'no email' }})
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn accent" style="padding:10px 20px;">
+      {% if job.status == 'assigned' %}Reassign Writer{% else %}Assign Writer{% endif %}
+    </button>
+    <a href="{{ url_for('main.writer_ai_removal_upload_page', job_id=job.id) }}" class="btn ghost" style="padding:10px 20px;">Upload as Admin</a>
+  </form>
+  {% else %}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <span style="color:#4ade80;font-size:14px;font-weight:600;">✅ Completed {{ job.completed_at.strftime('%H:%M %d %b') }}</span>
+    {% if job.final_file_url %}
+    <a href="{{ job.final_file_url }}" class="btn ghost" style="padding:8px 16px;font-size:13px;">⬇ Download Final</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}

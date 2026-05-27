@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}</title>
+
+  <!-- ── SEO Meta ── -->
+  <meta name="description" content="{% block meta_description %}Smart Study Guides generates polished, properly-cited academic assignments in minutes. Real research, humanized text, undetectable AI score — delivered as a Word document.{% endblock %}" />
+  <meta name="keywords" content="{% block meta_keywords %}AI assignment writer, academic writing AI, essay generator, homework help, plagiarism-free assignments, AI essay writer, college assignment help, academic paper generator{% endblock %}" />
+  <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}" />
+  <link rel="canonical" href="{% block canonical %}https://smart-study-guides.com{{ request.path }}{% endblock %}" />
+
+  <!-- ── Favicon / App Icon ── -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}?v=2" />
+  <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='img/favicon.png') }}?v=2" />
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2" />
+  <meta name="theme-color" content="#00bcd4" />
+
+  <!-- ── Open Graph (Facebook, WhatsApp, LinkedIn) ── -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="Smart Study Guides" />
+  <meta property="og:title"       content="{% block og_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}Generate polished, properly-cited academic assignments in minutes. Real research, humanized text, 0% AI detection score — delivered as a Word document.{% endblock %}" />
+  <meta property="og:url"         content="https://smart-study-guides.com{{ request.path }}" />
+  <meta property="og:image"       content="{% block og_image %}https://smart-study-guides.com/static/img/og-cover.jpg{% endblock %}" />
+  <meta property="og:image:width"  content="630" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type"   content="image/jpeg" />
+
+  <!-- ── Twitter / X Card ── -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="{% block twitter_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}" />
+  <meta name="twitter:description" content="{% block twitter_description %}Generate polished academic assignments in minutes. Real research, humanized, plagiarism-clean — delivered as .docx.{% endblock %}" />
+  <meta name="twitter:image"       content="{% block twitter_image %}https://smart-study-guides.com/static/img/og-cover.jpg{% endblock %}" />
+
+  <!-- ── Extra head (JSON-LD etc) ── -->
+  {% block extra_head %}{% endblock %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=41" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/human_writer.css') }}?v=2" />
+</head>
+<body{% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'akyida001@gmail.com', 'simonedwardj@yahoo.com']) %} class="is-admin"{% endif %}>
+{% block layout %}
+
+{% if current_user.is_authenticated %}
+<!-- ── Authenticated: sidebar layout ── -->
+<div class="app-layout">
+  <div class="sidebar-overlay" id="sidebar-overlay" role="presentation"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a href="{{ url_for('main.index') }}">Smart Study<span class="dot">.</span>Guides</a>
+      <button class="sidebar-close" id="sidebar-close-btn" aria-label="Close" type="button">×</button>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">{{ current_user.display_name[0].upper() if current_user.display_name else 'U' }}</div>
+      <div>
+        <div class="sidebar-user-name">{{ current_user.display_name }}</div>
+        {% if not current_user.is_writer and not session.get('admin_writer_preview') %}
+          {% if active_plan == "admin" %}
+            <div class="sidebar-user-credits sub-badge-admin">⚙ Admin</div>
+          {% elif active_plan %}
+            <div class="sidebar-user-credits sub-badge-{{ active_plan }}">{{ active_plan | capitalize }} plan</div>
+          {% else %}
+            <div class="sidebar-user-credits sub-badge-none">No active plan</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if current_user.is_writer or session.get('admin_writer_preview') %}
+    <!-- ── Writer portal navigation ── -->
+    <nav class="sidebar-nav">
+      {% if current_user.is_staff and session.get('admin_writer_preview') %}
+      <a class="snav-item" href="{{ url_for('main.admin_writer_mode_off') }}"
+         style="color:#f59e0b;font-weight:700;border:1.5px solid rgba(245,158,11,.25);border-radius:8px;margin-bottom:4px;">
+        <span class="snav-icon">👑</span> Exit Writer Mode
+      </a>
+      <div class="snav-divider"></div>
+      {% endif %}
+      <a class="snav-item {% if request.endpoint in ('main.writer_available','main.writer_home') %}active{% endif %}" href="{{ url_for('main.writer_available') }}">
+        <span class="snav-icon">📋</span> Available Orders
+      </a>
+      <a class="snav-item {% if request.endpoint == 'main.writer_my_orders' %}active{% endif %}" href="{{ url_for('main.writer_my_orders') }}">
+        <span class="snav-icon">📝</span> My Orders
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item {% if request.endpoint == 'main.profile' %}active{% endif %}" href="{{ url_for('main.profile') }}">
+        <span class="snav-icon">👤</span> Profile
+      </a>
+      <a class="snav-item snav-terms {% if request.endpoint == 'main.terms_page' %}active{% endif %}" href="{{ url_for('main.terms_page') }}" style="font-size:12px;opacity:.7;">
+        <span class="snav-icon">📜</span> Terms &amp; Conditions
+      </a>
+      <a class="snav-item snav-logout" href="{{ url_for('auth.logout') }}">
+        <span class="snav-icon">🚪</span> Log out
+      </a>
+    </nav>
+
+    {% else %}
+    <!-- ── Student / Admin navigation ── -->
+    <nav class="sidebar-nav">
+      <a class="snav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+        <span class="snav-icon">🏠</span> Dashboard
+      </a>
+      <a class="snav-item {% if request.endpoint == 'main.new_assignment' %}active{% endif %}" href="{{ url_for('main.new_assignment') }}">
+        <span class="snav-icon">📝</span> Create Assignment
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item {% if request.endpoint == 'main.humanize_tool' %}active{% endif %}" href="{{ url_for('main.humanize_tool') }}">
+        <span class="snav-icon">✍️</span> Humanize Text
+      </a>
+      <a class="snav-item {% if request.endpoint == 'main.ai_checker' %}active{% endif %}" href="{{ url_for('main.ai_checker') }}">
+        <span class="snav-icon">🤖</span> AI Checker
+      </a>
+      <a class="snav-item {% if request.endpoint == 'main.plagiarism_checker' %}active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}">
+        <span class="snav-icon">📋</span> Plagiarism Check
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item {% if request.endpoint == 'main.my_assignments' %}active{% endif %}" href="{{ url_for('main.my_assignments') }}">
+        <span class="snav-icon">📂</span> My Assignments
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item {% if request.endpoint in ('main.pricing','main.buy_credits') %}active{% endif %}" href="{{ url_for('main.pricing') }}">
+        <span class="snav-icon">💳</span> Plans &amp; Pricing
+      </a>
+      <a class="snav-item {% if request.endpoint in ('main.subscription_manage',) %}active{% endif %}" href="{{ url_for('main.subscription_manage') }}">
+        <span class="snav-icon">🎯</span> My Subscription
+      </a>
+      <a class="snav-item {% if request.endpoint == 'main.transactions' %}active{% endif %}" href="{{ url_for('main.transactions') }}">
+        <span class="snav-icon">🧾</span> Billing History
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item {% if request.endpoint == 'main.post_human_assignment' %}active{% endif %}" href="{{ url_for('main.post_human_assignment') }}">
+        <span class="snav-icon">✍️</span> Human Writer
+      </a>
+      <a class="snav-item {% if 'job_docs' in request.endpoint %}active{% endif %}" href="{{ url_for('main.job_docs') }}">
+        <span class="snav-icon">📄</span> Career Section
+        <span class="snav-free-tag">Free</span>
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item" href="#" onclick="openFloatingChat();return false;" id="snav-chat-link" style="position:relative;">
+        <span class="snav-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </span>
+        Support Chat
+        <span id="snav-chat-badge" style="display:none;position:absolute;top:7px;right:10px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 5px;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.35);"></span>
+      </a>
+      {% if current_user.is_staff %}
+      <a class="snav-item {% if request.endpoint == 'main.writers_dashboard' %}active{% endif %}" href="{{ url_for('main.writers_dashboard') }}">
+        <span class="snav-icon">📋</span> Writers Dashboard
+      </a>
+      <a class="snav-item {% if 'admin' in request.endpoint and 'users' not in request.endpoint and 'removal' not in request.endpoint %}active{% endif %}" href="{{ url_for('main.admin_chats') }}">
+        <span class="snav-icon">🎧</span> Support Dashboard
+      </a>
+      <a class="snav-item {% if request.endpoint == 'main.admin_ai_removal_jobs' %}active{% endif %}" href="{{ url_for('main.admin_ai_removal_jobs') }}" style="position:relative;">
+        <span class="snav-icon">✍️</span> AI Removal Jobs
+        {% if pending_ai_removal_count and pending_ai_removal_count > 0 %}
+        <span style="position:absolute;top:6px;right:10px;background:#e53e3e;color:#fff;font-size:11px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;line-height:1;">{{ pending_ai_removal_count }}</span>
+        {% endif %}
+      </a>
+      <a class="snav-item {% if 'admin_users' in request.endpoint %}active{% endif %}" href="{{ url_for('main.admin_users') }}">
+        <span class="snav-icon">👥</span> User Management
+      </a>
+      <div class="snav-divider"></div>
+      <a class="snav-item snav-writer-mode-btn" href="{{ url_for('main.admin_writer_mode_on') }}"
+         title="Preview the writer portal as if you were a writer">
+        <span class="snav-icon">✍️</span> Writer Account Mode
+      </a>
+      {% endif %}
+
+      <a class="snav-item {% if request.endpoint == 'main.help_page' %}active{% endif %}" href="{{ url_for('main.help_page') }}">
+        <span class="snav-icon">❓</span> Help &amp; Tutorials
+      </a>
+
+      <div class="snav-divider"></div>
+
+      <a class="snav-item {% if request.endpoint == 'main.profile' %}active{% endif %}" href="{{ url_for('main.profile') }}">
+        <span class="snav-icon">👤</span> Profile
+      </a>
+      <a class="snav-item snav-terms {% if request.endpoint == 'main.terms_page' %}active{% endif %}" href="{{ url_for('main.terms_page') }}" style="font-size:12px;opacity:.7;">
+        <span class="snav-icon">📜</span> Terms &amp; Conditions
+      </a>
+
+      <a class="snav-item snav-logout" href="{{ url_for('auth.logout') }}">
+        <span class="snav-icon">🚪</span> Log out
+      </a>
+    </nav>
+    {% endif %}
+  </aside>
+
+  <div class="app-main">
+    <header class="app-topbar">
+      <button class="topbar-menu-btn" id="topbar-menu-btn" aria-label="Open menu" type="button">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-right">
+        <!-- ── Notification bell ── -->
+        <div class="ntf-wrap" id="ntf-wrap">
+          <button class="ntf-bell" id="ntf-bell" onclick="ntfToggle()" aria-label="Notifications" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="ntf-dot" id="ntf-dot" style="display:none;"></span>
+          </button>
+
+          <!-- floating panel -->
+          <div class="ntf-panel" id="ntf-panel" style="display:none;">
+            <div class="ntf-panel-head">
+              <span class="ntf-panel-title">Notifications</span>
+              <button class="ntf-mark-all" id="ntf-mark-all" onclick="ntfMarkAll()" type="button">Mark all read</button>
+            </div>
+            <div class="ntf-list" id="ntf-list">
+              <div class="ntf-empty" id="ntf-empty" style="display:none;">No notifications yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Live clock ── -->
+        <div class="tb-infobar" id="tb-infobar">
+          <span id="tb-clock" class="tb-item"></span>
+        </div>
+
+        {% if not current_user.is_writer and not session.get('admin_writer_preview') %}
+          {% if active_plan == "admin" %}
+            <span class="topbar-credits topbar-plan-admin" title="Admin account">⚙ Admin</span>
+          {% elif active_plan %}
+            <a class="topbar-credits topbar-plan-{{ active_plan }}" href="{{ url_for('main.subscription_manage') }}" title="Manage subscription">{{ active_plan | capitalize }}</a>
+          {% else %}
+            <a class="topbar-credits topbar-plan-none" href="{{ url_for('main.pricing') }}" title="Get a plan">Subscribe</a>
+          {% endif %}
+        {% endif %}
+      </div>
+    </header>
+    <div class="app-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+
+{% else %}
+<!-- ── Guest: top nav layout ── -->
+<nav class="nav">
+  <a class="brand" href="{{ url_for('main.index') }}">Smart Study<span class="dot">.</span>Guides</a>
+  <button class="nav-toggle" id="nav-toggle-btn" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-right" id="nav-right">
+    <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
+    <a class="nav-link" href="{{ url_for('auth.login') }}">Sign in</a>
+    <a class="nav-cta" href="{{ url_for('auth.signup') }}">Sign up free</a>
+  </div>
+</nav>
+<div class="container {% block container_class %}{% endblock %}">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+
+{% endif %}
+
+{# ── single content block ── #}
+{% block content %}{% endblock %}
+
+<footer class="site-footer">
+  <!-- ── Top row: logo + nav columns ── -->
+  <div class="sf-top">
+    <div class="sf-brand-col">
+      <a class="sf-logo" href="{{ url_for('main.index') }}">
+        Smart Study<span class="sf-logo-dot">.</span>Guides
+      </a>
+      <p class="sf-tagline">AI-powered academic assignments.<br>Real research. Humanized. Undetectable.</p>
+      <div class="sf-socials">
+        <a class="sf-social-link" href="mailto:pro@smart-study-guides.com" aria-label="Email us">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="sf-links-cols">
+      <div class="sf-links-col">
+        <div class="sf-links-heading">Product</div>
+        <a href="{{ url_for('main.index') }}">Home</a>
+        <a href="{{ url_for('main.pricing') }}">Pricing</a>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.new_assignment') }}">Create Assignment</a>
+        <a href="{{ url_for('main.my_assignments') }}">My Assignments</a>
+        {% else %}
+        <a href="{{ url_for('auth.signup') }}">Get Started</a>
+        <a href="{{ url_for('auth.login') }}">Sign In</a>
+        {% endif %}
+      </div>
+      <div class="sf-links-col">
+        <div class="sf-links-heading">Tools</div>
+        <a href="{{ url_for('main.humanize_tool') }}">Humanize Text</a>
+        <a href="{{ url_for('main.ai_checker') }}">AI Checker</a>
+        <a href="{{ url_for('main.plagiarism_checker') }}">Plagiarism Check</a>
+        <a href="{{ url_for('main.post_human_assignment') }}">Human Writer</a>
+      </div>
+      <div class="sf-links-col">
+        <div class="sf-links-heading">Company</div>
+        <a href="/terms">Terms of Service</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="{{ url_for('main.help_page') }}">Help &amp; Tutorials</a>
+        <a href="mailto:pro@smart-study-guides.com">Contact Us</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Divider ── -->
+  <div class="sf-rule"></div>
+
+  <!-- ── Bottom row: mini logo far-left + copyright ── -->
+  <div class="sf-bottom">
+    <a class="sf-logo-sm" href="{{ url_for('main.index') }}">
+      Smart Study<span class="sf-logo-dot">.</span>Guides
+    </a>
+    <span class="sf-copy">© {{ 2026 }} Smart Study Guides. All rights reserved.</span>
+    <div class="sf-bottom-links">
+      <a href="/privacy">Privacy</a>
+      <span class="sf-dot">·</span>
+      <a href="/terms">Terms</a>
+    </div>
+  </div>
+</footer>
+
+{% if current_user.is_authenticated %}
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-layout -->
+
+<!-- ── Floating Chat Widget ── -->
+<div class="fc-widget" id="fc-widget">
+  <div class="fc-panel" id="fc-panel" style="display:none;">
+    <div class="fc-header">
+      <div class="fc-avatar">👤</div>
+      <div>
+        <div class="fc-agent-name">Smart Study Guides Support</div>
+        <div class="fc-agent-status"><span class="fc-status-dot"></span> Available 24/7</div>
+      </div>
+      <div class="fc-hdr-actions">
+        <button class="fc-hdr-btn" onclick="fcNewChat()" title="New chat">↺</button>
+        <button class="fc-hdr-btn" onclick="toggleFloatingChat()" title="Minimise">−</button>
+      </div>
+    </div>
+    <div class="fc-messages" id="fc-messages">
+      <div class="fc-bwrap agt" id="fc-loading">
+        <div class="fc-typing-row">
+          <div class="chat-typing-dot"></div>
+          <div class="chat-typing-dot"></div>
+          <div class="chat-typing-dot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-input-row">
+      <textarea id="fc-input" class="fc-textarea" rows="1"
+        placeholder="Type your message…"
+        onkeydown="fcKey(event)" oninput="fcGrow(this)"></textarea>
+      <button class="fc-send" id="fc-send" onclick="fcSend()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+    <!-- Quick-action chips (shown above input, hidden after first user message) -->
+    <div class="fc-chips" id="fc-chips">
+      <div class="fc-chips-label">Quick actions</div>
+      <div class="fc-chips-row">
+        <button class="fc-chip fc-chip-cta" onclick="fcChipHuman()">
+          ✍️ Get my assignment done by a human writer
+        </button>
+        <button class="fc-chip" onclick="fcChipMsg('How does pricing work?')">
+          💰 How does pricing work?
+        </button>
+        <button class="fc-chip" onclick="fcChipMsg('What is the difference between AI and human writer?')">
+          🤖 AI vs Human writer?
+        </button>
+        <button class="fc-chip" onclick="window.location.href='/pricing'">
+          💳 View plans &amp; pricing
+        </button>
+        <button class="fc-chip" onclick="window.location.href='/assignments'">
+          📂 My assignments
+        </button>
+      </div>
+    </div>
+    <div class="fc-foot">Messages are reviewed by our customer care team.</div>
+  </div>
+  <button class="fc-fab" id="fc-fab" onclick="toggleFloatingChat()" aria-label="Support chat">
+    <span class="fc-fab-icon">💬</span>
+    <span class="fc-badge" id="fc-badge" style="display:none;">1</span>
+  </button>
+</div>
+
+<script>
+(function () {
+  var panel     = document.getElementById('fc-panel');
+  var fab       = document.getElementById('fc-fab');
+  var badge     = document.getElementById('fc-badge');
+  var msgWrap   = document.getElementById('fc-messages');
+  var inputEl   = document.getElementById('fc-input');
+  var sendBtn   = document.getElementById('fc-send');
+  var loadingEl = document.getElementById('fc-loading');
+
+  var sessionId = null;
+  var lastMsgId = 0;
+  var sending   = false;
+  var pollTimer = null;
+  var isOpen    = false;
+  var typingEl  = null;
+  var unread    = 0;
+  var snavBadge = document.getElementById('snav-chat-badge');
+
+  function storedSid()    { try { return sessionStorage.getItem('fc_sid'); }    catch(e) { return null; } }
+  function saveSid(id)    { try { sessionStorage.setItem('fc_sid', String(id)); } catch(e) {} }
+  function clearSid()     { try { sessionStorage.removeItem('fc_sid'); }         catch(e) {} }
+
+  /* ── Global unread badge (FAB + sidebar) ── */
+  function setBadgeCount(n) {
+    if (n > 0) {
+      var label = n > 99 ? '99+' : String(n);
+      badge.textContent = label;
+      badge.style.display = 'flex';
+      if (snavBadge) { snavBadge.textContent = label; snavBadge.style.display = 'flex'; }
+    } else {
+      badge.style.display = 'none';
+      if (snavBadge) snavBadge.style.display = 'none';
+    }
+  }
+
+  async function refreshUnreadCount() {
+    try {
+      var r = await fetch('/api/chat/unread-count');
+      if (r.ok) {
+        var d = await r.json();
+        if (!isOpen) setBadgeCount(d.count);
+      }
+    } catch(e) {}
+  }
+
+  /* Poll for unread every 30s (lightweight) */
+  setInterval(refreshUnreadCount, 30000);
+  refreshUnreadCount();
+
+  function fcNow() {
+    var d = new Date();
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  }
+
+  /* ── open / close ── */
+  window.toggleFloatingChat = function () {
+    isOpen = !isOpen;
+    panel.style.display = isOpen ? 'flex' : 'none';
+    fab.classList.toggle('open', isOpen);
+    if (isOpen) {
+      unread = 0;
+      setBadgeCount(0);
+      /* Tell the server to mark every message across ALL sessions as read */
+      fetch('/api/chat/mark-all-read', { method: 'POST' }).catch(function(){});
+      if (!sessionId) {
+        var saved = storedSid();
+        if (saved) { sessionId = parseInt(saved); fcLoadExisting(); }
+        else        { fcStart(); }
+      }
+      setTimeout(function () { if (inputEl) inputEl.focus(); }, 220);
+      msgWrap.scrollTop = msgWrap.scrollHeight;
+    } else {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+  };
+
+  window.openFloatingChat = function () { if (!isOpen) window.toggleFloatingChat(); };
+
+  /* ── start new session ── */
+  async function fcStart() {
+    try {
+      var r = await fetch('/api/chat/start', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      var d = await r.json();
+      sessionId = d.session_id;
+      saveSid(sessionId);
+      if (loadingEl) loadingEl.style.display = 'none';
+      d.messages.forEach(fcAppend);
+      lastMsgId = d.messages.length ? d.messages[d.messages.length - 1].id : 0;
+      fcStartPoll();
+    } catch (e) {
+      fcSys('Could not connect. Please try again.');
+    }
+  }
+
+  /* ── load existing ── */
+  async function fcLoadExisting() {
+    try {
+      var r = await fetch('/api/chat/' + sessionId + '/messages?after=0');
+      var msgs = await r.json();
+      if (loadingEl) loadingEl.style.display = 'none';
+      msgs.forEach(fcAppend);
+      lastMsgId = msgs.length ? msgs[msgs.length - 1].id : 0;
+      fcStartPoll();
+    } catch (e) {
+      fcSys('Could not load messages.');
+    }
+  }
+
+  /* ── poll for new messages ── */
+  function fcStartPoll() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(fcPoll, 3000);
+  }
+
+  async function fcPoll() {
+    if (!sessionId) return;
+    try {
+      var r = await fetch('/api/chat/' + sessionId + '/messages?after=' + lastMsgId);
+      var msgs = await r.json();
+      msgs.forEach(function (m) {
+        fcAppend(m);
+        lastMsgId = m.id;
+        if (!isOpen && m.sender !== 'user') {
+          unread++;
+          setBadgeCount(unread);
+        }
+      });
+    } catch (e) {}
+  }
+
+  /* ── send ── */
+  window.fcSend = async function () {
+    if (sending) return;
+    var text = (inputEl.value || '').trim();
+    if (!text || !sessionId) return;
+
+    sending = true;
+    inputEl.value = '';
+    fcGrow(inputEl);
+    sendBtn.disabled = true;
+
+    var fake = Date.now();
+    fcAppend({ id: fake, sender: 'user', content: text, ts: fcNow() });
+    lastMsgId = Math.max(lastMsgId, fake);
+    fcShowTyping();
+
+    try {
+      var r = await fetch('/api/chat/' + sessionId + '/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      var d = await r.json();
+      fcHideTyping();
+      if (d.ai_reply) { fcAppend(d.ai_reply); lastMsgId = Math.max(lastMsgId, d.ai_reply.id); }
+      if (d.error)    fcSys(d.error);
+    } catch (e) {
+      fcHideTyping();
+      fcSys('Message failed. Please try again.');
+    }
+    sending = false;
+    sendBtn.disabled = false;
+    inputEl.focus();
+  };
+
+  /* ── new chat ── */
+  window.fcNewChat = async function () {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    sessionId = null; lastMsgId = 0; unread = 0;
+    clearSid();
+    badge.style.display = 'none';
+    msgWrap.innerHTML =
+      '<div class="fc-bwrap agt" id="fc-loading">' +
+        '<div class="fc-typing-row">' +
+          '<div class="chat-typing-dot"></div>' +
+          '<div class="chat-typing-dot"></div>' +
+          '<div class="chat-typing-dot"></div>' +
+        '</div>' +
+      '</div>';
+    loadingEl = document.getElementById('fc-loading');
+    await fcStart();
+  };
+
+  /* ── helpers ── */
+  function fcAppend(m) {
+    if (document.getElementById('fcm-' + m.id)) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'fcm-' + m.id;
+    wrap.className = 'fc-bwrap ' + (m.sender === 'user' ? 'usr' : 'agt');
+
+    var b = document.createElement('div');
+    b.className = 'fc-bubble ' +
+      (m.sender === 'user' ? 'fc-bubble-user' :
+       m.sender === 'staff' ? 'fc-bubble-staff' : 'fc-bubble-ai');
+    b.textContent = m.content;
+
+    var meta = document.createElement('div');
+    meta.className = 'fc-meta';
+    meta.textContent = (m.sender === 'staff' ? '👤 Agent · ' : m.sender === 'ai' ? '🤖 · ' : '') + m.ts;
+
+    wrap.appendChild(b);
+    wrap.appendChild(meta);
+    msgWrap.appendChild(wrap);
+    msgWrap.scrollTop = msgWrap.scrollHeight;
+  }
+
+  function fcSys(text) {
+    var d = document.createElement('div');
+    d.className = 'fc-sys';
+    d.textContent = text;
+    msgWrap.appendChild(d);
+    msgWrap.scrollTop = msgWrap.scrollHeight;
+  }
+
+  function fcShowTyping() {
+    if (typingEl) return;
+    typingEl = document.createElement('div');
+    typingEl.className = 'fc-bwrap agt';
+    typingEl.innerHTML =
+      '<div class="fc-typing-row">' +
+        '<div class="chat-typing-dot"></div>' +
+        '<div class="chat-typing-dot"></div>' +
+        '<div class="chat-typing-dot"></div>' +
+      '</div>';
+    msgWrap.appendChild(typingEl);
+    msgWrap.scrollTop = msgWrap.scrollHeight;
+  }
+
+  function fcHideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+  window.fcKey  = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); fcSend(); } };
+  window.fcGrow = function (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 90) + 'px'; };
+
+  /* ── quick action chips ── */
+  var chipsEl       = document.getElementById('fc-chips');
+  var chipsHidden   = false;
+
+  function fcHideChips() {
+    if (!chipsHidden && chipsEl) {
+      chipsEl.style.opacity = '0';
+      chipsEl.style.transform = 'translateY(6px)';
+      setTimeout(function () { chipsEl.style.display = 'none'; }, 200);
+      chipsHidden = true;
+    }
+  }
+
+  // Hide chips after the user sends their first real message
+  var _origFcSend = window.fcSend;
+  window.fcSend = async function () {
+    fcHideChips();
+    await _origFcSend();
+  };
+
+  /* Human writer chip — sends a chat message AND redirects */
+  window.fcChipHuman = async function () {
+    fcHideChips();
+    var text = "I'd like to get my assignment done by a human writer.";
+    inputEl.value = text;
+    fcGrow(inputEl);
+    await fcSend();
+    setTimeout(function () {
+      var banner = document.createElement('div');
+      banner.className = 'fc-redirect-banner';
+      banner.innerHTML =
+        '<span>Taking you to the Human Writer page…</span>' +
+        '<a href="/post-assignment" class="fc-redirect-btn">✍️ Open now →</a>';
+      msgWrap.appendChild(banner);
+      msgWrap.scrollTop = msgWrap.scrollHeight;
+      setTimeout(function () { window.location.href = '/post-assignment'; }, 2200);
+    }, 800);
+  };
+
+  /* Text chips — pre-fill and send as a user message */
+  window.fcChipMsg = async function (text) {
+    fcHideChips();
+    inputEl.value = text;
+    fcGrow(inputEl);
+    await fcSend();
+  };
+})();
+</script>
+
+{% else %}
+</div><!-- /container -->
+{% endif %}
+
+{% endblock %}
+
+<script>
+(function () {
+  /* ────────────────────────────────────────────────────
+     SIDEBAR TOGGLE — works on every screen size
+     State lives on .app-layout via class "sidebar-open"
+  ──────────────────────────────────────────────────── */
+  var layout   = document.querySelector('.app-layout');
+  var overlay  = document.getElementById('sidebar-overlay');
+  var hamburger = document.getElementById('topbar-menu-btn');
+  var closeBtn  = document.getElementById('sidebar-close-btn');
+
+  if (!layout) {
+    /* Guest page — only wire the mobile nav toggle */
+    document.addEventListener('DOMContentLoaded', function () {
+      var navBtn  = document.getElementById('nav-toggle-btn');
+      var navMenu = document.getElementById('nav-right');
+      if (!navBtn || !navMenu) return;
+      navBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        navMenu.classList.toggle('open');
+      });
+      document.addEventListener('click', function (e) {
+        if (!navMenu.contains(e.target) && !navBtn.contains(e.target))
+          navMenu.classList.remove('open');
+      });
+    });
+    return;
+  }
+
+  /* ── Initialise sidebar state ── */
+  var MOBILE_BP = 860;
+
+  function isMobile() { return window.innerWidth <= MOBILE_BP; }
+
+  function getSavedState() {
+    try { return localStorage.getItem('ssg_sidebar'); } catch(e) { return null; }
+  }
+  function saveState(open) {
+    try { localStorage.setItem('ssg_sidebar', open ? '1' : '0'); } catch(e) {}
+  }
+
+  /* Default: open on desktop, closed on mobile */
+  var saved = getSavedState();
+  var shouldOpen = (saved !== null) ? (saved === '1') : !isMobile();
+  /* On mobile, always start closed regardless of saved preference */
+  if (isMobile()) shouldOpen = false;
+
+  if (shouldOpen) layout.classList.add('sidebar-open');
+
+  /* ── Toggle function ── */
+  function toggleSidebar(forceClose) {
+    var willOpen = forceClose ? false : !layout.classList.contains('sidebar-open');
+    layout.classList.toggle('sidebar-open', willOpen);
+    saveState(willOpen);
+    /* Lock body scroll only on mobile when sidebar is open */
+    if (isMobile()) {
+      document.body.style.overflow = willOpen ? 'hidden' : '';
+    }
+  }
+
+  /* ── Event listeners ── */
+  if (hamburger) {
+    hamburger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleSidebar();
+    });
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleSidebar(true);
+    });
+  }
+  if (overlay) {
+    overlay.addEventListener('click', function () {
+      toggleSidebar(true);
+    });
+  }
+
+  /* Close on mobile when a nav link is clicked (page will navigate anyway) */
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar) {
+    sidebar.querySelectorAll('.snav-item').forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (isMobile()) toggleSidebar(true);
+      });
+    });
+  }
+
+  /* Close on resize to desktop (avoid stuck-open overlay) */
+  window.addEventListener('resize', function () {
+    if (!isMobile() && layout.classList.contains('sidebar-open')) {
+      document.body.style.overflow = '';
+    }
+  });
+
+  /* ── Guest nav toggle (not reached here, but kept for safety) ── */
+  document.addEventListener('DOMContentLoaded', function () {
+    var navBtn  = document.getElementById('nav-toggle-btn');
+    var navMenu = document.getElementById('nav-right');
+    if (!navBtn || !navMenu) return;
+    navBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      navMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', function (e) {
+      if (!navMenu.contains(e.target) && !navBtn.contains(e.target))
+        navMenu.classList.remove('open');
+    });
+  });
+})();
+</script>
+
+<script>
+/* ── Notification panel ── */
+(function () {
+  var panel   = document.getElementById('ntf-panel');
+  var dot     = document.getElementById('ntf-dot');
+  var list    = document.getElementById('ntf-list');
+  var empty   = document.getElementById('ntf-empty');
+  if (!panel) return;
+
+  var open    = false;
+  var loaded  = [];
+
+  var ICONS = {
+    payment_success: { cls: 'payment',  icon: '💳' },
+    low_credits:     { cls: 'low',      icon: '⚡' },
+    depleted:        { cls: 'depleted', icon: '🚨' },
+    admin:           { cls: 'admin',    icon: '📋' },
+  };
+
+  window.ntfToggle = function () {
+    open = !open;
+    panel.style.display = open ? 'flex' : 'none';
+    if (open) ntfLoad();
+  };
+
+  window.ntfMarkAll = async function () {
+    await fetch('/api/notifications/read-all', { method: 'POST' });
+    loaded.forEach(function (n) { n.is_read = true; });
+    ntfRender();
+    dot.style.display = 'none';
+  };
+
+  async function ntfLoad() {
+    try {
+      var r = await fetch('/api/notifications');
+      var d = await r.json();
+      loaded = d.items;
+      ntfRender();
+      ntfUpdateDot(d.unread);
+    } catch (e) {}
+  }
+
+  function ntfRender() {
+    /* clear everything except the empty placeholder */
+    Array.from(list.children).forEach(function (el) {
+      if (el.id !== 'ntf-empty') el.remove();
+    });
+    if (!loaded.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    loaded.forEach(function (n) {
+      var info = ICONS[n.type] || { cls: 'admin', icon: '🔔' };
+      var el = document.createElement('div');
+      el.className = 'ntf-item' + (n.is_read ? '' : ' unread');
+      el.dataset.id = n.id;
+      el.innerHTML =
+        '<div class="ntf-item-icon ' + info.cls + '">' + info.icon + '</div>' +
+        '<div class="ntf-item-body">' +
+          '<div class="ntf-item-title">' + escHtml(n.title) + '</div>' +
+          '<div class="ntf-item-text">' + escHtml(n.body) + '</div>' +
+          '<div class="ntf-item-ts">' + n.ts + '</div>' +
+        '</div>' +
+        (n.is_read ? '' : '<div class="ntf-unread-pip"></div>');
+      el.addEventListener('click', function () { ntfMarkOne(n.id, el); });
+      list.insertBefore(el, empty);
+    });
+  }
+
+  async function ntfMarkOne(id, el) {
+    if (el.classList.contains('unread')) {
+      await fetch('/api/notifications/' + id + '/read', { method: 'POST' });
+      el.classList.remove('unread');
+      el.querySelector('.ntf-unread-pip') && el.querySelector('.ntf-unread-pip').remove();
+      var n = loaded.find(function (x) { return x.id === id; });
+      if (n) n.is_read = true;
+      var still = loaded.filter(function (x) { return !x.is_read; }).length;
+      ntfUpdateDot(still);
+    }
+  }
+
+  function ntfUpdateDot(count) {
+    dot.style.display = count > 0 ? 'block' : 'none';
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* close panel when clicking outside */
+  document.addEventListener('click', function (e) {
+    var wrap = document.getElementById('ntf-wrap');
+    if (open && wrap && !wrap.contains(e.target)) {
+      open = false;
+      panel.style.display = 'none';
+    }
+  });
+
+  /* Poll every 60s for new notifications (lightweight) */
+  async function ntfPoll() {
+    try {
+      var r = await fetch('/api/notifications');
+      var d = await r.json();
+      ntfUpdateDot(d.unread);
+      if (open) { loaded = d.items; ntfRender(); }
+    } catch(e) {}
+  }
+  setInterval(ntfPoll, 60000);
+  ntfPoll();
+})();
+</script>
+
+
+<!-- ── Copy-protection warning modal ── -->
+<div id="copy-warn-overlay" class="cpw-overlay" style="display:none;" onclick="closeCopyWarn()">
+  <div class="cpw-modal" onclick="event.stopPropagation()">
+    <div class="cpw-icon-ring">
+      <span class="cpw-icon">🚫</span>
+    </div>
+    <h2 class="cpw-title">Copying is disabled</h2>
+    <p class="cpw-body">
+      This content is protected. Copying, cutting, or reproducing generated assignments is not permitted on Smart Study Guides.
+    </p>
+    <p class="cpw-hint">Use the <strong>⬇ Download</strong> button to save your work as a Word document.</p>
+    <button class="cpw-close-btn" onclick="closeCopyWarn()">Got it</button>
+  </div>
+</div>
+
+<!-- ── Copy / selection protection on generated content ── -->
+<!-- Global admin flag + copy helper (available to all pages) -->
+<script>
+window.IS_ADMIN = {{ 'true' if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'akyida001@gmail.com', 'simonedwardj@yahoo.com']) else 'false' }};
+window.adminCopy = function(text, btn) {
+  if (!window.IS_ADMIN) return;
+  navigator.clipboard.writeText(text).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.background = '#16a34a';
+    btn.style.color = '#fff';
+    setTimeout(function() { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 1800);
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ Copied!';
+    setTimeout(function() { btn.textContent = '📋 Copy'; }, 1800);
+  });
+};
+</script>
+<style>
+.admin-copy-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; font-size: 11.5px; font-weight: 600;
+  border: 1.5px solid #6366f1; color: #6366f1; background: transparent;
+  border-radius: 20px; cursor: pointer; transition: all .15s;
+  white-space: nowrap; margin-left: 8px; vertical-align: middle;
+  font-family: inherit;
+}
+.admin-copy-btn:hover { background: #6366f1; color: #fff; }
+/* Admin: override no-copy CSS so selection always works */
+body.is-admin .no-copy,
+body.is-admin .no-copy * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+body.is-admin .no-copy::selection,
+body.is-admin .no-copy *::selection { background: highlight; }
+</style>
+
+<script>
+(function() {
+  // Admins are never subject to copy protection
+  var IS_ADMIN = window.IS_ADMIN;
+  if (IS_ADMIN) return;
+
+  var warnCooldown = false;
+
+  function playWarningSound() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      function beep(freq, start, dur, vol) {
+        var o = ctx.createOscillator();
+        var g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'square';
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0, ctx.currentTime + start);
+        g.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.01);
+        g.gain.linearRampToValueAtTime(0,   ctx.currentTime + start + dur);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur + 0.05);
+      }
+      beep(880, 0,    0.12, 0.4);
+      beep(660, 0.14, 0.12, 0.4);
+      beep(440, 0.28, 0.22, 0.5);
+    } catch(_) {}
+  }
+
+  function showCopyWarn() {
+    if (warnCooldown) return;
+    warnCooldown = true;
+    setTimeout(function() { warnCooldown = false; }, 3000);
+    playWarningSound();
+    var overlay = document.getElementById('copy-warn-overlay');
+    overlay.style.display = 'flex';
+    var modal = overlay.querySelector('.cpw-modal');
+    modal.classList.remove('cpw-shake');
+    void modal.offsetWidth;
+    modal.classList.add('cpw-shake');
+  }
+
+  window.closeCopyWarn = function() {
+    document.getElementById('copy-warn-overlay').style.display = 'none';
+  };
+
+  function isInNoCopy(el) {
+    while (el) {
+      if (el.classList && el.classList.contains('no-copy')) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+
+  function selectionInNoCopy() {
+    var sel = window.getSelection && window.getSelection();
+    if (!sel || !sel.rangeCount) return false;
+    var node = sel.getRangeAt(0).commonAncestorContainer;
+    if (node.nodeType !== 1) node = node.parentElement;
+    return isInNoCopy(node);
+  }
+
+  function blockAndWarn(e) {
+    if (isInNoCopy(e.target) || selectionInNoCopy()) {
+      e.preventDefault();
+      e.stopPropagation();
+      showCopyWarn();
+      return false;
+    }
+  }
+
+  document.addEventListener('copy',        blockAndWarn, true);
+  document.addEventListener('cut',         blockAndWarn, true);
+  document.addEventListener('selectstart', function(e) {
+    if (isInNoCopy(e.target)) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
+  document.addEventListener('contextmenu', function(e) {
+    if (isInNoCopy(e.target)) {
+      e.preventDefault();
+      showCopyWarn();
+    }
+  }, true);
+
+  document.addEventListener('keydown', function(e) {
+    var ctrl = e.ctrlKey || e.metaKey;
+    if (!ctrl) return;
+    var key  = e.key ? e.key.toLowerCase() : '';
+    if (!['c','a','x','u'].includes(key)) return;
+    if (isInNoCopy(document.activeElement) || selectionInNoCopy()) {
+      e.preventDefault();
+      e.stopPropagation();
+      showCopyWarn();
+    }
+  }, true);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var o = document.getElementById('copy-warn-overlay');
+      if (o && o.style.display !== 'none') closeCopyWarn();
+    }
+  });
+})();
+</script>
+
+{% if current_user.is_authenticated %}
+<script>
+/* ── Live clock ── */
+(function () {
+  var clockEl = document.getElementById('tb-clock');
+  if (!clockEl) return;
+  function tick() {
+    var n = new Date();
+    var h = String(n.getHours()).padStart(2,'0');
+    var m = String(n.getMinutes()).padStart(2,'0');
+    var s = String(n.getSeconds()).padStart(2,'0');
+    clockEl.textContent = '🕒 ' + h + ':' + m + ':' + s;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+{% endif %}
+
+{% if current_user.is_authenticated %}
+<script>
+(function() {
+  var SESSION_MS   = 6 * 60 * 60 * 1000;   // 6 hours
+  var WARNING_MS   = SESSION_MS - 10 * 60 * 1000; // warn 10 min before
+  var STORAGE_KEY  = 'ssg_last_active';
+  var LOGOUT_URL   = '{{ url_for("auth.logout") }}';
+
+  function now() { return Date.now(); }
+  function touch() { localStorage.setItem(STORAGE_KEY, now()); }
+  function idle()  { return now() - (parseInt(localStorage.getItem(STORAGE_KEY) || now(), 10)); }
+
+  // Reset timer on any user activity
+  ['click','keydown','mousemove','touchstart','scroll'].forEach(function(ev) {
+    document.addEventListener(ev, touch, { passive: true });
+  });
+  touch(); // record login / page-load as activity
+
+  // Warning banner (created lazily)
+  var _banner = null;
+  function showWarning(minsLeft) {
+    if (!_banner) {
+      _banner = document.createElement('div');
+      _banner.style.cssText = [
+        'position:fixed;bottom:20px;left:50%;transform:translateX(-50%)',
+        'background:#1e293b;color:#fff;padding:14px 24px;border-radius:12px',
+        'font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 24px rgba(0,0,0,.4)',
+        'display:flex;align-items:center;gap:14px;max-width:92vw;text-align:center'
+      ].join(';');
+      var btn = document.createElement('button');
+      btn.textContent = 'Stay logged in';
+      btn.style.cssText = 'background:#0ea5e9;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;';
+      btn.onclick = function() { touch(); _banner.remove(); _banner = null; };
+      _banner.innerHTML = '<span>⏰ You\'ll be logged out in <strong id="ssg-mins">' + minsLeft + ' min</strong> due to inactivity.</span>';
+      _banner.appendChild(btn);
+      document.body.appendChild(_banner);
+    } else {
+      var el = document.getElementById('ssg-mins');
+      if (el) el.textContent = minsLeft + ' min';
+    }
+  }
+
+  setInterval(function() {
+    var idleMs = idle();
+    if (idleMs >= SESSION_MS) {
+      window.location.href = LOGOUT_URL + '?reason=timeout';
+      return;
+    }
+    if (idleMs >= WARNING_MS) {
+      var minsLeft = Math.max(1, Math.round((SESSION_MS - idleMs) / 60000));
+      showWarning(minsLeft);
+    } else if (_banner) {
+      _banner.remove(); _banner = null;
+    }
+  }, 30000); // check every 30 s
+})();
+</script>
+{% endif %}
+</body>
+</html>

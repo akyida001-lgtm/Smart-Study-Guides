@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+{% block title %}Humanizing — {{ a.topic[:50] }} — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>✨ Humanizing Assignment</h1>
+</div>
+
+<!-- Phase strip -->
+<div class="lv-phase-strip" id="phase-strip">
+  <div class="lv-phase-step active" id="ph-humanizing">
+    <span class="lv-phase-dot"></span>
+    <span>Humanizing</span>
+  </div>
+  <div class="lv-phase-arrow">→</div>
+  <div class="lv-phase-step" id="ph-detecting">
+    <span class="lv-phase-dot"></span>
+    <span>AI Detection</span>
+  </div>
+  <div class="lv-phase-arrow">→</div>
+  <div class="lv-phase-step" id="ph-done">
+    <span class="lv-phase-dot"></span>
+    <span>Done</span>
+  </div>
+</div>
+
+<!-- ── TOP PANEL: Original content ──────────────────────── -->
+<div class="hlv-panel card">
+  <div class="hlv-panel-header">
+    <div class="hlv-panel-title-row">
+      <span class="hlv-panel-icon">📄</span>
+      <span class="hlv-panel-title">Original Content</span>
+      {% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+      <button class="admin-copy-btn" style="margin-left:12px;" onclick="adminCopy({{ a.paper_text | tojson }}, this)">📋 Copy</button>
+      {% endif %}
+    </div>
+    <span class="hlv-wc-badge" id="orig-wc"></span>
+  </div>
+  <div class="hlv-doc-scroll no-copy" id="orig-scroll">
+    <pre class="hlv-doc-pre">{{ a.paper_text }}</pre>
+  </div>
+</div>
+
+<!-- ── DIVIDER ───────────────────────────────────────────── -->
+<div class="hlv-divider">
+  <div class="hlv-divider-line"></div>
+  <div class="hlv-divider-badge" id="divider-badge">
+    <span class="lv-spin" id="divider-spin"></span>
+    <span id="divider-label">Running humanization engine…</span>
+  </div>
+  <div class="hlv-divider-line"></div>
+</div>
+
+<!-- ── BOTTOM PANEL: Humanized content ──────────────────── -->
+<div class="hlv-panel card">
+  <div class="hlv-panel-header">
+    <div class="hlv-panel-title-row">
+      <span class="hlv-panel-icon">✨</span>
+      <span class="hlv-panel-title">Humanized Content</span>
+      {% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+      <button class="admin-copy-btn" id="copy-hum-btn" style="margin-left:12px;display:none;" onclick="adminCopy(humanizedText, this)">📋 Copy</button>
+      {% endif %}
+    </div>
+    <span class="hlv-wc-badge" id="hum-wc" style="display:none;"></span>
+  </div>
+
+  <!-- Waiting state -->
+  <div class="hlv-waiting" id="hlv-waiting">
+    <span class="lv-spin"></span>
+    <span>Waiting for humanization engine…</span>
+  </div>
+
+  <!-- Humanized text (appears after stream) -->
+  <div class="hlv-doc-scroll no-copy" id="hum-scroll" style="display:none;">
+    <pre class="hlv-doc-pre" id="hum-text"></pre>
+  </div>
+
+  <!-- Detection results (shown after done) -->
+  <div class="hlv-detection" id="hlv-detection" style="display:none;">
+    <div class="hlv-detection-header">🛡️ AI Detection Result</div>
+    <div class="hlv-detection-body">
+
+      <!-- Score ring -->
+      <div class="hlv-score-wrap">
+        <svg class="hlv-ring-svg" viewBox="0 0 120 120">
+          <circle class="hlv-ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="hlv-ring-fill" id="ring-fill" cx="60" cy="60" r="50"
+                  stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="hlv-ring-inner">
+          <span class="hlv-ring-pct" id="ring-pct">0%</span>
+          <span class="hlv-ring-label">Human</span>
+        </div>
+      </div>
+
+      <!-- Honest score info -->
+      <div class="hlv-sites-col">
+        <div class="hlv-sites-title">Ryter Pro Detection</div>
+        <div id="detect-verdict" style="font-size:15px;font-weight:700;margin-bottom:6px;"></div>
+        <div id="detect-ai-pct" style="font-size:13px;color:var(--slate-500);margin-bottom:10px;"></div>
+        <div style="font-size:12px;color:var(--slate-400);line-height:1.6;">
+          Score provided by <strong>Ryter Pro</strong>'s detection engine.<br>
+          Results from other detectors (GPTZero, Turnitin, etc.) may vary — we only show what we actually measured.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="hlv-error flash error" id="hlv-error" style="display:none;"></div>
+</div>
+
+<!-- ── Action row: shown when score ≤ 1% (passes) ──────── -->
+<div class="hlv-actions card" id="hlv-actions" style="display:none;">
+  <div class="lv-two-btn-row">
+    <button class="btn ghost lv-btn-big lv-btn-half" onclick="downloadHumanized()">
+      ⬇ Download Humanized
+      <span class="lv-btn-note">Save as .txt file</span>
+    </button>
+    <button class="btn accent lv-btn-big lv-btn-half" id="get-docx-btn" onclick="startDocxConversion()">
+      📄 Get Word Doc
+      <span class="lv-btn-note">Format &amp; download as .docx</span>
+    </button>
+  </div>
+
+  <!-- Customer support forward card (score ≤ 1%) -->
+  <div style="margin-top:16px;background:linear-gradient(135deg,#0d3d2e,#052e16);border:1px solid #166534;border-radius:12px;padding:20px 22px;">
+    <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:12px;">Want extra peace of mind? Forward to our support team</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:18px;margin-bottom:4px;">🛡️</div>
+        <div style="font-size:13px;font-weight:600;color:#bbf7d0;margin-bottom:2px;">Human Expert Review</div>
+        <div style="font-size:12px;color:#86efac;">A real editor personally checks your final paper before you submit.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:18px;margin-bottom:4px;">✅</div>
+        <div style="font-size:13px;font-weight:600;color:#bbf7d0;margin-bottom:2px;">Guaranteed 0% AI</div>
+        <div style="font-size:12px;color:#86efac;">We re-check on all major detectors and fix anything above 1%.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:18px;margin-bottom:4px;">💬</div>
+        <div style="font-size:13px;font-weight:600;color:#bbf7d0;margin-bottom:2px;">Live Chat Tracking</div>
+        <div style="font-size:12px;color:#86efac;">Track progress and request changes directly in your support chat.</div>
+      </div>
+    </div>
+    <span style="display:inline-block;color:#4ade80;font-size:12px;font-weight:700;font-style:italic;margin-bottom:6px;">⭐ Recommended</span><br>
+    <a href="{{ url_for('main.chat_page') }}" style="display:inline-block;color:#4ade80;font-size:14px;font-weight:700;font-style:italic;text-decoration:underline;text-underline-offset:3px;letter-spacing:.01em;">
+      💬 Forward to Customer Support →
+    </a>
+  </div>
+
+  <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <a class="btn ghost lv-bar-link" style="font-size:13px;" href="{{ url_for('main.my_assignments') }}">📂 My Assignments</a>
+    {% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+    <button class="admin-copy-btn" id="copy-hum-action-btn" style="display:none;" onclick="adminCopy(humanizedText, this)">📋 Copy humanized text</button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── AI Removal CTA (shown when score > 1%) ───────────── -->
+<div class="card" id="hlv-ai-removal" style="display:none;border-left:4px solid #ff6b6b;">
+  <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+    <div style="flex:1;min-width:220px;">
+      <div style="font-size:18px;font-weight:800;color:#ff6b6b;margin-bottom:6px;">Still above 1% AI?</div>
+      <div style="font-size:14px;color:var(--slate-300);line-height:1.6;">
+        Submit your paper to our writing team. A skilled writer will manually rewrite it to pass all AI detectors.
+        Your deadline is <strong id="removal-deadline-label" style="color:#ffd166;"></strong>.
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+      <div style="font-size:12px;color:var(--slate-400);text-align:right;">⏰ Fast turnaround · ✅ Verified score shown on delivery</div>
+    </div>
+  </div>
+
+  <!-- Notes input -->
+  <textarea id="removal-notes" placeholder="Optional: add any notes for the writer (e.g. tone, style preferences, specific sections to focus on)…"
+    rows="3" style="width:100%;padding:10px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;resize:vertical;margin-bottom:14px;"></textarea>
+
+  <!-- Hidden form for submission -->
+  <form id="ai-removal-form" method="POST" action="/assignments/{{ a.id }}/submit-ai-removal" style="display:none;">
+    <input type="hidden" name="humanized_text" id="removal-text-input">
+    <input type="hidden" name="ai_score"        id="removal-score-input">
+    <input type="hidden" name="notes"           id="removal-notes-input">
+  </form>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <button class="btn accent" style="background:#ff6b6b;border-color:#ff6b6b;padding:13px 28px;font-size:15px;font-weight:700;" onclick="submitForRemoval()">
+      ✍️ Submit for AI Removal by Our Writers
+    </button>
+    <button class="btn ghost" style="padding:13px 20px;" onclick="downloadHumanized()">
+      ⬇ Download As-Is
+    </button>
+    <button class="btn ghost" style="padding:13px 20px;" id="get-docx-btn-2" onclick="startDocxConversion()">
+      📄 Get Word Doc
+    </button>
+  </div>
+
+  <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+    <a class="btn ghost lv-bar-link" style="font-size:13px;" href="{{ url_for('main.my_assignments') }}">📂 My Assignments</a>
+    {% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+    <button class="admin-copy-btn" id="copy-hum-action-btn" style="display:none;margin-left:8px;" onclick="adminCopy(humanizedText, this)">📋 Copy humanized text</button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Live DOCX Conversion Panel (appears when Get Word Doc is clicked) ── -->
+<div class="dlv-panel card" id="dlv-panel" style="display:none;">
+  <div class="dlv-panel-header">
+    <span class="dlv-header-icon">📄</span>
+    <span class="dlv-header-title">Building your Word Document</span>
+  </div>
+
+  <div class="dlv-steps" id="dlv-steps">
+    <div class="dlv-step" id="dlv-step-formatting">
+      <span class="dlv-step-icon dlv-spin-icon" id="dlv-icon-formatting"><span class="lv-spin"></span></span>
+      <span class="dlv-step-label">AI formatting document…</span>
+    </div>
+    <div class="dlv-step dlv-step-pending" id="dlv-step-building">
+      <span class="dlv-step-icon" id="dlv-icon-building">○</span>
+      <span class="dlv-step-label">Building Word file…</span>
+    </div>
+    <div class="dlv-step dlv-step-pending" id="dlv-step-uploading">
+      <span class="dlv-step-icon" id="dlv-icon-uploading">○</span>
+      <span class="dlv-step-label">Uploading…</span>
+    </div>
+  </div>
+
+  <!-- Download button — hidden until ready -->
+  <div id="dlv-ready" style="display:none;" class="dlv-ready-section">
+    <div class="dlv-ready-badge">✅ Your Word document is ready!</div>
+    <a id="dlv-download-btn" href="#" class="btn accent dlv-download-btn" download>
+      ⬇ Download .docx
+    </a>
+  </div>
+
+  <div id="dlv-error" class="flash error" style="display:none;margin:12px 0 0;"></div>
+</div>
+
+<script>
+const aid         = {{ a.id }};
+const origText    = {{ a.paper_text | tojson }};
+const topic       = {{ a.topic | tojson }};
+let humanizedText = '';
+
+/* ── DOM refs ── */
+const phHumanizing = document.getElementById('ph-humanizing');
+const phDetecting  = document.getElementById('ph-detecting');
+const phDone       = document.getElementById('ph-done');
+const dividerBadge = document.getElementById('divider-badge');
+const dividerLabel = document.getElementById('divider-label');
+const dividerSpin  = document.getElementById('divider-spin');
+const hlvWaiting   = document.getElementById('hlv-waiting');
+const humScroll    = document.getElementById('hum-scroll');
+const humTextEl    = document.getElementById('hum-text');
+const humWc        = document.getElementById('hum-wc');
+const hlvDetection = document.getElementById('hlv-detection');
+const hlvActions   = document.getElementById('hlv-actions');
+const hlvError     = document.getElementById('hlv-error');
+const origWc       = document.getElementById('orig-wc');
+
+/* ── Word count badge ── */
+function wc(txt) { return txt.trim().split(/\s+/).filter(Boolean).length; }
+origWc.textContent = wc(origText).toLocaleString() + ' words';
+
+/* ── Phase helpers ── */
+function setActive(el) {
+  [phHumanizing, phDetecting, phDone].forEach(p => p.classList.remove('active','done'));
+  el.classList.add('active');
+}
+function setDone(...els) { els.forEach(e => { e.classList.remove('active'); e.classList.add('done'); }); }
+
+/* ── Live chunk append (called for each streamed chunk) ── */
+function appendChunk(chunk) {
+  if (hlvWaiting.style.display !== 'none') {
+    hlvWaiting.style.display = 'none';
+    humScroll.style.display  = 'block';
+    humWc.style.display      = '';
+  }
+  humanizedText += chunk;
+  humTextEl.textContent += chunk;
+  humScroll.scrollTop    = humScroll.scrollHeight;
+  humWc.textContent      = wc(humanizedText).toLocaleString() + ' words';
+}
+
+/* ── Typing animation fallback (used if full text arrives at once) ── */
+function typeText(text, speed = 4) {
+  hlvWaiting.style.display = 'none';
+  humScroll.style.display  = 'block';
+  humTextEl.textContent    = '';
+  humanizedText            = text;
+  humWc.style.display      = '';
+
+  const CHUNK = 60;
+  let idx = 0;
+  function tick() {
+    if (idx >= text.length) {
+      humWc.textContent = wc(text).toLocaleString() + ' words';
+      return;
+    }
+    humTextEl.textContent += text.slice(idx, idx + CHUNK);
+    idx += CHUNK;
+    humScroll.scrollTop = humScroll.scrollHeight;
+    humWc.textContent = wc(humTextEl.textContent).toLocaleString() + ' words';
+    setTimeout(tick, speed);
+  }
+  tick();
+}
+
+function renderDetection(humanScore, aiScore) {
+  const pct  = Math.round(humanScore);
+  const good = humanScore >= 70;
+  const mid  = humanScore >= 50;
+
+  /* Animate ring */
+  const fill   = document.getElementById('ring-fill');
+  const circum = 314;
+  const offset = circum - (circum * humanScore / 100);
+  fill.style.transition       = 'stroke-dashoffset 1.4s ease';
+  fill.style.strokeDashoffset = offset;
+  fill.style.stroke           = good ? '#5ad48a' : mid ? '#ffd166' : '#ff6b6b';
+
+  /* Animate percentage counter */
+  const ringPct = document.getElementById('ring-pct');
+  let cur = 0;
+  const step = () => {
+    cur = Math.min(cur + 2, pct);
+    ringPct.textContent = cur + '%';
+    ringPct.style.color = good ? '#5ad48a' : mid ? '#ffd166' : '#ff6b6b';
+    if (cur < pct) setTimeout(step, 30);
+  };
+  step();
+
+  /* Honest verdict text */
+  const verdict = document.getElementById('detect-verdict');
+  const aiPctEl = document.getElementById('detect-ai-pct');
+  if (good) {
+    verdict.textContent = '✅ Likely passes AI detection';
+    verdict.style.color = '#5ad48a';
+  } else if (mid) {
+    verdict.textContent = '⚠️ May be flagged by some detectors';
+    verdict.style.color = '#ffd166';
+  } else {
+    verdict.textContent = '❌ Likely detected as AI-written';
+    verdict.style.color = '#ff6b6b';
+  }
+  aiPctEl.textContent = `${pct}% human-written · ${Math.round(aiScore || (100 - humanScore))}% AI-written (Ryter Pro score)`;
+
+  hlvDetection.style.display = 'block';
+  hlvDetection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ── SSE-based live humanization ── */
+function showStreamError(msg) {
+  dividerSpin.style.display = 'none';
+  dividerLabel.textContent  = 'Failed';
+  hlvWaiting.style.display  = 'none';
+  hlvError.innerHTML = (msg || 'Something went wrong.') +
+    ' <a href="" style="color:var(--accent);text-decoration:underline;font-weight:700;" ' +
+    'onclick="location.reload();return false;">Tap to retry</a>';
+  hlvError.style.display = 'block';
+}
+
+function startStream() {
+  setActive(phHumanizing);
+  dividerLabel.textContent = 'Running humanization engine…';
+
+  const es = new EventSource(`/api/assignments/${aid}/stream-humanize`);
+
+  // Safety watchdog — close & show retry after 6 minutes of no 'done'
+  let watchdog = setTimeout(() => {
+    es.close();
+    showStreamError('Humanization is taking unusually long. The server may be busy.');
+  }, 360000);
+
+  // Reassurance message after 30 s
+  let reassure = setTimeout(() => {
+    if (dividerLabel.textContent.startsWith('Running')) {
+      dividerLabel.textContent = 'Still working — humanization can take 1–3 minutes…';
+    }
+  }, 30000);
+
+  es.onmessage = function(event) {
+    let d;
+    try { d = JSON.parse(event.data); } catch(_) { return; }
+
+    if (d.error) {
+      clearTimeout(watchdog); clearTimeout(reassure);
+      es.close();
+      showStreamError(d.error);
+      return;
+    }
+
+    if (d.phase === 'start' || d.phase === 'humanizing') {
+      return; // stream opened — nothing to render yet
+    }
+
+    // ── Live chunk: text arrives piece by piece from Ryter ──
+    if (d.phase === 'chunk' && d.text) {
+      clearTimeout(reassure);
+      // Show the panel on first chunk
+      if (dividerLabel.textContent.startsWith('Running') ||
+          dividerLabel.textContent.startsWith('Still')) {
+        dividerLabel.textContent = 'Humanizing…';
+      }
+      appendChunk(d.text);
+      return;
+    }
+
+    // ── Humanization finished (all chunks sent) ──
+    if (d.phase === 'humanized') {
+      clearTimeout(reassure);
+      dividerLabel.textContent = 'Humanized ✓ — running AI detection…';
+      setDone(phHumanizing);
+      setActive(phDetecting);
+      // If Ryter didn't stream (fell back to full-text), d.text may be set
+      if (d.text && !humanizedText) typeText(d.text);
+      return;
+    }
+
+    if (d.phase === 'detecting') {
+      dividerLabel.textContent = 'Running AI detection…';
+      setDone(phHumanizing);
+      setActive(phDetecting);
+      return;
+    }
+
+    if (d.phase === 'done') {
+      clearTimeout(watchdog); clearTimeout(reassure);
+      es.close();
+
+      // Fallback: if somehow no text was shown yet
+      if (!humanizedText && d.text) typeText(d.text);
+
+      setDone(phHumanizing, phDetecting, phDone);
+      dividerSpin.style.display = 'none';
+      dividerLabel.textContent  = `${d.human_score}% human-written`;
+      dividerBadge.classList.add(
+        d.human_score >= 70 ? 'green' : d.human_score >= 50 ? 'amber' : 'red'
+      );
+      renderDetection(d.human_score, d.ai_score);
+
+      // Show the right action panel based on AI score
+      const aiScore = d.ai_score || (100 - d.human_score);
+      if (aiScore > 1) {
+        // Show AI removal CTA
+        const removalPanel = document.getElementById('hlv-ai-removal');
+        removalPanel.style.display = 'block';
+        removalPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Set deadline label (30 min for ≤800 words, 60 min for longer)
+        const wordCount = humanizedText.trim().split(/\s+/).filter(Boolean).length;
+        const deadlineMins = wordCount <= 800 ? 30 : 60;
+        document.getElementById('removal-deadline-label').textContent =
+          deadlineMins + ' minutes from submission';
+      } else {
+        // Score ≤ 1% — show normal download + customer support card
+        hlvActions.style.display = 'block';
+        hlvActions.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      ['copy-hum-btn','copy-hum-action-btn'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.style.display = 'inline-flex';
+      });
+    }
+  };
+
+  es.onerror = function() {
+    clearTimeout(watchdog); clearTimeout(reassure);
+    es.close();
+    // Only show error if we haven't already shown the done state
+    if (hlvActions.style.display === 'none') {
+      showStreamError('Connection lost — please tap to retry.');
+    }
+  };
+}
+
+/* ── Live DOCX Conversion ── */
+async function startDocxConversion() {
+  const btn = document.getElementById('get-docx-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="lv-spin" style="margin-right:6px;"></span> Starting…';
+
+  const dlvPanel = document.getElementById('dlv-panel');
+  dlvPanel.style.display = 'block';
+  dlvPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // POST the humanized text to queue it on the server
+  const textToConvert = humanizedText || origText;
+  try {
+    const r = await fetch(`/api/assignments/${aid}/queue-docx`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: textToConvert }),
+    });
+    if (!r.ok) throw new Error('Failed to queue document.');
+  } catch(err) {
+    document.getElementById('dlv-error').textContent = err.message;
+    document.getElementById('dlv-error').style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '📄 Get Word Doc<span class="lv-btn-note">Format &amp; download as .docx</span>';
+    return;
+  }
+
+  // Helper: mark a step done/active
+  function dlvStepDone(name) {
+    const icon = document.getElementById(`dlv-icon-${name}`);
+    const step = document.getElementById(`dlv-step-${name}`);
+    icon.innerHTML = '✓';
+    icon.className = 'dlv-step-icon dlv-step-check';
+    step.classList.remove('dlv-step-pending');
+    step.classList.add('dlv-step-done');
+  }
+  function dlvStepActive(name) {
+    const icon = document.getElementById(`dlv-icon-${name}`);
+    const step = document.getElementById(`dlv-step-${name}`);
+    icon.innerHTML = '<span class="lv-spin"></span>';
+    icon.className = 'dlv-step-icon dlv-spin-icon';
+    step.classList.remove('dlv-step-pending');
+    step.classList.add('dlv-step-active');
+  }
+
+  // Poll for DOCX status every 3 s
+  dlvStepActive('formatting');
+  const docxTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`/api/assignments/${aid}/poll-docx`);
+      if (!r.ok) return;
+      const d = await r.json();
+
+      if (d.status === 'formatting') {
+        dlvStepActive('formatting');
+        return;
+      }
+      if (d.status === 'building') {
+        dlvStepDone('formatting');
+        dlvStepActive('building');
+        return;
+      }
+      if (d.status === 'uploading') {
+        dlvStepDone('formatting');
+        dlvStepDone('building');
+        dlvStepActive('uploading');
+        return;
+      }
+
+      clearInterval(docxTimer);
+
+      if (d.status === 'error') {
+        document.getElementById('dlv-error').textContent = d.error || 'Conversion failed.';
+        document.getElementById('dlv-error').style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '📄 Get Word Doc<span class="lv-btn-note">Try again</span>';
+        return;
+      }
+
+      if (d.status === 'done') {
+        dlvStepDone('formatting');
+        dlvStepDone('building');
+        dlvStepDone('uploading');
+        const dlvReady = document.getElementById('dlv-ready');
+        const dlBtn    = document.getElementById('dlv-download-btn');
+        dlBtn.href = d.url;
+        dlBtn.setAttribute('download', d.filename || 'assignment.docx');
+        dlvReady.style.display = 'block';
+        dlvReady.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        btn.innerHTML = '✅ Doc ready — scroll down';
+      }
+    } catch(_) { /* transient — retry next tick */ }
+  }, 3000);
+}
+
+/* ── Submit for AI Removal ── */
+function submitForRemoval() {
+  const notes = document.getElementById('removal-notes').value;
+  const aiPct = parseFloat(
+    document.querySelector('#hlv-ai-removal #removal-score-input')
+      ? document.getElementById('removal-score-input').value
+      : '50'
+  ) || 50;
+  document.getElementById('removal-text-input').value  = humanizedText;
+  document.getElementById('removal-notes-input').value = notes;
+  // ai_score already set via renderDetection — read it from the display
+  const aiPctDisplay = document.getElementById('detect-ai-pct').textContent;
+  const match = aiPctDisplay.match(/(\d+(?:\.\d+)?)%\s*AI/);
+  document.getElementById('removal-score-input').value = match ? match[1] : '50';
+  document.getElementById('ai-removal-form').submit();
+}
+
+/* ── Download ── */
+function downloadHumanized() {
+  if (!humanizedText) return;
+  const blob = new Blob([humanizedText], { type: 'text/plain' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'humanized_' + topic.slice(0, 40).replace(/[^a-z0-9]/gi, '_') + '.txt';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+window.addEventListener('DOMContentLoaded', startStream);
+</script>
+{% endblock %}

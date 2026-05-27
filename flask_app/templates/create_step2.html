@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+{% block title %}Sources — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📝 Create Assignment</h1>
+</div>
+
+<div class="wizard-steps">
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Details</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep active"><span class="wstep-num">2</span><span class="wstep-label">Sources</span></div>
+  <div class="wstep-line"></div>
+  <div class="wstep"><span class="wstep-num">3</span><span class="wstep-label">Annotate</span></div>
+  <div class="wstep-line"></div>
+  <div class="wstep"><span class="wstep-num">4</span><span class="wstep-label">Preview</span></div>
+</div>
+
+<div class="card wizard-card" id="main-card">
+  <div class="wizard-card-title">Choose your sources</div>
+  <div class="wizard-card-sub">We'll find relevant academic papers for your topic, or you can paste your own.</div>
+
+  <!-- Mode selector -->
+  <div class="source-choice-grid" id="mode-grid">
+    <div class="source-choice selected" id="choice-auto" onclick="pickMode('auto')">
+      <div class="sc-icon">🔍</div>
+      <div class="sc-title">Find sources automatically</div>
+      <div class="sc-desc">We search academic databases and suggest papers — you pick the best ones.</div>
+    </div>
+    <div class="source-choice" id="choice-manual" onclick="pickMode('manual')">
+      <div class="sc-icon">📋</div>
+      <div class="sc-title">Paste my own sources</div>
+      <div class="sc-desc">Add titles, URLs, and summaries of sources you've already gathered.</div>
+    </div>
+  </div>
+
+  <!-- ── AUTO FLOW ── -->
+  <div id="auto-section">
+
+    <!-- Phase A: prompt to search -->
+    <div id="phase-prompt" style="margin-top:12px;">
+      <p class="wf-hint" style="margin-bottom:16px;">
+        Click below and we'll search Semantic Scholar and other academic databases for papers related to your topic. You'll be able to pick the ones you like best.
+      </p>
+      <button class="btn accent" type="button" onclick="startSearch(0)" id="search-btn">
+        🔍 Find sources now
+      </button>
+    </div>
+
+    <!-- Phase B: searching animation -->
+    <div id="phase-searching" style="display:none;margin-top:20px;">
+      <div class="src-search-anim">
+        <div class="src-search-icon">📚</div>
+        <div class="src-search-text" id="search-anim-text">Searching academic databases…</div>
+        <div class="src-search-sub">Checking Semantic Scholar for papers matching your topic</div>
+        <div class="src-dots">
+          <div class="src-dot"></div><div class="src-dot"></div><div class="src-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase C: results -->
+    <div id="phase-results" style="display:none;">
+
+      <!-- Selection status bar -->
+      <div class="src-selection-bar" id="selection-bar">
+        <div class="src-sel-info">
+          <span id="sel-count">0</span> source<span id="sel-plural">s</span> selected
+          <span class="src-sel-hint" id="sel-hint"></span>
+        </div>
+        <div class="src-sel-actions">
+          <button class="btn-sm ghost" type="button" onclick="selectAll()">Select all</button>
+          <button class="btn-sm ghost" type="button" onclick="clearAll()">Clear all</button>
+        </div>
+      </div>
+
+      <!-- Cards container -->
+      <div id="src-cards" style="margin-top:14px;"></div>
+
+      <!-- Load more -->
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn ghost src-load-more" type="button" id="load-more-btn" onclick="loadMore()" style="display:none;">
+          🔍 Find more sources
+        </button>
+        <div id="load-more-searching" style="display:none;">
+          <div class="src-search-anim" style="padding:16px 20px;">
+            <div class="src-search-icon" style="font-size:28px;">📖</div>
+            <div class="src-search-text" style="font-size:13px;">Searching for more papers…</div>
+            <div class="src-dots" style="margin-top:4px;">
+              <div class="src-dot"></div><div class="src-dot"></div><div class="src-dot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="src-error" class="flash error" style="display:none;margin-top:12px;"></div>
+
+      <!-- Confirm form -->
+      <form method="post" id="confirm-form" style="margin-top:20px;">
+        <input type="hidden" name="mode" value="auto-confirmed" />
+        <div id="src-hidden-fields"></div>
+        <div id="confirm-warning" class="flash warning" style="display:none;margin-bottom:12px;">
+          ⚠️ Please select at least 1 source before continuing.
+        </div>
+        <div class="wf-actions">
+          <a class="btn ghost" href="{{ url_for('main.dashboard') }}">Cancel</a>
+          <button class="btn accent" type="button" onclick="confirmSources()" id="confirm-btn">
+            Use selected sources &amp; continue →
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Search error -->
+    <div id="phase-error" style="display:none;margin-top:16px;">
+      <div class="flash error">⚠️ Could not find sources. Check your connection or try again.</div>
+      <button class="btn ghost" type="button" onclick="startSearch(0)" style="margin-top:10px;">Retry</button>
+    </div>
+  </div>
+
+  <!-- ── MANUAL FLOW ── -->
+  <form method="post" id="manual-form" style="display:none;">
+    <input type="hidden" name="mode" value="manual" />
+
+    <!-- Source file upload -->
+    <div class="src-upload-zone" id="src-drop-zone" onclick="document.getElementById('src-file-input').click()" ondragover="srcDragOver(event)" ondragleave="srcDragLeave(event)" ondrop="srcDrop(event)" style="margin-top:14px;">
+      <input type="file" id="src-file-input" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden;" onchange="srcFileSelected(this.files[0])">
+      <div class="suz-icon" id="src-upload-icon">📄</div>
+      <div class="suz-label" id="src-upload-label">Upload your source list <span class="suz-types">PDF, Word, or photo</span></div>
+      <div class="suz-hint">We'll read your reference list and fill in the fields automatically</div>
+      <div class="suz-spinner" id="src-spinner" style="display:none;">
+        <div class="suz-spin-ring"></div>
+        <span>Reading sources…</span>
+      </div>
+      <div class="suz-success" id="src-success" style="display:none;"></div>
+      <div class="suz-error" id="src-error-upload" style="display:none;"></div>
+    </div>
+
+    <div id="manual-list" style="margin-top:16px;display:flex;flex-direction:column;gap:12px;"></div>
+    <button type="button" class="btn ghost" onclick="addManual()" style="margin-top:10px;">+ Add another source</button>
+    <div class="wf-actions" style="margin-top:20px;">
+      <a class="btn ghost" href="{{ url_for('main.dashboard') }}">Cancel</a>
+      <button class="btn accent" type="submit">Continue to preview →</button>
+    </div>
+  </form>
+
+</div>
+
+<style>
+/* Selection bar */
+.src-selection-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px;
+  padding: 10px 16px; margin-top: 18px;
+}
+.src-sel-info { font-size: 14px; font-weight: 600; color: #3730a3; }
+.src-sel-hint { font-size: 12px; color: #6366f1; margin-left: 6px; font-weight: 400; }
+.src-sel-actions { display: flex; gap: 8px; }
+
+/* Selectable card */
+.src-result-card {
+  display: flex; gap: 14px;
+  background: #f8f9fd;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.src-result-card:hover { border-color: #a5b4fc; }
+.src-result-card.selected { border-color: #4f46e5; background: #eef2ff; }
+.src-result-card.new-batch { border-left: 4px solid #10b981; }
+
+.src-rc-check {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #cbd5e1; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px; transition: all .15s;
+  font-size: 13px;
+}
+.src-result-card.selected .src-rc-check {
+  background: #4f46e5; border-color: #4f46e5; color: #fff;
+}
+
+.src-load-more {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; padding: 8px 20px;
+}
+
+/* New batch label */
+.src-new-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  background: #d1fae5; color: #065f46; border-radius: 20px;
+  padding: 2px 8px; margin-left: 8px; vertical-align: middle;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+</style>
+
+<script>
+const AID = {{ a.id }};
+const NUM_SOURCES = {{ a.num_sources }};
+let currentMode = 'auto';
+let allSources = [];     // all fetched so far
+let batchOffset = 0;     // next fetch offset
+let manualCount = 0;
+
+function pickMode(m) {
+  currentMode = m;
+  document.getElementById('choice-auto').classList.toggle('selected', m === 'auto');
+  document.getElementById('choice-manual').classList.toggle('selected', m === 'manual');
+  document.getElementById('auto-section').style.display = m === 'auto' ? 'block' : 'none';
+  document.getElementById('manual-form').style.display = m === 'manual' ? 'block' : 'none';
+  if (m === 'manual' && manualCount === 0) {
+    for (let i = 0; i < NUM_SOURCES; i++) addManual();
+  }
+}
+
+async function startSearch(offset) {
+  document.getElementById('phase-prompt').style.display = 'none';
+  document.getElementById('phase-results').style.display = 'none';
+  document.getElementById('phase-error').style.display = 'none';
+  document.getElementById('phase-searching').style.display = 'block';
+
+  try {
+    const r = await fetch(`/api/assignments/${AID}/find-sources?offset=${offset}`);
+    if (!r.ok) throw new Error('Server error');
+    const sources = await r.json();
+    if (!sources.length) throw new Error('No sources returned');
+    allSources = sources;
+    batchOffset = 8;
+    renderAllCards(true);
+    document.getElementById('phase-searching').style.display = 'none';
+    document.getElementById('phase-results').style.display = 'block';
+  } catch (e) {
+    document.getElementById('phase-searching').style.display = 'none';
+    document.getElementById('phase-error').style.display = 'block';
+  }
+}
+
+async function loadMore() {
+  document.getElementById('load-more-btn').style.display = 'none';
+  document.getElementById('load-more-searching').style.display = 'block';
+
+  try {
+    const r = await fetch(`/api/assignments/${AID}/find-sources?offset=${batchOffset}`);
+    if (!r.ok) throw new Error();
+    const newSources = await r.json();
+    if (!newSources.length) {
+      document.getElementById('load-more-searching').style.display = 'none';
+      document.getElementById('load-more-btn').style.display = 'inline-flex';
+      showError('No additional sources found for this topic.');
+      return;
+    }
+    const startIdx = allSources.length;
+    allSources = allSources.concat(newSources);
+    batchOffset += 8;
+    // Append only the new cards
+    appendCards(newSources, startIdx, true);
+    document.getElementById('load-more-searching').style.display = 'none';
+    document.getElementById('load-more-btn').style.display = 'inline-flex';
+  } catch(e) {
+    document.getElementById('load-more-searching').style.display = 'none';
+    document.getElementById('load-more-btn').style.display = 'inline-flex';
+    showError('Could not load more sources. Try again.');
+  }
+}
+
+function renderAllCards(isInitial) {
+  document.getElementById('src-cards').innerHTML = '';
+  appendCards(allSources, 0, false);
+  // Pre-select first NUM_SOURCES cards
+  if (isInitial) {
+    const cards = document.querySelectorAll('.src-result-card');
+    cards.forEach(function(c, i) { if (i < NUM_SOURCES) toggleCard(c, true); });
+  }
+  updateBar();
+  document.getElementById('load-more-btn').style.display = 'inline-flex';
+}
+
+function appendCards(sources, startIdx, isNewBatch) {
+  const container = document.getElementById('src-cards');
+  sources.forEach(function(s, i) {
+    const idx = startIdx + i;
+    const card = document.createElement('div');
+    card.className = 'src-result-card' + (isNewBatch ? ' new-batch' : '');
+    card.dataset.idx = idx;
+    const newLabel = isNewBatch ? '<span class="src-new-badge">New</span>' : '';
+    card.innerHTML = `
+      <div class="src-rc-check">✓</div>
+      <div class="src-rc-body">
+        <div class="src-rc-title">${escHtml(s.title || 'Untitled')}${newLabel}</div>
+        <div class="src-rc-meta">
+          ${s.authors ? '<span class="src-rc-authors">👤 ' + escHtml(s.authors) + '</span>' : ''}
+          ${s.year    ? '<span class="src-rc-year">📅 ' + s.year + '</span>' : ''}
+          ${s.url     ? '<a class="src-rc-link" href="' + escHtml(s.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 View paper</a>' : ''}
+        </div>
+        ${s.summary && s.summary !== 'No abstract available.' ? `<div class="src-rc-abstract">${escHtml(truncate(s.summary, 300))}</div>` : ''}
+      </div>
+    `;
+    card.addEventListener('click', function() { toggleCard(card); });
+    container.appendChild(card);
+  });
+  updateBar();
+}
+
+function toggleCard(card, forceOn) {
+  const on = forceOn !== undefined ? forceOn : !card.classList.contains('selected');
+  card.classList.toggle('selected', on);
+  updateBar();
+}
+
+function selectAll() {
+  document.querySelectorAll('.src-result-card').forEach(function(c) { c.classList.add('selected'); });
+  updateBar();
+}
+
+function clearAll() {
+  document.querySelectorAll('.src-result-card').forEach(function(c) { c.classList.remove('selected'); });
+  updateBar();
+}
+
+function updateBar() {
+  const total = document.querySelectorAll('.src-result-card').length;
+  const sel = document.querySelectorAll('.src-result-card.selected').length;
+  document.getElementById('sel-count').textContent = sel;
+  document.getElementById('sel-plural').textContent = sel === 1 ? '' : 's';
+  const hint = document.getElementById('sel-hint');
+  if (sel === 0) hint.textContent = '— pick at least 1';
+  else if (sel < NUM_SOURCES) hint.textContent = `(${NUM_SOURCES - sel} more recommended)`;
+  else hint.textContent = '✓ good to go!';
+}
+
+function confirmSources() {
+  const selected = document.querySelectorAll('.src-result-card.selected');
+  if (!selected.length) {
+    document.getElementById('confirm-warning').style.display = 'block';
+    return;
+  }
+  document.getElementById('confirm-warning').style.display = 'none';
+  const hidden = document.getElementById('src-hidden-fields');
+  hidden.innerHTML = '';
+  selected.forEach(function(card) {
+    const idx = parseInt(card.dataset.idx);
+    const s = allSources[idx];
+    ['title','summary','url','authors','year'].forEach(function(k) {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = `src_${k}[]`; inp.value = s[k] || '';
+      hidden.appendChild(inp);
+    });
+  });
+  document.getElementById('confirm-form').submit();
+}
+
+function showError(msg) {
+  const el = document.getElementById('src-error');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 4000);
+}
+
+function truncate(str, n) {
+  return str && str.length > n ? str.slice(0, n) + '…' : (str || '');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Source file upload ── */
+function srcDragOver(e) {
+  e.preventDefault();
+  document.getElementById('src-drop-zone').classList.add('drag-over');
+}
+function srcDragLeave(e) {
+  document.getElementById('src-drop-zone').classList.remove('drag-over');
+}
+function srcDrop(e) {
+  e.preventDefault();
+  document.getElementById('src-drop-zone').classList.remove('drag-over');
+  var file = e.dataTransfer.files[0];
+  if (file) srcFileSelected(file);
+}
+
+async function srcFileSelected(file) {
+  var zone    = document.getElementById('src-drop-zone');
+  var icon    = document.getElementById('src-upload-icon');
+  var label   = document.getElementById('src-upload-label');
+  var hint    = zone.querySelector('.suz-hint');
+  var spinner = document.getElementById('src-spinner');
+  var success = document.getElementById('src-success');
+  var errEl   = document.getElementById('src-error-upload');
+
+  icon.style.display    = 'none';
+  label.style.display   = 'none';
+  hint.style.display    = 'none';
+  success.style.display = 'none';
+  errEl.style.display   = 'none';
+  spinner.style.display = 'flex';
+  zone.classList.add('uploading');
+
+  try {
+    var fd = new FormData();
+    fd.append('file', file);
+    var resp = await fetch('/api/extract-file-text?mode=sources', { method: 'POST', body: fd });
+    var data = await resp.json();
+    spinner.style.display = 'none';
+
+    if (data.error) {
+      errEl.textContent   = '⚠ ' + data.error;
+      errEl.style.display = 'block';
+      icon.style.display  = 'block';
+      label.style.display = 'block';
+      hint.style.display  = 'block';
+      zone.classList.remove('uploading');
+      return;
+    }
+
+    // Populate manual source fields from parsed sources
+    if (data.sources && data.sources.length > 0) {
+      document.getElementById('manual-list').innerHTML = '';
+      manualCount = 0;
+      data.sources.forEach(function(s) { addManualFromData(s); });
+      success.textContent   = '✓ ' + data.sources.length + ' source' + (data.sources.length !== 1 ? 's' : '') + ' imported from ' + file.name;
+    } else if (data.text) {
+      // GPT parse failed but raw text extracted — prefill first source summary
+      if (manualCount === 0) addManual();
+      var firstSummary = document.querySelector('#manual-list textarea[name="source_summary[]"]');
+      if (firstSummary) firstSummary.value = data.text.slice(0, 800);
+      success.textContent = '✓ Text extracted from ' + file.name + ' — fill in the titles above.';
+    }
+    success.style.display = 'block';
+    zone.classList.remove('uploading');
+    zone.classList.add('done');
+  } catch(err) {
+    spinner.style.display = 'none';
+    errEl.textContent     = '⚠ Upload failed — please try again.';
+    errEl.style.display   = 'block';
+    icon.style.display    = 'block';
+    label.style.display   = 'block';
+    hint.style.display    = 'block';
+    zone.classList.remove('uploading');
+  }
+}
+
+function addManualFromData(s) {
+  manualCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'source-card-edit';
+  wrap.innerHTML = `
+    <div class="sce-header">
+      <span class="sce-num">Source ${manualCount}</span>
+      <button type="button" class="btn-sm red" onclick="this.closest('.source-card-edit').remove()">Remove</button>
+    </div>
+    <input class="wf-input" type="text" name="source_title[]" placeholder="Source title" value="${escHtml(s.title||'')}" />
+    <input class="wf-input" type="text" name="source_authors[]" placeholder="Authors (e.g. Smith, J. &amp; Jones, A.)" style="margin-top:8px;" value="${escHtml(s.authors||'')}" />
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input class="wf-input" type="text" name="source_year[]" placeholder="Year (e.g. 2023)" style="max-width:140px;" value="${escHtml(s.year||'')}" />
+      <input class="wf-input" type="text" name="source_url[]" placeholder="URL (optional)" style="flex:1;" value="${escHtml(s.url||'')}" />
+    </div>
+    <textarea class="wf-textarea" name="source_summary[]" placeholder="Paste a summary or abstract…" rows="3" style="margin-top:8px;">${escHtml(s.summary||'')}</textarea>
+  `;
+  document.getElementById('manual-list').appendChild(wrap);
+}
+
+// Manual source entry
+function addManual() {
+  manualCount++;
+  const wrap = document.createElement('div');
+  wrap.className = 'source-card-edit';
+  wrap.innerHTML = `
+    <div class="sce-header">
+      <span class="sce-num">Source ${manualCount}</span>
+      <button type="button" class="btn-sm red" onclick="this.closest('.source-card-edit').remove()">Remove</button>
+    </div>
+    <input class="wf-input" type="text" name="source_title[]" placeholder="Source title" />
+    <input class="wf-input" type="text" name="source_authors[]" placeholder="Authors (e.g. Smith, J. &amp; Jones, A.)" style="margin-top:8px;" />
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <input class="wf-input" type="text" name="source_year[]" placeholder="Year (e.g. 2023)" style="max-width:140px;" />
+      <input class="wf-input" type="text" name="source_url[]" placeholder="URL (optional)" style="flex:1;" />
+    </div>
+    <textarea class="wf-textarea" name="source_summary[]" placeholder="Paste a summary or abstract…" rows="3" style="margin-top:8px;"></textarea>
+  `;
+  document.getElementById('manual-list').appendChild(wrap);
+}
+</script>
+{% endblock %}

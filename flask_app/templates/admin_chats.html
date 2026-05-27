@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Support Dashboard — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <h1>🎧 Support Dashboard</h1>
+  <div style="font-size:13px;color:#64748b;">
+    <span id="dash-open">{{ sessions|length }}</span> open chat(s) ·
+    <span id="dash-unread">{{ unread.values()|sum }}</span> unread message(s)
+    <button onclick="location.reload()" class="btn-sm ghost" style="margin-left:10px;">↻ Refresh</button>
+  </div>
+</div>
+
+{% if not sessions %}
+<div class="card" style="text-align:center;padding:48px 24px;color:#64748b;">
+  <div style="font-size:40px;margin-bottom:12px;">🎉</div>
+  <p>No open chats right now. All students have been helped!</p>
+</div>
+{% else %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="asgn-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Student</th>
+        <th>Started</th>
+        <th>Messages</th>
+        <th>Unread</th>
+        <th>Human joined</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sessions %}
+      <tr>
+        <td>#{{ s.id }}</td>
+        <td>
+          <strong>{{ s.user.display_name }}</strong><br/>
+          <span style="font-size:11px;color:#64748b;">{{ s.user.email }}</span>
+        </td>
+        <td class="asgn-date">{{ s.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        <td>{{ s.messages|length }}</td>
+        <td>
+          {% if unread[s.id] > 0 %}
+          <span class="chat-unread-badge">{{ unread[s.id] }}</span>
+          {% else %}
+          <span style="color:#64748b;font-size:12px;">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.has_human %}
+          <span style="color:#16a34a;font-size:12px;">✓ Yes</span>
+          {% else %}
+          <span style="color:#94a3b8;font-size:12px;">AI only</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right;">
+          <a class="btn-sm accent" href="{{ url_for('main.admin_chat_detail', sid=s.id) }}">Open →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>
+// Auto-refresh every 30 seconds
+setTimeout(function() { location.reload(); }, 30000);
+</script>
+{% endblock %}

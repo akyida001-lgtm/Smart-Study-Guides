@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %}Buy Credits — Smart Study Guides{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom:28px;">
+  <div>
+    <h1>⚡ Buy Credits</h1>
+    <p style="margin:4px 0 0;color:var(--slate-500);font-size:14px;">
+      $1 = 100 credits &nbsp;·&nbsp; Credits never expire &nbsp;·&nbsp; Instant delivery
+    </p>
+  </div>
+  <div class="pkg-balance-chip">
+    Balance: <strong>⚡ {{ "{:,}".format(user.credits or 0) }}</strong>
+  </div>
+</div>
+
+<!-- ── Payment method pills ──────────────────────────────────────────────── -->
+<div class="pay-methods-bar">
+  <div class="pay-method">
+    <span class="pay-method-icon">💳</span>
+    <span>Bank Card</span>
+    <span class="pay-method-note pay-method-note-blue">Any country</span>
+  </div>
+  <div class="pay-method">
+    <span class="pay-method-icon">🅖</span>
+    <span>Google Pay</span>
+    <span class="pay-method-note pay-method-note-gray">Chrome · Android</span>
+  </div>
+  <div class="pay-method">
+    <span class="pay-method-icon">🍎</span>
+    <span>Apple Pay</span>
+    <span class="pay-method-note pay-method-note-gray">Safari · iPhone</span>
+  </div>
+  <div class="pay-method momo">
+    <span class="pay-method-icon">📱</span>
+    <span>Mobile Money</span>
+    <span class="pay-method-note">Select African countries</span>
+  </div>
+</div>
+
+<!-- ── Package cards ──────────────────────────────────────────────────────── -->
+<div class="pkg-grid">
+  {% for p in packages %}
+  <div class="pkg-card card {% if p.popular %}pkg-popular{% endif %} {% if p.usd >= 500 %}pkg-premium{% endif %}">
+    {% if p.popular %}
+      <div class="pkg-badge-ribbon">Most Popular</div>
+    {% elif p.usd == 1000 %}
+      <div class="pkg-badge-ribbon pkg-badge-max">MAX</div>
+    {% endif %}
+
+    <div class="pkg-label">{{ p.label }}</div>
+    <div class="pkg-price">
+      <span class="pkg-dollar">$</span>{{ "{:,}".format(p.usd) }}
+    </div>
+    <div class="pkg-credits">⚡ {{ "{:,}".format(p.credits) }} credits</div>
+    <div class="pkg-rate">100 credits per $1</div>
+
+    <button
+      class="btn pkg-btn {% if p.popular %}accent{% elif p.usd >= 500 %}pkg-btn-premium{% else %}ghost{% endif %} full"
+      onclick="startCheckout({{ p.usd }}, {{ p.credits }}, '{{ p.label }}', this)">
+      Pay Now
+    </button>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── Security trust row ─────────────────────────────────────────────────── -->
+<div class="pkg-trust-row">
+  <span>🔒 256-bit SSL</span>
+  <span class="trust-sep">·</span>
+  <span>Secured by Stripe</span>
+  <span class="trust-sep">·</span>
+  <span>No card data stored on our servers</span>
+  <span class="trust-sep">·</span>
+  <span>3D Secure supported</span>
+  <span class="trust-sep">·</span>
+  <span>Max purchase: $1,000</span>
+</div>
+
+<!-- ── Processing overlay ─────────────────────────────────────────────────── -->
+<div id="pay-overlay" class="pay-overlay" style="display:none;">
+  <div class="pay-overlay-box">
+    <div class="pay-spinner"></div>
+    <p class="pay-overlay-title" id="pay-overlay-title">Opening secure checkout…</p>
+    <p class="pay-overlay-sub">You'll be taken to Stripe's hosted payment page.</p>
+  </div>
+</div>
+
+<!-- ── Error toast ────────────────────────────────────────────────────────── -->
+<div id="pay-error-toast" class="pay-error-toast" style="display:none;">
+  <span id="pay-error-msg">Something went wrong. Please try again.</span>
+  <button onclick="document.getElementById('pay-error-toast').style.display='none'">✕</button>
+</div>
+
+<style>
+/* ── Balance chip ── */
+.pkg-balance-chip {
+  background: #eef2ff; border: 1px solid #c7d6ff; border-radius: 999px;
+  padding: 8px 18px; font-size: 13px; color: #3d4d6e; white-space: nowrap;
+  flex-shrink: 0;
+}
+.pkg-balance-chip strong { color: #122047; }
+
+/* ── Payment method pills ── */
+.pay-methods-bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 24px;
+}
+.pay-method {
+  display: flex; align-items: center; gap: 6px;
+  background: #fff; border: 1.5px solid #e2e8f0; border-radius: 999px;
+  padding: 7px 14px; font-size: 13px; font-weight: 600; color: #1a2535;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.pay-method.momo { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+.pay-method-icon { font-size: 16px; line-height: 1; }
+.pay-method-note {
+  font-size: 10px; font-weight: 500; color: #4ade80;
+  background: #166534; padding: 2px 7px; border-radius: 999px;
+  letter-spacing: .2px;
+}
+.pay-method-note-blue {
+  font-size: 10px; font-weight: 500; color: #3b82f6;
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  padding: 2px 7px; border-radius: 999px; letter-spacing: .2px;
+}
+.pay-method-note-gray {
+  font-size: 10px; font-weight: 500; color: #64748b;
+  background: #f1f5f9; border: 1px solid #e2e8f0;
+  padding: 2px 7px; border-radius: 999px; letter-spacing: .2px;
+}
+
+/* ── Package grid — 3 columns on desktop, 2 on tablet, 1 on mobile ── */
+.pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 24px;
+}
+
+.pkg-card {
+  position: relative; padding: 28px 18px 20px;
+  text-align: center; display: flex; flex-direction: column;
+  gap: 6px; transition: box-shadow .18s, transform .18s;
+  border: 2px solid transparent;
+}
+.pkg-card:hover {
+  box-shadow: 0 12px 40px rgba(6,17,43,.12);
+  transform: translateY(-2px);
+}
+
+/* Popular */
+.pkg-popular {
+  border-color: #7aa2ff;
+  box-shadow: 0 0 0 3px rgba(122,162,255,.15), 0 8px 32px rgba(122,162,255,.18);
+}
+.pkg-popular:hover {
+  box-shadow: 0 0 0 3px rgba(122,162,255,.22), 0 16px 48px rgba(122,162,255,.22);
+}
+
+/* Premium ($500 / $1000) */
+.pkg-premium {
+  border-color: #f59e0b;
+  background: linear-gradient(160deg, #fffbeb 0%, #fff 60%);
+}
+.pkg-premium:hover {
+  box-shadow: 0 0 0 3px rgba(245,158,11,.15), 0 12px 40px rgba(245,158,11,.18);
+}
+
+/* Ribbon badges */
+.pkg-badge-ribbon {
+  position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; font-weight: 800; letter-spacing: .4px;
+  padding: 3px 12px; border-radius: 999px; white-space: nowrap;
+  background: #7aa2ff; color: #fff;
+}
+.pkg-badge-max { background: #f59e0b; color: #fff; }
+
+.pkg-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .7px; color: var(--slate-400); margin-bottom: 2px;
+}
+.pkg-dollar { font-size: 22px; font-weight: 700; vertical-align: top; margin-top: 8px; }
+.pkg-price { font-size: 44px; font-weight: 800; color: var(--navy-900); line-height: 1; }
+.pkg-premium .pkg-price { color: #92400e; }
+.pkg-credits { font-size: 15px; font-weight: 700; color: #7aa2ff; }
+.pkg-premium .pkg-credits { color: #d97706; }
+.pkg-rate { font-size: 11px; color: var(--slate-400); margin-bottom: 10px; }
+.pkg-btn { margin-top: auto; font-size: 13px; font-weight: 700; }
+.pkg-btn:disabled { opacity: .55; cursor: not-allowed; }
+.pkg-btn-premium {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff; border: none; cursor: pointer;
+  border-radius: var(--radius, 8px); padding: 10px 16px;
+  transition: opacity .15s;
+}
+.pkg-btn-premium:hover { opacity: .9; }
+.pkg-btn-premium:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Trust row ── */
+.pkg-trust-row {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 8px; font-size: 11px; color: var(--slate-400); margin-bottom: 32px;
+}
+.trust-sep { color: var(--slate-200); }
+
+/* ── Overlay ── */
+.pay-overlay {
+  position: fixed; inset: 0; background: rgba(6,17,43,.6);
+  z-index: 9000; display: flex; align-items: center; justify-content: center;
+}
+.pay-overlay-box {
+  background: #fff; border-radius: 16px; padding: 36px 40px;
+  text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 14px;
+  box-shadow: 0 24px 64px rgba(6,17,43,.3); max-width: 320px; width: 90%;
+}
+.pay-spinner {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 4px solid #e8ecf3; border-top-color: #7aa2ff;
+  animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pay-overlay-title { font-size: 16px; font-weight: 700; color: var(--navy-900); margin: 0; }
+.pay-overlay-sub { font-size: 12px; color: var(--slate-400); margin: 0; }
+
+/* ── Error toast ── */
+.pay-error-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1a2535; color: #fff; padding: 13px 20px; border-radius: 10px;
+  font-size: 13px; z-index: 9100; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35); max-width: 440px; width: calc(100% - 32px);
+}
+.pay-error-toast button {
+  background: none; border: none; color: #8595b1; cursor: pointer;
+  font-size: 18px; padding: 0; line-height: 1; flex-shrink: 0;
+}
+.pay-error-toast button:hover { color: #fff; }
+
+/* ── Responsive ── */
+@media(max-width: 700px) {
+  .pkg-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 420px) {
+  .pkg-grid { grid-template-columns: 1fr; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+</style>
+
+<script>
+var CREATE_URL = "{{ url_for('main.stripe_create_checkout') }}";
+var HAS_STRIPE  = {{ 'true' if stripe_pub_key else 'false' }};
+
+function startCheckout(usd, credits, label, btn) {
+  if (!HAS_STRIPE) {
+    showError('Payments are not yet configured. Please contact support.');
+    return;
+  }
+  document.querySelectorAll('.pkg-btn').forEach(function(b){ b.disabled = true; });
+  var overlay = document.getElementById('pay-overlay');
+  document.getElementById('pay-overlay-title').textContent =
+    'Preparing ' + label + ' package…';
+  overlay.style.display = 'flex';
+
+  fetch(CREATE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount_usd: usd, credits: credits, label: label })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { throw new Error(data.error); }
+    document.getElementById('pay-overlay-title').textContent = 'Redirecting to Stripe…';
+    window.location.href = data.url;
+  })
+  .catch(function(err) {
+    overlay.style.display = 'none';
+    document.querySelectorAll('.pkg-btn').forEach(function(b){ b.disabled = false; });
+    showError(err.message || 'Could not start checkout. Please try again.');
+  });
+}
+
+function showError(msg) {
+  document.getElementById('pay-error-msg').textContent = msg;
+  var toast = document.getElementById('pay-error-toast');
+  toast.style.display = 'flex';
+  clearTimeout(window._errTimer);
+  window._errTimer = setTimeout(function() { toast.style.display = 'none'; }, 7000);
+}
+</script>
+
+{% endblock %}

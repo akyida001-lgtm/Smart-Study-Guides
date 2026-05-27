@@ -1,0 +1,1322 @@
+{% extends "base.html" %}
+{% block title %}Career Section (Free Service) — Smart Study Guides{% endblock %}
+{% block container_class %}{% endblock %}
+{% block content %}
+
+<div class="jd-page">
+
+  <!-- ── Header ── -->
+  <div class="jd-header">
+    <div>
+      <h1>📄 Career Section <span class="jd-free-badge">Free Service</span></h1>
+      <p class="jd-sub">AI writes your professional career documents instantly —
+        {% if can_access and referral_unlock %}free because you've referred subscribing members.
+        {% elif can_access %}free with your active subscription.
+        {% else %}free for all subscribers and members who refer subscribing clients.
+        {% endif %}
+      </p>
+    </div>
+    {% if not can_access %}
+    <div class="jd-locked-chip">🔒 Subscribe to unlock</div>
+    {% elif referral_unlock %}
+    <div class="jd-free-chip">🎁 Referral unlock</div>
+    {% else %}
+    <div class="jd-free-chip">✅ Free with your plan</div>
+    {% endif %}
+  </div>
+
+  {% if not can_access %}
+  <!-- ── Locked state ── -->
+  <div class="card jd-locked-card">
+    <div class="jd-locked-icon">🔒</div>
+    <h2>Unlock Career Documents</h2>
+    <p>This feature is <strong>free</strong> for anyone with an active subscription, or for anyone who has referred clients who subscribe.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;">
+      <a class="btn accent" href="{{ url_for('main.pricing') }}">Subscribe to Unlock →</a>
+      {% if current_user.referral_code %}
+      <button class="btn ghost" type="button"
+        onclick="navigator.clipboard.writeText('{{ request.host_url }}?ref={{ current_user.referral_code }}');this.textContent='Link copied!';setTimeout(()=>this.textContent='Copy referral link',1800);">
+        Copy referral link
+      </button>
+      {% endif %}
+    </div>
+    <p style="margin-top:14px;font-size:13px;color:var(--slate-500);">
+      When a friend signs up through your referral link and subscribes, you unlock the Career Section for free — no subscription needed.
+    </p>
+  </div>
+
+  {% else %}
+
+  <!-- ── Document type grid ── -->
+  <p class="jd-choose-label">Choose a document to create:</p>
+  <div class="jd-grid">
+    {% for key, dt in doc_types.items() %}
+      {% set used = usage.get(key, 0) %}
+      {% set depleted = (not bypassed) and (used >= limit) %}
+    <button class="jd-type-card card{% if depleted %} jd-type-depleted{% elif (not bypassed) and used == limit - 1 %} jd-type-warn{% endif %}"
+            data-type="{{ key }}" data-label="{{ dt.label }}"
+            onclick="handleCardClick(this)" type="button">
+      <span class="jd-type-icon">{{ dt.icon }}</span>
+      <span class="jd-type-label">{{ dt.label }}</span>
+      <span class="jd-type-desc">{{ dt.desc }}</span>
+      {% if not bypassed %}
+        {% if depleted %}
+      <span class="jd-usage-badge full">4/4 · resets {{ reset_dates.get(key, 'soon') }}</span>
+        {% elif used > 0 %}
+      <span class="jd-usage-badge partial">{{ used }}/4 used</span>
+        {% endif %}
+      {% endif %}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     LIMIT-REACHED MODAL
+═══════════════════════════════════════════════════════ -->
+<div id="jd-limit-overlay" class="jd-modal-overlay" style="display:none;" onclick="if(event.target===this){closeLimitModal();}">
+  <div class="jd-modal jd-limit-modal">
+    <div class="jd-modal-header">
+      <div>
+        <div style="font-size:30px;margin-bottom:4px;">⏳</div>
+        <h2 class="jd-modal-title" id="limit-modal-title">Monthly limit reached</h2>
+      </div>
+      <button class="jd-modal-close" onclick="closeLimitModal()" type="button">✕</button>
+    </div>
+    <div class="jd-limit-body">
+      <p>You've used all <strong>4 free</strong> <strong id="limit-doc-label">document</strong> generations for this month.</p>
+      <div class="jd-limit-info">
+        <div class="jd-limit-row">
+          <span>Used this month</span>
+          <span class="jd-limit-val">4 / 4</span>
+        </div>
+        <div class="jd-limit-row">
+          <span>Your free uses reset on</span>
+          <span class="jd-limit-val" id="limit-reset-date">—</span>
+        </div>
+      </div>
+      <div class="jd-limit-options">
+        <div class="jd-limit-option">
+          <div class="jd-limit-opt-icon">⏳</div>
+          <div>
+            <div class="jd-limit-opt-title">Wait for reset</div>
+            <div class="jd-limit-opt-desc">Your 4 free uses for this document type refresh automatically 30 days after your first generation this month.</div>
+          </div>
+        </div>
+        <div class="jd-limit-divider">— or —</div>
+        <div class="jd-limit-option highlight">
+          <div class="jd-limit-opt-icon">✨</div>
+          <div>
+            <div class="jd-limit-opt-title">Upgrade your subscription</div>
+            <div class="jd-limit-opt-desc">Subscribe to unlock full Career Section access with no monthly limits.</div>
+          </div>
+        </div>
+      </div>
+      <div class="jd-limit-actions">
+        <button class="btn ghost" type="button" onclick="closeLimitModal()">Maybe later</button>
+        <a class="btn accent" href="{{ url_for('main.pricing') }}">View Plans →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     FLOATING DETAIL MODAL
+═══════════════════════════════════════════════════════ -->
+<div id="jd-modal-overlay" class="jd-modal-overlay" style="display:none;" onclick="closeModalOutside(event)">
+  <div class="jd-modal" id="jd-modal">
+    <div class="jd-modal-header">
+      <div>
+        <div class="jd-modal-doc-type" id="modal-doc-icon"></div>
+        <h2 class="jd-modal-title" id="modal-title">Your Details</h2>
+      </div>
+      <button class="jd-modal-close" onclick="closeModal()" type="button">✕</button>
+    </div>
+
+    <form id="jd-form" onsubmit="submitDocForm(event)">
+      <input type="hidden" id="f-doc-type" name="doc_type" />
+
+      <!-- ── Scrollable body ── -->
+      <div class="jd-modal-body">
+
+        <!-- § 1  Personal Details -->
+        <div class="jd-section">
+          <div class="jd-section-title">👤 Your Details</div>
+          <div class="jd-row2">
+            <label class="field">Full Name *
+              <input type="text" name="full_name" id="f-full-name" required autocomplete="name"
+                     placeholder="e.g. Jane Achieng Odhiambo" />
+            </label>
+            <label class="field">Email *
+              <input type="email" name="email" id="f-email" required autocomplete="email"
+                     placeholder="jane@email.com"
+                     value="{{ current_user.email or '' }}" />
+            </label>
+          </div>
+          <div class="jd-row2">
+            <label class="field">Phone
+              <input type="tel" name="phone" autocomplete="tel" placeholder="+254 7xx xxx xxx" />
+            </label>
+            <label class="field">LinkedIn / Portfolio URL
+              <input type="url" name="linkedin" id="f-linkedin" autocomplete="url"
+                     placeholder="https://linkedin.com/in/your-name" />
+            </label>
+          </div>
+        </div>
+
+        <!-- § 2  Your Address -->
+        <div class="jd-section">
+          <div class="jd-section-title">📍 Your Address</div>
+          <div class="jd-row2">
+            <label class="field">Country *
+              <select name="country" id="f-country" required autocomplete="country-name">
+                <option value="">— Select country —</option>
+              </select>
+            </label>
+            <label class="field">City / Town *
+              <input type="text" name="city" required autocomplete="address-level2" list="city-suggestions"
+                     placeholder="e.g. Nairobi" id="f-city" />
+              <datalist id="city-suggestions"></datalist>
+            </label>
+          </div>
+          <div class="jd-row2">
+            <label class="field">State / Province / County
+              <input type="text" name="state" autocomplete="address-level1" list="state-suggestions"
+                     placeholder="e.g. Nairobi County" id="f-state" />
+              <datalist id="state-suggestions"></datalist>
+            </label>
+            <label class="field">Street / Area
+              <input type="text" name="street" autocomplete="street-address" placeholder="e.g. Ngong Road, Apt 4B" />
+            </label>
+          </div>
+        </div>
+
+        <!-- § 3  Education History -->
+        <div class="jd-section">
+          <div class="jd-section-title">🎓 Education History <span class="jd-hint">(earliest → highest)</span></div>
+          <div id="edu-list"></div>
+          <button type="button" class="btn ghost jd-add-edu-btn" onclick="addEduEntry()">+ Add Education Level</button>
+          <label class="field" style="margin-top:12px;">Current School / Institution
+            <input type="text" name="current_school" autocomplete="organization"
+                   list="schools-list"
+                   placeholder="University / College you are currently attending (if any)" />
+          </label>
+        </div>
+
+        <!-- § 4  Receiver Details -->
+        <div class="jd-section">
+          <div class="jd-section-title">🏢 Receiver / Employer Details</div>
+          <div class="jd-row2">
+            <label class="field">Receiver's Full Name
+              <input type="text" name="receiver_name" placeholder="e.g. Dr. James Mwangi" autocomplete="off" />
+            </label>
+            <label class="field">Receiver's Job Title / Position
+              <input type="text" name="receiver_title" placeholder="e.g. HR Manager"
+                     autocomplete="off" list="titles-list" />
+            </label>
+          </div>
+          <div class="jd-row2">
+            <label class="field">Organisation / Company / Institution *
+              <input type="text" name="receiver_org" required placeholder="e.g. Safaricom PLC"
+                     autocomplete="off" list="orgs-list" />
+            </label>
+            <label class="field">Receiver's City / Country
+              <input type="text" name="receiver_location" placeholder="e.g. Nairobi, Kenya" autocomplete="off" />
+            </label>
+          </div>
+        </div>
+
+        <!-- § 5  Document Purpose -->
+        <div class="jd-section">
+          <div class="jd-section-title">✏️ Document Purpose</div>
+          <label class="field">Position / Role / Programme Applying For *
+            <input type="text" name="position" required list="positions-list"
+                   placeholder="e.g. Software Engineer Intern, MBA Programme, Scholarship XYZ" />
+          </label>
+          <label class="field">Key Skills / Strengths (comma-separated)
+            <input type="text" name="skills" list="skills-list"
+                   placeholder="e.g. Python, leadership, data analysis, teamwork" />
+          </label>
+          <label class="field">Additional Instructions or Notes
+            <textarea name="notes" rows="3"
+                      placeholder="Any specific points to highlight, tone, language, extra details…"></textarea>
+          </label>
+        </div>
+
+      </div><!-- end modal-body -->
+
+      <!-- ── Footer ── -->
+      <div class="jd-modal-footer">
+        <button type="button" class="btn ghost" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn accent" id="jd-submit-btn">
+          ✍️ Generate Document
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Shared datalists (referenced by list="..." on inputs) ── -->
+<datalist id="schools-list"></datalist>
+<datalist id="years-list"></datalist>
+<datalist id="quals-list"></datalist>
+<datalist id="titles-list"></datalist>
+<datalist id="positions-list"></datalist>
+<datalist id="skills-list"></datalist>
+<datalist id="orgs-list"></datalist>
+
+<!-- ── Error toast ── -->
+<div id="jd-toast" class="jd-toast" style="display:none;">
+  <span id="jd-toast-msg"></span>
+  <button onclick="document.getElementById('jd-toast').style.display='none'">✕</button>
+</div>
+
+<style>
+/* ── Free badge in heading ── */
+.jd-free-badge {
+  display: inline-block; font-size: 13px; font-weight: 700;
+  background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;
+  border-radius: 999px; padding: 3px 12px; vertical-align: middle;
+  margin-left: 8px; letter-spacing: .2px;
+}
+
+/* ── Page layout ── */
+.jd-page { max-width: 1060px; margin: 0 auto; padding: 0 0 48px; }
+.jd-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 14px; margin-bottom: 28px;
+}
+.jd-header h1 { margin: 0 0 4px; font-size: 26px; }
+.jd-sub { margin: 0; color: var(--slate-500); font-size: 14px; }
+.jd-free-chip {
+  background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;
+  border-radius: 999px; padding: 6px 16px; font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.jd-locked-chip {
+  background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+  border-radius: 999px; padding: 6px 16px; font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+
+/* ── Locked card ── */
+.jd-locked-card { max-width: 480px; margin: 40px auto; text-align: center; padding: 40px 32px; }
+.jd-locked-icon { font-size: 52px; margin-bottom: 16px; }
+.jd-locked-card h2 { margin: 0 0 10px; }
+.jd-locked-card p { color: var(--slate-500); margin: 0 0 24px; line-height: 1.6; }
+
+/* ── Document type grid ── */
+.jd-choose-label {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--slate-500); margin-bottom: 14px;
+}
+.jd-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;
+}
+.jd-type-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 24px 16px; text-align: center; cursor: pointer;
+  border: 2px solid transparent; background: var(--surface);
+  border-radius: var(--radius); transition: box-shadow .15s, transform .15s, border-color .15s;
+  font-family: inherit;
+}
+.jd-type-card:hover {
+  box-shadow: 0 8px 28px rgba(6,17,43,.1); transform: translateY(-2px); border-color: var(--accent);
+}
+.jd-type-icon { font-size: 32px; }
+.jd-type-label { font-size: 14px; font-weight: 700; color: var(--navy-900); line-height: 1.3; }
+.jd-type-desc  { font-size: 11px; color: var(--slate-500); }
+
+/* ── Modal overlay ── */
+.jd-modal-overlay {
+  position: fixed; inset: 0; background: rgba(6,17,43,.55);
+  z-index: 8000; display: flex; align-items: flex-end;
+  justify-content: center;
+}
+@media(min-width: 640px) { .jd-modal-overlay { align-items: center; } }
+
+/* ── Modal box ── */
+.jd-modal {
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 680px;
+  height: 92vh;           /* fixed height so children can scroll */
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;       /* clip — body scrolls internally */
+  box-shadow: 0 -12px 48px rgba(6,17,43,.25);
+  animation: slideUp .25s ease;
+}
+@media(min-width: 640px) {
+  .jd-modal { border-radius: 20px; height: 88vh; max-height: 88vh; }
+}
+@keyframes slideUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+/* The <form> sits between .jd-modal and .jd-modal-body — it must
+   join the flex chain so the body can actually scroll */
+#jd-form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.jd-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--surface-2); flex-shrink: 0;
+}
+.jd-modal-doc-type { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--accent); margin-bottom: 3px; }
+.jd-modal-title { margin: 0; font-size: 19px; }
+.jd-modal-close {
+  background: none; border: none; font-size: 20px; cursor: pointer;
+  color: var(--slate-400); padding: 4px 8px; border-radius: 8px;
+}
+.jd-modal-close:hover { color: var(--navy-900); background: var(--surface-2); }
+
+.jd-modal-body {
+  flex: 1;
+  min-height: 0;           /* CRITICAL: lets flex child shrink & scroll */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
+  padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 0;
+}
+.jd-modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--surface-2);
+  display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;
+}
+
+/* ── Form sections ── */
+.jd-section { margin-bottom: 24px; }
+.jd-section-title {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--slate-500); margin-bottom: 12px;
+}
+.jd-hint { font-size: 11px; font-weight: 400; text-transform: none; color: var(--slate-400); }
+.jd-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width: 540px) { .jd-row2 { grid-template-columns: 1fr; } }
+
+/* ── Education entries ── */
+.edu-entry {
+  background: var(--surface-2); border-radius: 10px; padding: 14px;
+  margin-bottom: 10px; position: relative;
+}
+.edu-entry .edu-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width: 480px) { .edu-entry .edu-row { grid-template-columns: 1fr; } }
+.edu-entry .field { margin-bottom: 8px; }
+.edu-entry .field:last-child { margin-bottom: 0; }
+.edu-remove {
+  position: absolute; top: 10px; right: 10px;
+  background: none; border: none; cursor: pointer; color: var(--slate-400);
+  font-size: 16px; padding: 2px 6px; border-radius: 6px;
+}
+.edu-remove:hover { color: var(--danger); background: #fff0f0; }
+.jd-add-edu-btn { font-size: 13px; padding: 8px 14px; }
+
+/* ── Toast ── */
+.jd-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1a2535; color: #fff; padding: 12px 20px; border-radius: 10px;
+  font-size: 13px; z-index: 9200; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3); max-width: 440px; width: calc(100% - 32px);
+}
+.jd-toast button { background: none; border: none; color: #8595b1; cursor: pointer; font-size: 16px; }
+
+/* ── Usage badges on cards ── */
+.jd-usage-badge {
+  display: inline-block; border-radius: 999px; font-size: 10px; font-weight: 700;
+  padding: 3px 9px; margin-top: 4px; letter-spacing: .2px;
+}
+.jd-usage-badge.full    { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+.jd-usage-badge.partial { background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+
+/* ── Depleted card ── */
+.jd-type-depleted {
+  opacity: .7; cursor: pointer;
+  border-color: #fca5a5 !important;
+  background: #fff5f5 !important;
+}
+.jd-type-depleted:hover { box-shadow: 0 4px 14px rgba(220,38,38,.12); transform: none; border-color: #f87171 !important; }
+.jd-type-depleted .jd-type-label { color: #9ca3af; }
+
+/* ── Last-use warning card ── */
+.jd-type-warn { border-color: #fcd34d; }
+.jd-type-warn:hover { border-color: #f59e0b; }
+
+/* ── All-depleted banner ── */
+.jd-all-depleted {
+  text-align: center; padding: 36px 28px; margin-bottom: 20px;
+  border: 2px dashed #fca5a5; background: #fff5f5;
+}
+.jd-depleted-icon { font-size: 40px; margin-bottom: 10px; }
+.jd-all-depleted h3 { margin: 0 0 8px; font-size: 18px; color: #dc2626; }
+.jd-all-depleted p  { color: var(--slate-500); margin: 0 0 20px; line-height: 1.6; }
+
+/* ── Limit modal ── */
+.jd-limit-modal {
+  max-width: 480px !important; height: auto !important; max-height: 90vh !important;
+  border-radius: 20px !important;
+}
+.jd-limit-body { padding: 20px 24px 28px; overflow-y: auto; }
+.jd-limit-body > p { margin: 0 0 18px; font-size: 15px; color: var(--slate-600); line-height: 1.6; }
+
+.jd-limit-info {
+  background: var(--surface-2); border-radius: 10px; padding: 14px 18px;
+  margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;
+}
+.jd-limit-row {
+  display: flex; justify-content: space-between; font-size: 13px;
+  color: var(--slate-500);
+}
+.jd-limit-val { font-weight: 700; color: var(--navy-900); }
+
+.jd-limit-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+.jd-limit-option {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--surface-3, var(--surface-2));
+}
+.jd-limit-option.highlight {
+  background: #eef6ff; border-color: #bfdbfe;
+}
+.jd-limit-opt-icon  { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.jd-limit-opt-title { font-weight: 700; font-size: 14px; color: var(--navy-900); margin-bottom: 3px; }
+.jd-limit-opt-desc  { font-size: 12px; color: var(--slate-500); line-height: 1.5; }
+.jd-limit-divider   { text-align: center; color: var(--slate-400); font-size: 12px; padding: 2px 0; }
+
+.jd-limit-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.jd-limit-actions .btn { font-size: 13px; padding: 9px 18px; }
+
+</style>
+
+<script>
+/* ── Countries list ── */
+var COUNTRIES = ["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+/* Populate country dropdown */
+(function () {
+  var sel = document.getElementById('f-country');
+  if (!sel) return;
+  COUNTRIES.forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = o.textContent = c;
+    sel.appendChild(o);
+  });
+})();
+
+/* ── Usage data from server ── */
+var USAGE    = {{ usage    | tojson }};
+var LIMIT    = {{ limit    | int }};
+var BYPASSED = {{ 'true' if bypassed else 'false' }};
+var RESET_DATES = {{ reset_dates | tojson }};
+
+/* ── Card click dispatcher ── */
+function handleCardClick(btn) {
+  var type  = btn.getAttribute('data-type');
+  var label = btn.getAttribute('data-label');
+  if (!BYPASSED && (USAGE[type] || 0) >= LIMIT) {
+    showLimitModal(type, label);
+  } else {
+    openModal(type, label);
+  }
+}
+
+/* ── Limit-reached modal ── */
+function showLimitModal(type, label) {
+  document.getElementById('limit-doc-label').textContent = label;
+  var resetDate = RESET_DATES[type] || 'soon';
+  document.getElementById('limit-reset-date').textContent = resetDate;
+  document.getElementById('jd-limit-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLimitModal() {
+  document.getElementById('jd-limit-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+/* ── Modal ── */
+var _selectedDocType = '';
+var _selectedDocLabel = '';
+
+function openModal(type, label) {
+  _selectedDocType  = type;
+  _selectedDocLabel = label;
+  document.getElementById('f-doc-type').value = type;
+  document.getElementById('modal-doc-icon').textContent = label;
+  document.getElementById('modal-title').textContent = 'Your Details — ' + label;
+  document.getElementById('jd-modal-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  /* Pre-fill email */
+  var emailFld = document.getElementById('f-email');
+  if (emailFld && !emailFld.value) {
+    emailFld.value = '{{ current_user.email or "" }}';
+  }
+  /* Pre-fill name */
+  var nameFld = document.getElementById('f-full-name');
+  if (nameFld && !nameFld.value) {
+    nameFld.value = '{{ current_user.display_name or "" }}';
+  }
+}
+
+function closeModal() {
+  document.getElementById('jd-modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('jd-modal-overlay')) closeModal();
+}
+
+/* ══════════════════════════════════════════════════════
+   SMART AUTOCOMPLETE DATA
+══════════════════════════════════════════════════════ */
+
+/* ── Schools / Universities ── */
+var SCHOOLS = [
+  /* Canada — Universities */
+  "University of Toronto","McGill University","University of British Columbia","University of Waterloo",
+  "McMaster University","Queen's University","Western University","University of Ottawa",
+  "Simon Fraser University","University of Calgary","University of Alberta","Dalhousie University",
+  "University of Manitoba","University of Saskatchewan","Carleton University",
+  "Toronto Metropolitan University","York University","University of Victoria",
+  "University of Windsor","Brock University","Lakehead University","Trent University",
+  "Ontario Tech University","Wilfrid Laurier University","University of Guelph",
+  "Memorial University of Newfoundland","OCAD University","University of Regina",
+  /* Canada — Colleges */
+  "Conestoga College","Humber College","George Brown College","Seneca College",
+  "Centennial College","Sheridan College","Algonquin College","Fanshawe College",
+  "St. Lawrence College","Niagara College","Durham College","Georgian College",
+  "Mohawk College","Cambrian College","Sault College","Northern College",
+  "Loyalist College","St. Clair College","Canadore College","Confederation College",
+  /* USA */
+  "Harvard University","Massachusetts Institute of Technology","Stanford University",
+  "Yale University","Princeton University","Columbia University","University of Chicago",
+  "University of Pennsylvania","Duke University","Johns Hopkins University",
+  "Northwestern University","Dartmouth College","Brown University","Cornell University",
+  "Rice University","Vanderbilt University","Georgetown University","Tufts University",
+  "Boston University","Northeastern University","New York University","Emory University",
+  "University of California Los Angeles","University of California Berkeley",
+  "University of Michigan","University of Texas at Austin","University of Florida",
+  "Penn State University","Ohio State University","Arizona State University",
+  "Purdue University","Indiana University","University of Washington","University of Illinois",
+  "University of Wisconsin-Madison","University of Minnesota","Georgia Tech",
+  "University of North Carolina","University of Virginia","Wake Forest University",
+  /* UK */
+  "University of Oxford","University of Cambridge","Imperial College London",
+  "University College London","London School of Economics","University of Edinburgh",
+  "University of Manchester","University of Birmingham","University of Bristol",
+  "University of Warwick","King's College London","University of Leeds",
+  "University of Glasgow","University of Sheffield","University of Nottingham",
+  "University of Southampton","Durham University","University of Exeter","University of Bath",
+  "Newcastle University","Loughborough University","University of Liverpool",
+  "Queen Mary University of London","University of Reading","University of Surrey",
+  "Cardiff University","University of Aberdeen","Heriot-Watt University",
+  "University of Strathclyde","Open University","Brunel University London",
+  "City University of London","Coventry University","De Montfort University",
+  /* Germany */
+  "Technical University of Munich","Ludwig Maximilian University of Munich",
+  "Heidelberg University","Humboldt University of Berlin","Free University of Berlin",
+  "Technical University of Berlin","RWTH Aachen University","University of Hamburg",
+  "University of Cologne","University of Freiburg","University of Stuttgart",
+  "Goethe University Frankfurt","University of Tübingen","University of Münster",
+  "TU Dresden","University of Göttingen","University of Mainz","University of Bonn",
+  "University of Düsseldorf","University of Leipzig","University of Mannheim",
+  "Karlsruhe Institute of Technology","University of Erlangen-Nuremberg",
+  /* Ireland */
+  "Trinity College Dublin","University College Dublin","University College Cork",
+  "University of Galway","Dublin City University","Maynooth University",
+  "University of Limerick","Technological University Dublin","RCSI University of Medicine",
+  "Dublin Business School","Griffith College Dublin","Institute of Technology Sligo",
+  "Waterford Institute of Technology","Dundalk Institute of Technology",
+  /* Australia & New Zealand */
+  "University of Melbourne","Australian National University","University of Sydney",
+  "University of Queensland","Monash University","University of New South Wales",
+  "University of Adelaide","University of Western Australia","University of Technology Sydney",
+  "Macquarie University","RMIT University","Curtin University","Griffith University",
+  "Deakin University","La Trobe University","University of Auckland","Victoria University of Wellington",
+  /* Europe */
+  "ETH Zurich","EPFL (École Polytechnique Fédérale de Lausanne)",
+  "University of Amsterdam","Leiden University","Delft University of Technology",
+  "Maastricht University","Erasmus University Rotterdam","Uppsala University","Lund University",
+  "University of Copenhagen","KU Leuven","Ghent University","Université Paris-Saclay",
+  "Sciences Po","HEC Paris","INSEAD","IE Business School","Bocconi University",
+  /* Asia */
+  "National University of Singapore","Nanyang Technological University",
+  "University of Hong Kong","Chinese University of Hong Kong","University of Tokyo",
+  "Seoul National University","KAIST","Peking University","Tsinghua University",
+  /* Online / Other */
+  "University of the People","Western Governors University",
+  "Athabasca University","Open University (UK)",
+];
+
+/* ── Courses / Majors (what you studied) ── */
+var COURSES = [
+  /* Sciences */
+  "Computer Science","Software Engineering","Information Technology","Cybersecurity",
+  "Data Science","Artificial Intelligence","Information Systems","Computer Engineering",
+  "Electrical Engineering","Electronic Engineering","Mechanical Engineering",
+  "Civil Engineering","Chemical Engineering","Biomedical Engineering","Aerospace Engineering",
+  "Mathematics","Statistics","Physics","Chemistry","Biology","Biochemistry",
+  "Microbiology","Biotechnology","Environmental Science","Geography",
+  /* Health */
+  "Medicine (MBChB)","Nursing","Pharmacy","Medical Laboratory Science","Physiotherapy",
+  "Dentistry","Public Health","Nutrition and Dietetics","Clinical Medicine","Optometry",
+  "Medical Imaging","Radiography","Occupational Therapy",
+  /* Business & Economics */
+  "Business Administration","Business Management","Commerce","Economics",
+  "Accounting","Finance","Banking and Finance","Actuarial Science",
+  "Marketing","Human Resource Management","Supply Chain Management",
+  "Entrepreneurship","International Business","Hospitality Management","Tourism Management",
+  "Project Management","Strategic Management","Operations Management",
+  /* Law & Social Sciences */
+  "Law (LLB)","International Relations","Political Science","Sociology","Psychology",
+  "Social Work","Criminology","Public Administration","Development Studies",
+  "Peace and Conflict Studies","Gender Studies","Anthropology","Philosophy",
+  /* Arts & Humanities */
+  "English and Literature","Linguistics","Journalism","Mass Communication",
+  "Media Studies","Communication Studies","French","Kiswahili","Arabic","History",
+  "Fine Art","Music","Theatre and Film Studies","Religious Studies",
+  /* Agriculture & Environment */
+  "Agriculture","Agribusiness","Food Science and Technology","Horticulture",
+  "Animal Science","Agricultural Economics","Forestry","Natural Resource Management",
+  "Environmental Management","Water and Sanitation Engineering",
+  /* Education */
+  "Education (Arts)","Education (Science)","Early Childhood Education",
+  "Special Needs Education","Educational Administration","Library and Information Science",
+  /* Architecture & Built Environment */
+  "Architecture","Quantity Surveying","Urban and Regional Planning","Real Estate",
+  "Construction Management","Interior Design","Landscape Architecture"
+];
+
+/* ── Academic years ── */
+var YEARS = ["Current","Ongoing"];
+var yr = new Date().getFullYear();
+for (var y = yr + 2; y >= 1970; y--) {
+  YEARS.push(String(y));
+  YEARS.push(y + '/' + (y + 1));
+}
+
+/* ── Qualifications / Degrees ── */
+var QUALS = [
+  "KCPE Certificate","KCSE Certificate","O-Level Certificate","A-Level Certificate",
+  "Uganda Certificate of Education (UCE)","Uganda Advanced Certificate of Education (UACE)",
+  "West African Senior School Certificate (WASSCE)","National Certificate","National Diploma",
+  "Higher National Diploma (HND)","Certificate in Business Administration",
+  "Certificate in Information Technology","Certificate in Education",
+  "Diploma in Business Management","Diploma in Computer Science","Diploma in Nursing",
+  "Diploma in Education","Diploma in Community Development",
+  "Bachelor of Arts (BA)","Bachelor of Science (BSc)","Bachelor of Commerce (BCom)",
+  "Bachelor of Education (BEd)","Bachelor of Laws (LLB)","Bachelor of Engineering (BEng)",
+  "Bachelor of Medicine, Bachelor of Surgery (MBChB)","Bachelor of Nursing (BN)",
+  "Bachelor of Business Administration (BBA)","Bachelor of Information Technology (BIT)",
+  "Bachelor of Social Work","Bachelor of Public Health",
+  "Master of Arts (MA)","Master of Science (MSc)","Master of Business Administration (MBA)",
+  "Master of Laws (LLM)","Master of Education (MEd)","Master of Public Health (MPH)",
+  "Master of Engineering (MEng)","Master of Finance","Master of Social Work",
+  "Postgraduate Diploma","Postgraduate Certificate",
+  "Doctor of Philosophy (PhD)","Doctor of Medicine (MD)","Doctor of Education (EdD)",
+  "ACCA","CPA (K)","CFA","CIMA","CPS","CIPS","PMP","CISSP","AWS Certified","Google Certified"
+];
+
+/* ── Job titles ── */
+var TITLES = [
+  "Chief Executive Officer (CEO)","Chief Operating Officer (COO)","Chief Financial Officer (CFO)",
+  "Chief Technology Officer (CTO)","Managing Director","General Manager","Director",
+  "Human Resources Manager","HR Director","Recruitment Manager","Talent Acquisition Manager",
+  "Head of Department","Department Head","Dean","Principal","Vice Chancellor","Registrar",
+  "Programme Coordinator","Project Manager","Operations Manager","Finance Manager",
+  "Marketing Manager","Sales Manager","IT Manager","Data Manager",
+  "Professor","Associate Professor","Lecturer","Senior Lecturer","Research Fellow",
+  "Doctor","Engineer","Architect","Accountant","Auditor","Lawyer","Advocate"
+];
+
+/* ── Positions / roles being applied for ── */
+var POSITIONS = [
+  /* Internships */
+  "Software Engineering Intern","Data Science Intern","Marketing Intern","Finance Intern",
+  "Human Resources Intern","Business Development Intern","Research Intern","Graphic Design Intern",
+  /* Entry level */
+  "Software Engineer","Data Analyst","Business Analyst","Marketing Coordinator",
+  "Accountant","Finance Officer","HR Officer","Sales Representative","Customer Service Officer",
+  "Project Coordinator","Research Assistant","Teaching Assistant","Clinical Officer","Nurse",
+  /* Mid-level */
+  "Senior Software Engineer","Senior Data Analyst","Marketing Manager","Finance Manager",
+  "Operations Manager","HR Manager","Project Manager","Product Manager",
+  /* Academic */
+  "MBA Programme","MSc Computer Science","MSc Data Science","MSc Finance","LLM Programme",
+  "PhD Programme","Postgraduate Diploma","Bachelor of Science","Bachelor of Arts",
+  /* Scholarships / Funding */
+  "Undergraduate Scholarship","Postgraduate Scholarship","Research Grant",
+  "Commonwealth Scholarship","Chevening Scholarship","Fulbright Scholarship",
+  "African Development Bank Scholarship","Mastercard Foundation Scholarship"
+];
+
+/* ── Skills ── */
+var SKILLS = [
+  /* Technical */
+  "Python","JavaScript","Java","C++","R","SQL","MATLAB","Excel","Power BI","Tableau",
+  "Machine Learning","Data Analysis","Data Science","Artificial Intelligence","Deep Learning",
+  "Web Development","Mobile App Development","Cloud Computing (AWS)","Cloud Computing (Azure)",
+  "Cybersecurity","Network Administration","Database Management","UI/UX Design","AutoCAD",
+  /* Business */
+  "Financial Modelling","Accounting","Budgeting","Project Management","Agile","Scrum",
+  "Business Development","Sales","Digital Marketing","SEO","Social Media Marketing",
+  "Content Creation","Graphic Design","Adobe Photoshop","Adobe Illustrator",
+  /* Soft skills */
+  "Leadership","Communication","Teamwork","Problem Solving","Critical Thinking",
+  "Time Management","Adaptability","Creativity","Attention to Detail","Research",
+  "Report Writing","Public Speaking","Negotiation","Conflict Resolution","Mentorship",
+  /* Languages */
+  "English (fluent)","Swahili (fluent)","French","Arabic","Mandarin"
+];
+
+/* ── Organisations ── */
+var ORGS = [
+  /* Kenya */
+  "Safaricom PLC","Kenya Commercial Bank (KCB)","Equity Bank","Co-operative Bank","Stanbic Bank",
+  "Kenya Power","Kenya Ports Authority","Kenya Revenue Authority (KRA)","Kenya National Highways Authority",
+  "Kenya Medical Research Institute (KEMRI)","National Hospital Insurance Fund (NHIF)",
+  "National Social Security Fund (NSSF)","Kenya Broadcasting Corporation (KBC)",
+  "Nation Media Group","Standard Group","Jubilee Insurance","UAP Old Mutual","ICEA Lion",
+  "Microsoft Kenya","IBM Kenya","Google Kenya","Oracle","PwC Kenya","Deloitte Kenya","KPMG Kenya","EY Kenya",
+  "Unilever Kenya","Nestlé Kenya","Brookside Dairy","Kenya Breweries Limited (EABL)",
+  /* Regional */
+  "African Development Bank","African Union","East African Community","Common Market for Eastern and Southern Africa (COMESA)",
+  "United Nations (UNEP — Nairobi)","UNDP","UNICEF","WHO Africa","World Bank Kenya","IMF",
+  "Maersk","DHL","Ethiopian Airlines","Kenya Airways",
+  /* Global */
+  "Google","Microsoft","Amazon","Meta","Apple","IBM","Accenture","McKinsey & Company",
+  "Deloitte","PwC","KPMG","EY","Boston Consulting Group (BCG)","World Bank","United Nations"
+];
+
+/* ── Country → cities & states ── */
+var COUNTRY_DATA = {
+
+  /* ══════════════════════════════════════════
+     KENYA  —  all 47 counties + towns
+  ══════════════════════════════════════════ */
+  "Kenya": {
+    states: ["Nairobi County","Mombasa County","Kisumu County","Nakuru County",
+      "Uasin Gishu County","Kiambu County","Machakos County","Kajiado County",
+      "Meru County","Nyeri County","Kirinyaga County","Murang'a County",
+      "Nyandarua County","Laikipia County","Samburu County","Trans-Nzoia County",
+      "West Pokot County","Siaya County","Homa Bay County","Migori County",
+      "Kisii County","Nyamira County","Turkana County","Baringo County",
+      "Elgeyo-Marakwet County","Nandi County","Kericho County","Bomet County",
+      "Kakamega County","Vihiga County","Bungoma County","Busia County",
+      "Kilifi County","Kwale County","Taita Taveta County","Tana River County",
+      "Lamu County","Garissa County","Wajir County","Mandera County",
+      "Isiolo County","Marsabit County","Tharaka-Nithi County","Embu County",
+      "Makueni County","Kitui County"],
+    allCities: ["Nairobi","Mombasa","Kisumu","Nakuru","Eldoret","Thika","Malindi",
+      "Kitale","Garissa","Nyeri","Meru","Machakos","Kericho","Kakamega","Embu","Lamu","Kilifi",
+      "Kisii","Migori","Bungoma","Busia","Homa Bay","Siaya","Voi","Wajir","Mandera","Lodwar"],
+    citiesByState: {
+      "Nairobi County":       ["Nairobi CBD","Westlands","Kasarani","Embakasi","Langata","Karen","Kileleshwa","Kilimani","South B","South C","Eastleigh","Ngong Road","Ruaraka","Roysambu","Dagoretti","Makadara","Mathare","Pumwani"],
+      "Mombasa County":       ["Mombasa","Nyali","Bamburi","Likoni","Changamwe","Kisauni","Mvita","Jomvu","Shanzu"],
+      "Kisumu County":        ["Kisumu","Ahero","Maseno","Muhoroni","Kombewa","Winam","Nyando","Chemelil"],
+      "Nakuru County":        ["Nakuru","Naivasha","Gilgil","Molo","Subukia","Rongai","Bahati","Njoro","Ol Kalou"],
+      "Uasin Gishu County":   ["Eldoret","Turbo","Moiben","Kapsabet Road","Ainabkoi","Kesses","Soy","Langas","Pioneer"],
+      "Kiambu County":        ["Thika","Kiambu","Ruiru","Limuru","Kikuyu","Githunguri","Gatundu","Karuri","Tigoni","Ruaka","Juja","Kamiti","Githurai"],
+      "Machakos County":      ["Machakos","Athi River","Kangundo","Kathiani","Mavoko","Matungulu","Yatta"],
+      "Kajiado County":       ["Ngong","Kajiado","Kitengela","Ongata Rongai","Kiserian","Loitoktok","Namanga"],
+      "Meru County":          ["Meru","Nkubu","Maua","Timau","Mikinduri","Githongo","Isiolo"],
+      "Nyeri County":         ["Nyeri","Karatina","Othaya","Mukurwe-ini","Tetu","Kieni"],
+      "Kirinyaga County":     ["Kerugoya","Kutus","Sagana","Wanguru","Mwea"],
+      "Murang'a County":      ["Murang'a","Thika","Kangema","Kigumo","Maragua","Kandara","Gatanga"],
+      "Nyandarua County":     ["Ol Kalou","Engineer","Nyahururu","Ndaragwa","Kinangop"],
+      "Laikipia County":      ["Nanyuki","Nyahururu","Rumuruti","Doldol","Kinamba"],
+      "Samburu County":       ["Maralal","Archer's Post","Wamba","Baragoi"],
+      "Trans-Nzoia County":   ["Kitale","Kiminini","Saboti","Endebess","Kwanza"],
+      "West Pokot County":    ["Kapenguria","Lodwar Road","Sigor","Alale","Kacheliba"],
+      "Siaya County":         ["Siaya","Bondo","Ugunja","Yala","Ukwala","Ambira"],
+      "Homa Bay County":      ["Homa Bay","Kendu Bay","Oyugis","Ndhiwa","Mbita","Rongo","Suba"],
+      "Migori County":        ["Migori","Awendo","Uriri","Isebania","Kehancha","Rongo","Suna"],
+      "Kisii County":         ["Kisii","Ogembo","Suneka","Nyamache","Masimba"],
+      "Nyamira County":       ["Nyamira","Keroka","Manga","Ekerenyo","Nyansiongo"],
+      "Turkana County":       ["Lodwar","Kakuma","Lokichogio","Kalokol","Lokichar"],
+      "Baringo County":       ["Kabarnet","Eldama Ravine","Marigat","Mogotio","Timboroa"],
+      "Elgeyo-Marakwet County":["Iten","Eldoret West","Kapsowar","Tambach","Chepkorio"],
+      "Nandi County":         ["Kapsabet","Nandi Hills","Mosoriot","Kobujoi","Kabiyet"],
+      "Kericho County":       ["Kericho","Litein","Londiani","Kipkelion","Chepseon"],
+      "Bomet County":         ["Bomet","Sotik","Longisa","Chepalungu","Konoin"],
+      "Kakamega County":      ["Kakamega","Mumias","Butere","Khayega","Lugari","Navakholo"],
+      "Vihiga County":        ["Mbale","Vihiga","Hamisi","Luanda","Emuhaya"],
+      "Bungoma County":       ["Bungoma","Webuye","Kimilili","Chwele","Malakisi","Sirisia"],
+      "Busia County":         ["Busia","Malaba","Port Victoria","Nambale","Teso North"],
+      "Kilifi County":        ["Kilifi","Malindi","Mtwapa","Mariakani","Kaloleni","Rabai"],
+      "Kwale County":         ["Kwale","Ukunda","Diani","Shimba Hills","Msambweni","Lungalunga"],
+      "Taita Taveta County":  ["Voi","Wundanyi","Mwatate","Taveta","Moi's Bridge"],
+      "Tana River County":    ["Hola","Garsen","Bura","Madogo"],
+      "Lamu County":          ["Lamu","Mpeketoni","Witu","Hindi","Faza"],
+      "Garissa County":       ["Garissa","Dadaab","Modogashe","Hulugho","Ijara"],
+      "Wajir County":         ["Wajir","Habaswein","Buna","Tarbaj","Eldas"],
+      "Mandera County":       ["Mandera","Elwak","Takaba","Rhamu","Banissa"],
+      "Isiolo County":        ["Isiolo","Merti","Garbatulla","Kinna"],
+      "Marsabit County":      ["Marsabit","Moyale","Laisamis","Loiyangalani","Sololo"],
+      "Tharaka-Nithi County": ["Chuka","Marimba","Chogoria","Magumoni","Gatunga"],
+      "Embu County":          ["Embu","Runyenjes","Manyatta","Siakago","Nembure"],
+      "Makueni County":       ["Wote","Makindu","Sultan Hamud","Mtito Andei","Kibwezi"],
+      "Kitui County":         ["Kitui","Mwingi","Mutomo","Ikutha","Zombe"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     EAST AFRICA
+  ══════════════════════════════════════════ */
+  "Uganda": {
+    states: ["Central Region","Eastern Region","Northern Region","Western Region",
+      "Kampala","Wakiso","Mukono","Jinja","Gulu","Mbarara","Mbale","Lira"],
+    allCities: ["Kampala","Entebbe","Jinja","Gulu","Lira","Mbarara","Mbale","Masaka","Kasese","Fort Portal","Soroti","Arua"],
+    citiesByState: {
+      "Central Region":  ["Kampala","Entebbe","Mukono","Masaka","Mityana","Mpigi"],
+      "Kampala":         ["Kampala CBD","Nakawa","Kawempe","Makindye","Rubaga","Ntinda","Kololo","Mengo"],
+      "Wakiso":          ["Entebbe","Nansana","Kira","Bweyogerere","Kasangati","Gayaza"],
+      "Eastern Region":  ["Jinja","Mbale","Tororo","Soroti","Iganga","Busia"],
+      "Northern Region": ["Gulu","Lira","Arua","Kitgum","Pader","Oyam"],
+      "Western Region":  ["Mbarara","Fort Portal","Kasese","Masindi","Hoima","Kabale"]
+    }
+  },
+  "Tanzania": {
+    states: ["Dar es Salaam","Dodoma","Mwanza","Arusha","Mbeya","Pwani","Morogoro",
+      "Tanga","Kilimanjaro","Zanzibar North","Zanzibar South","Zanzibar West",
+      "Rukwa","Kagera","Kigoma","Shinyanga","Singida","Tabora","Ruvuma","Lindi","Mtwara"],
+    allCities: ["Dar es Salaam","Dodoma","Mwanza","Arusha","Mbeya","Morogoro","Tanga","Kahama","Tabora","Zanzibar"],
+    citiesByState: {
+      "Dar es Salaam": ["Dar es Salaam","Kinondoni","Ilala","Temeke","Kigamboni","Ubungo","Tegeta","Mbagala"],
+      "Arusha":        ["Arusha","Moshi","Karatu","Monduli","Longido"],
+      "Kilimanjaro":   ["Moshi","Hai","Siha","Rombo","Mwanga","Same"],
+      "Mwanza":        ["Mwanza","Musoma","Shinyanga","Geita","Bukoba"],
+      "Zanzibar North":["Zanzibar City","Nungwi","Mkokotoni","Matemwe"],
+      "Zanzibar West": ["Zanzibar City","Stone Town","Bububu","Kinuni"],
+      "Dodoma":        ["Dodoma","Kondoa","Mpwapwa","Bahi"],
+      "Morogoro":      ["Morogoro","Kilosa","Ifakara","Mahenge"]
+    }
+  },
+  "Rwanda": {
+    states: ["Kigali","Northern Province","Southern Province","Eastern Province","Western Province"],
+    allCities: ["Kigali","Butare","Gisenyi","Ruhengeri","Byumba","Cyangugu","Gitarama","Kibungo"],
+    citiesByState: {
+      "Kigali":           ["Kigali","Gasabo","Kicukiro","Nyarugenge","Remera","Kimironko"],
+      "Northern Province":["Musanze (Ruhengeri)","Byumba","Gicumbi","Burera","Rulindo"],
+      "Southern Province":["Huye (Butare)","Gitarama","Muhanga","Kamonyi","Nyamagabe"],
+      "Eastern Province": ["Kibungo","Rwamagana","Kayonza","Ngoma","Kirehe","Bugesera"],
+      "Western Province": ["Gisenyi","Kibuye","Cyangugu","Rubavu","Nyabihu","Rusizi"]
+    }
+  },
+  "Ethiopia": {
+    states: ["Addis Ababa","Oromia","Amhara","Tigray","SNNPR","Somali","Afar","Benishangul-Gumuz","Gambela","Harari","Dire Dawa"],
+    allCities: ["Addis Ababa","Dire Dawa","Mekelle","Gondar","Hawassa","Bahir Dar","Adama","Jimma","Dessie","Jijiga"],
+    citiesByState: {
+      "Addis Ababa": ["Addis Ababa","Bole","Kirkos","Kolfe Keranio","Lideta","Yeka","Gulele","Akaky Kaliti","Nifas Silk-Lafto"],
+      "Oromia":      ["Adama","Jimma","Bishoftu","Shashamane","Ambo","Nekemte","Asella"],
+      "Amhara":      ["Bahir Dar","Gondar","Dessie","Debre Birhan","Debre Markos"],
+      "Tigray":      ["Mekelle","Axum","Adwa","Adigrat","Shire"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     WEST AFRICA
+  ══════════════════════════════════════════ */
+  "Nigeria": {
+    states: ["Lagos","Abuja (FCT)","Kano","Oyo","Rivers","Kaduna","Anambra","Enugu",
+      "Delta","Imo","Katsina","Borno","Plateau","Kwara","Niger","Osun","Ogun","Ondo","Ekiti","Edo"],
+    allCities: ["Lagos","Abuja","Kano","Ibadan","Kaduna","Port Harcourt","Benin City","Maiduguri","Zaria","Aba","Enugu","Onitsha","Owerri","Jos"],
+    citiesByState: {
+      "Lagos":       ["Lagos Island","Victoria Island","Lekki","Ikeja","Surulere","Yaba","Apapa","Ikorodu","Badagry","Mushin","Oshodi"],
+      "Abuja (FCT)": ["Abuja","Garki","Wuse","Maitama","Asokoro","Gwarinpa","Kubwa","Lugbe","Karu"],
+      "Kano":        ["Kano","Wudil","Gaya","Bichi","Rano","Karaye"],
+      "Oyo":         ["Ibadan","Oyo","Ogbomosho","Iseyin","Saki"],
+      "Rivers":      ["Port Harcourt","Obio-Akpor","Eleme","Okrika","Bonny"],
+      "Anambra":     ["Awka","Onitsha","Nnewi","Ekwulobia","Ogidi"],
+      "Enugu":       ["Enugu","Nsukka","Agbani","Oji River"],
+      "Imo":         ["Owerri","Orlu","Okigwe","Oguta"],
+      "Edo":         ["Benin City","Ekpoma","Auchi","Uromi","Igarra"]
+    }
+  },
+  "Ghana": {
+    states: ["Greater Accra","Ashanti","Northern","Western","Central","Eastern","Volta","Brong-Ahafo","Upper East","Upper West","Oti","Ahafo","Bono","Bono East","North East","Savannah","Western North"],
+    allCities: ["Accra","Kumasi","Tamale","Sekondi-Takoradi","Cape Coast","Sunyani","Koforidua","Wa","Bolgatanga","Ho"],
+    citiesByState: {
+      "Greater Accra": ["Accra","Tema","Madina","Achimota","Adenta","Ashaiman","Teshie","Nungua","Kasoa"],
+      "Ashanti":       ["Kumasi","Obuasi","Ejisu","Konongo","Mampong","Bekwai"],
+      "Northern":      ["Tamale","Yendi","Savelugu","Bimbilla"],
+      "Western":       ["Sekondi","Takoradi","Tarkwa","Axim","Prestea"],
+      "Central":       ["Cape Coast","Elmina","Winneba","Swedru","Assin Fosu"],
+      "Eastern":       ["Koforidua","Nkawkaw","Suhum","Akim Oda","Kibi"],
+      "Volta":         ["Ho","Hohoe","Kpando","Aflao","Denu"],
+      "Brong-Ahafo":   ["Sunyani","Techiman","Kintampo","Berekum","Wenchi"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     SOUTHERN AFRICA
+  ══════════════════════════════════════════ */
+  "South Africa": {
+    states: ["Gauteng","Western Cape","KwaZulu-Natal","Eastern Cape","Limpopo","Mpumalanga","North West","Free State","Northern Cape"],
+    allCities: ["Johannesburg","Cape Town","Durban","Pretoria","Port Elizabeth","Bloemfontein","Nelspruit","Polokwane","Kimberley","Rustenburg"],
+    citiesByState: {
+      "Gauteng":       ["Johannesburg","Pretoria","Sandton","Soweto","Midrand","Centurion","Randburg","Roodepoort","Kempton Park","Benoni","Boksburg"],
+      "Western Cape":  ["Cape Town","Stellenbosch","Paarl","George","Knysna","Hermanus","Somerset West","Bellville","Mitchells Plain"],
+      "KwaZulu-Natal": ["Durban","Pietermaritzburg","Richards Bay","Newcastle","Empangeni","Umhlanga","Pinetown"],
+      "Eastern Cape":  ["Port Elizabeth (Gqeberha)","East London","Mthatha","Queenstown","King William's Town"],
+      "Limpopo":       ["Polokwane","Tzaneen","Phalaborwa","Louis Trichardt","Mokopane"],
+      "Mpumalanga":    ["Nelspruit (Mbombela)","Witbank (eMalahleni)","Middelburg","Standerton"],
+      "Free State":    ["Bloemfontein","Welkom","Kimberley","Sasolburg","Phuthaditjhaba"],
+      "North West":    ["Rustenburg","Mahikeng","Klerksdorp","Potchefstroom","Brits"]
+    }
+  },
+  "Zimbabwe": {
+    states: ["Harare","Bulawayo","Manicaland","Mashonaland Central","Mashonaland East","Mashonaland West","Masvingo","Matabeleland North","Matabeleland South","Midlands"],
+    allCities: ["Harare","Bulawayo","Chitungwiza","Mutare","Gweru","Kwekwe","Kadoma","Masvingo","Hwange","Bindura"],
+    citiesByState: {
+      "Harare":    ["Harare CBD","Borrowdale","Avondale","Eastlea","Mbare","Chitungwiza","Norton","Ruwa"],
+      "Bulawayo":  ["Bulawayo CBD","Nkulumane","Magwegwe","Luveve","Pumula","Tshabalala"],
+      "Manicaland":["Mutare","Rusape","Chipinge","Chimanimani"],
+      "Masvingo":  ["Masvingo","Chiredzi","Gutu","Bikita"]
+    }
+  },
+  "Zambia": {
+    states: ["Lusaka","Copperbelt","Central","Eastern","Luapula","Muchinga","Northern","North-Western","Southern","Western"],
+    allCities: ["Lusaka","Ndola","Kitwe","Kabwe","Chingola","Mufulira","Livingstone","Chipata","Kasama"],
+    citiesByState: {
+      "Lusaka":     ["Lusaka CBD","Kalingalinga","Chelstone","Northmead","Woodlands","Kabulonga","Matero"],
+      "Copperbelt": ["Ndola","Kitwe","Chingola","Mufulira","Luanshya","Kalulushi","Chililabombwe"],
+      "Southern":   ["Livingstone","Choma","Mazabuka","Kalomo","Monze"],
+      "Eastern":    ["Chipata","Petauke","Katete","Lundazi"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     NORTH AFRICA
+  ══════════════════════════════════════════ */
+  "Egypt": {
+    states: ["Cairo","Alexandria","Giza","Aswan","Luxor","Dakahlia","Sharqia","Qalyubia","Kafr el-Sheikh","Gharbia","Menoufia","Beheira","Ismailia","Suez","Port Said"],
+    allCities: ["Cairo","Alexandria","Giza","Luxor","Aswan","Sharm el-Sheikh","Hurghada","Port Said","Suez","Ismailia"],
+    citiesByState: {
+      "Cairo":     ["Cairo CBD","Heliopolis","Nasr City","Maadi","Zamalek","Dokki","Mohandessin","New Cairo","6th of October"],
+      "Alexandria":["Alexandria","Smouha","Montazah","Sidi Gaber","Moharram Bek"],
+      "Giza":      ["Giza","6th of October City","Sheikh Zayed","Dokki","Agouza"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     UNITED KINGDOM
+  ══════════════════════════════════════════ */
+  "United Kingdom": {
+    states: ["England","Scotland","Wales","Northern Ireland"],
+    allCities: ["London","Birmingham","Manchester","Leeds","Glasgow","Liverpool","Bristol","Sheffield","Edinburgh","Cardiff","Leicester","Coventry","Bradford","Nottingham","Kingston upon Hull"],
+    citiesByState: {
+      "England":          ["London","Birmingham","Manchester","Leeds","Liverpool","Bristol","Sheffield","Nottingham","Leicester","Coventry","Bradford","Kingston upon Hull","Southampton","Portsmouth","Oxford","Cambridge","Exeter","Norwich","Canterbury","Brighton","Bath","Milton Keynes","Wolverhampton","Derby","Stoke-on-Trent","Plymouth","Sunderland","Newcastle upon Tyne","Middlesbrough"],
+      "Scotland":         ["Glasgow","Edinburgh","Aberdeen","Dundee","Inverness","Stirling","Perth","Livingston","Kilmarnock"],
+      "Wales":            ["Cardiff","Swansea","Newport","Bangor","Wrexham","Barry"],
+      "Northern Ireland": ["Belfast","Derry","Lisburn","Newtownabbey","Bangor","Craigavon"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     CANADA
+  ══════════════════════════════════════════ */
+  "Canada": {
+    states: ["Alberta","British Columbia","Manitoba","New Brunswick","Newfoundland and Labrador",
+      "Northwest Territories","Nova Scotia","Nunavut","Ontario","Prince Edward Island",
+      "Quebec","Saskatchewan","Yukon"],
+    allCities: ["Toronto","Montreal","Vancouver","Calgary","Edmonton","Ottawa","Winnipeg","Quebec City","Hamilton","Brampton","Surrey","Kitchener","London","Halifax"],
+    citiesByState: {
+      "Ontario":            ["Toronto","Ottawa","Mississauga","Brampton","Hamilton","London","Markham","Vaughan","Kitchener","Windsor","Richmond Hill","Oakville","Burlington","Oshawa","Barrie"],
+      "British Columbia":   ["Vancouver","Surrey","Burnaby","Richmond","Kelowna","Abbotsford","Coquitlam","Langley","Nanaimo","Victoria"],
+      "Alberta":            ["Calgary","Edmonton","Red Deer","Lethbridge","Medicine Hat","Grande Prairie","Airdrie","Fort McMurray","Spruce Grove"],
+      "Quebec":             ["Montreal","Quebec City","Laval","Gatineau","Longueuil","Sherbrooke","Saguenay","Trois-Rivières"],
+      "Manitoba":           ["Winnipeg","Brandon","Steinbach","Portage la Prairie"],
+      "Saskatchewan":       ["Saskatoon","Regina","Prince Albert","Moose Jaw","Swift Current"],
+      "Nova Scotia":        ["Halifax","Dartmouth","Sydney","Truro","New Glasgow"],
+      "New Brunswick":      ["Moncton","Saint John","Fredericton","Dieppe","Miramichi"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     UNITED STATES
+  ══════════════════════════════════════════ */
+  "United States": {
+    states: ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
+      "Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
+      "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan",
+      "Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada",
+      "New Hampshire","New Jersey","New Mexico","New York","North Carolina",
+      "North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island",
+      "South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont",
+      "Virginia","Washington","West Virginia","Wisconsin","Wyoming","District of Columbia"],
+    allCities: ["New York","Los Angeles","Chicago","Houston","Phoenix","Philadelphia","San Antonio","San Diego","Dallas","San Jose","Austin","Jacksonville","Fort Worth","Columbus","Charlotte","Indianapolis","San Francisco","Seattle","Denver","Washington D.C.","Nashville","Oklahoma City","El Paso","Boston","Portland","Las Vegas","Memphis","Louisville","Baltimore","Milwaukee","Albuquerque","Tucson","Fresno","Sacramento","Mesa","Atlanta","Miami"],
+    citiesByState: {
+      "California":       ["Los Angeles","San Francisco","San Diego","San Jose","Sacramento","Fresno","Oakland","Long Beach","Bakersfield","Anaheim","Santa Ana","Riverside","Stockton","Irvine"],
+      "New York":         ["New York City","Buffalo","Rochester","Yonkers","Syracuse","Albany","White Plains","Brooklyn","Manhattan","Queens","Bronx","Staten Island"],
+      "Texas":            ["Houston","San Antonio","Dallas","Austin","Fort Worth","El Paso","Arlington","Corpus Christi","Plano","Lubbock","Irving","Garland"],
+      "Florida":          ["Miami","Orlando","Tampa","Jacksonville","St. Petersburg","Tallahassee","Fort Lauderdale","Cape Coral","Pembroke Pines","Hollywood"],
+      "Illinois":         ["Chicago","Aurora","Naperville","Joliet","Rockford","Springfield","Peoria"],
+      "Georgia":          ["Atlanta","Augusta","Columbus","Macon","Savannah","Athens","Sandy Springs"],
+      "Washington":       ["Seattle","Spokane","Tacoma","Bellevue","Kirkland","Redmond","Renton"],
+      "Massachusetts":    ["Boston","Worcester","Springfield","Cambridge","Lowell","Brockton","Quincy"],
+      "Pennsylvania":     ["Philadelphia","Pittsburgh","Allentown","Erie","Reading","Scranton","Bethlehem"],
+      "Ohio":             ["Columbus","Cleveland","Cincinnati","Toledo","Akron","Dayton"],
+      "Michigan":         ["Detroit","Grand Rapids","Warren","Sterling Heights","Ann Arbor","Lansing"],
+      "Arizona":          ["Phoenix","Tucson","Mesa","Chandler","Scottsdale","Gilbert","Tempe","Peoria"],
+      "Colorado":         ["Denver","Colorado Springs","Aurora","Fort Collins","Lakewood","Thornton"],
+      "Virginia":         ["Virginia Beach","Norfolk","Chesapeake","Richmond","Newport News","Alexandria"],
+      "District of Columbia": ["Washington D.C.","Georgetown","Capitol Hill","Adams Morgan","Dupont Circle"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     AUSTRALIA
+  ══════════════════════════════════════════ */
+  "Australia": {
+    states: ["New South Wales","Victoria","Queensland","Western Australia","South Australia","Tasmania","Australian Capital Territory","Northern Territory"],
+    allCities: ["Sydney","Melbourne","Brisbane","Perth","Adelaide","Canberra","Hobart","Darwin","Gold Coast","Newcastle","Wollongong"],
+    citiesByState: {
+      "New South Wales":          ["Sydney","Newcastle","Wollongong","Central Coast","Maitland","Albury","Wagga Wagga","Coffs Harbour"],
+      "Victoria":                 ["Melbourne","Geelong","Ballarat","Bendigo","Shepparton","Mildura","Warrnambool"],
+      "Queensland":               ["Brisbane","Gold Coast","Sunshine Coast","Cairns","Townsville","Toowoomba","Mackay","Rockhampton"],
+      "Western Australia":        ["Perth","Fremantle","Mandurah","Bunbury","Geraldton","Kalgoorlie","Albany"],
+      "South Australia":          ["Adelaide","Mount Gambier","Whyalla","Victor Harbor","Port Augusta"],
+      "Australian Capital Territory": ["Canberra","Belconnen","Tuggeranong","Woden","Gungahlin"],
+      "Tasmania":                 ["Hobart","Launceston","Devonport","Burnie"],
+      "Northern Territory":       ["Darwin","Alice Springs","Katherine","Palmerston"]
+    }
+  },
+
+  /* ══════════════════════════════════════════
+     INDIA
+  ══════════════════════════════════════════ */
+  "India": {
+    states: ["Maharashtra","Delhi","Karnataka","Telangana","Tamil Nadu","West Bengal",
+      "Gujarat","Rajasthan","Uttar Pradesh","Madhya Pradesh","Punjab","Haryana",
+      "Bihar","Odisha","Assam","Jharkhand","Kerala","Chhattisgarh","Uttarakhand","Goa"],
+    allCities: ["Mumbai","Delhi","Bangalore","Hyderabad","Chennai","Kolkata","Pune","Ahmedabad","Jaipur","Surat","Lucknow","Kanpur","Nagpur","Indore","Thane","Bhopal","Visakhapatnam","Patna","Vadodara","Ludhiana"],
+    citiesByState: {
+      "Maharashtra":  ["Mumbai","Pune","Nagpur","Thane","Nashik","Aurangabad","Solapur","Kolhapur"],
+      "Delhi":        ["New Delhi","Old Delhi","Dwarka","Rohini","Connaught Place","Karol Bagh","Noida","Gurugram"],
+      "Karnataka":    ["Bangalore","Mysore","Mangalore","Hubli","Dharwad","Belgaum","Shimoga"],
+      "Tamil Nadu":   ["Chennai","Coimbatore","Madurai","Tiruchirappalli","Salem","Tirunelveli"],
+      "West Bengal":  ["Kolkata","Howrah","Durgapur","Asansol","Siliguri","Bardhaman"],
+      "Gujarat":      ["Ahmedabad","Surat","Vadodara","Rajkot","Bhavnagar","Jamnagar"],
+      "Rajasthan":    ["Jaipur","Jodhpur","Udaipur","Kota","Ajmer","Bikaner"],
+      "Uttar Pradesh":["Lucknow","Kanpur","Agra","Varanasi","Allahabad","Meerut","Ghaziabad"],
+      "Punjab":       ["Ludhiana","Amritsar","Jalandhar","Patiala","Bathinda","Mohali"],
+      "Kerala":       ["Thiruvananthapuram","Kochi","Kozhikode","Thrissur","Kollam","Palakkad"]
+    }
+  }
+
+};
+
+/* ── Populate a datalist from an array ── */
+function _fillList(id, arr) {
+  var dl = document.getElementById(id);
+  if (!dl) return;
+  dl.innerHTML = '';
+  arr.forEach(function (v) {
+    var o = document.createElement('option');
+    o.value = v;
+    dl.appendChild(o);
+  });
+}
+
+/* Fill all static datalists on load */
+(function () {
+  _fillList('schools-list',   SCHOOLS);
+  _fillList('years-list',     YEARS);
+  _fillList('quals-list',     QUALS.concat(COURSES)); /* degrees + specific course names */
+  _fillList('titles-list',    TITLES);
+  _fillList('positions-list', POSITIONS);
+  _fillList('skills-list',    SKILLS);
+  _fillList('orgs-list',      ORGS);
+})();
+
+/* ── LinkedIn auto-fill from name ── */
+(function () {
+  var nameFld     = document.getElementById('f-full-name');
+  var linkedinFld = document.getElementById('f-linkedin');
+  if (!nameFld || !linkedinFld) return;
+
+  /* Track whether the current value was auto-generated (not manually typed) */
+  var _autoGenerated = false;
+
+  function nameToSlug(name) {
+    return name.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')   /* strip non-alphanumeric */
+      .replace(/\s+/g, '-')          /* spaces → hyphens */
+      .replace(/-+/g, '-')           /* collapse double hyphens */
+      .replace(/^-|-$/g, '');        /* trim leading/trailing hyphens */
+  }
+
+  /* When user edits LinkedIn field manually, stop auto-filling */
+  linkedinFld.addEventListener('input', function () {
+    _autoGenerated = false;
+  });
+
+  /* When name changes, auto-fill LinkedIn only if field is blank or was auto-generated */
+  nameFld.addEventListener('input', function () {
+    var slug = nameToSlug(this.value);
+    if (!linkedinFld.value || _autoGenerated) {
+      if (slug) {
+        linkedinFld.value = 'https://linkedin.com/in/' + slug;
+        _autoGenerated = true;
+      } else {
+        linkedinFld.value = '';
+        _autoGenerated = false;
+      }
+    }
+  });
+})();
+
+/* ── Cascading: Country → State/County → City/Town ── */
+var _currentCountryData = null;
+
+document.getElementById('f-country').addEventListener('change', function () {
+  _currentCountryData = COUNTRY_DATA[this.value] || null;
+  var states   = _currentCountryData ? _currentCountryData.states   : [];
+  var allCities = _currentCountryData ? _currentCountryData.allCities : [];
+  _fillList('state-suggestions', states);
+  _fillList('city-suggestions',  allCities);
+  /* clear dependent fields */
+  document.getElementById('f-state').value = '';
+  document.getElementById('f-city').value  = '';
+});
+
+document.getElementById('f-state').addEventListener('input', function () {
+  if (!_currentCountryData) return;
+  var chosen  = this.value.trim();
+  var byState = _currentCountryData.citiesByState || {};
+  /* exact match first, then partial */
+  var cities = byState[chosen];
+  if (!cities) {
+    /* try case-insensitive partial match */
+    var key = Object.keys(byState).find(function (k) {
+      return k.toLowerCase().startsWith(chosen.toLowerCase());
+    });
+    cities = key ? byState[key] : _currentCountryData.allCities;
+  }
+  _fillList('city-suggestions', cities || _currentCountryData.allCities || []);
+  document.getElementById('f-city').value = '';
+});
+
+/* ── Education entries ── */
+var _eduCount = 0;
+var EDU_LEVELS = ["Primary School","Junior Secondary","Secondary / High School","Certificate","Diploma","Bachelor's Degree","Master's Degree","PhD / Doctorate","Professional Qualification","Other"];
+
+function addEduEntry() {
+  _eduCount++;
+  var idx = _eduCount;
+  var wrap = document.getElementById('edu-list');
+  var div = document.createElement('div');
+  div.className = 'edu-entry';
+  div.id = 'edu-' + idx;
+  div.innerHTML =
+    '<button type="button" class="edu-remove" onclick="removeEdu(' + idx + ')" title="Remove">✕</button>' +
+    '<div class="edu-row">' +
+      '<label class="field">Level' +
+        '<select name="edu_level_' + idx + '">' +
+          EDU_LEVELS.map(function(l){ return '<option>' + l + '</option>'; }).join('') +
+        '</select>' +
+      '</label>' +
+      '<label class="field">Year Completed / Expected' +
+        '<input type="text" name="edu_year_' + idx + '" list="years-list"' +
+               ' placeholder="e.g. 2021, Current" autocomplete="off" />' +
+      '</label>' +
+    '</div>' +
+    '<label class="field">School / Institution Name' +
+      '<input type="text" name="edu_school_' + idx + '" list="schools-list"' +
+             ' placeholder="e.g. University of Nairobi" autocomplete="off" />' +
+    '</label>' +
+    '<label class="field">Qualification / Course / Major' +
+      '<input type="text" name="edu_qual_' + idx + '" list="quals-list"' +
+             ' placeholder="e.g. BSc Computer Science, KCSE Certificate" autocomplete="off" />' +
+    '</label>';
+  wrap.appendChild(div);
+}
+
+function removeEdu(idx) {
+  var el = document.getElementById('edu-' + idx);
+  if (el) el.remove();
+}
+
+/* Auto-add one entry on load */
+document.addEventListener('DOMContentLoaded', function () { addEduEntry(); });
+
+/* ── Form submit ── */
+function submitDocForm(e) {
+  e.preventDefault();
+  var btn = document.getElementById('jd-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  var fd = new FormData(e.target);
+  var data = {};
+  fd.forEach(function (v, k) { data[k] = v; });
+
+  /* Collect dynamic education rows */
+  var edu = [];
+  document.querySelectorAll('.edu-entry').forEach(function (row) {
+    var id = row.id.replace('edu-', '');
+    edu.push({
+      level:  (data['edu_level_'  + id] || '').trim(),
+      year:   (data['edu_year_'   + id] || '').trim(),
+      school: (data['edu_school_' + id] || '').trim(),
+      qual:   (data['edu_qual_'   + id] || '').trim(),
+    });
+  });
+  data.education = edu;
+
+  fetch('{{ url_for("main.job_docs_start") }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  .then(function (r) {
+    return r.json().then(function (json) { return { status: r.status, body: json }; });
+  })
+  .then(function (res) {
+    btn.disabled = false;
+    btn.textContent = '✍️ Generate Document';
+    if (res.status === 429 && res.body.limit_reached) {
+      /* Monthly limit hit — close the form modal, show the limit modal */
+      closeModal();
+      /* Update usage cache so cards show the new count */
+      USAGE[_selectedDocType] = res.body.limit || LIMIT;
+      RESET_DATES[_selectedDocType] = res.body.reset_at || 'soon';
+      /* Visually mark the card as depleted */
+      var card = document.querySelector('[data-type="' + _selectedDocType + '"]');
+      if (card) {
+        card.classList.add('jd-type-depleted');
+        var badge = card.querySelector('.jd-usage-badge');
+        if (!badge) { badge = document.createElement('span'); card.appendChild(badge); }
+        badge.className = 'jd-usage-badge full';
+        badge.textContent = '4/4 · resets ' + (res.body.reset_at || 'soon');
+      }
+      showLimitModal(_selectedDocType, _selectedDocLabel);
+      return;
+    }
+    if (res.body.error) { throw new Error(res.body.error); }
+    window.location.href = res.body.redirect;
+  })
+  .catch(function (err) {
+    btn.disabled = false;
+    btn.textContent = '✍️ Generate Document';
+    showToast(err.message || 'Something went wrong. Please try again.');
+  });
+}
+
+function showToast(msg) {
+  document.getElementById('jd-toast-msg').textContent = msg;
+  var t = document.getElementById('jd-toast');
+  t.style.display = 'flex';
+  clearTimeout(window._jdToastTimer);
+  window._jdToastTimer = setTimeout(function () { t.style.display = 'none'; }, 7000);
+}
+</script>
+
+{% endblock %}

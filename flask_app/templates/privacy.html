@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — Smart Study Guides{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom:32px;">
+  <div>
+    <h1>🔒 Privacy Policy</h1>
+    <p style="margin:4px 0 0;color:var(--slate-500);font-size:14px;">Last updated: {{ last_updated }}</p>
+  </div>
+</div>
+
+<div class="card terms-card">
+
+  <p class="terms-intro">
+    Smart Study Guides is committed to protecting your privacy. This policy explains what data we collect, how we use it, and your rights.
+  </p>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">1. Information We Collect</h2>
+    <p>When you create an account or use our services, we collect:</p>
+    <ul class="terms-list">
+      <li>Name and email address (provided at signup or via Google sign-in)</li>
+      <li>Assignment content and preferences you submit</li>
+      <li>Payment records (processed securely by Stripe or PesaPal — we do not store card details)</li>
+      <li>Usage data such as assignments created, pages generated, and login timestamps</li>
+    </ul>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">2. How We Use Your Information</h2>
+    <ul class="terms-list">
+      <li>To generate, deliver, and store your assignments</li>
+      <li>To manage your subscription and billing</li>
+      <li>To send transactional emails (assignment delivery, receipts, verification)</li>
+      <li>To improve platform performance and detect abuse</li>
+    </ul>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">3. Data Storage & Security</h2>
+    <p>Your data is stored on secure, encrypted servers. Assignment files are stored in Supabase object storage with access-controlled signed URLs. We apply industry-standard security practices and do not sell your data to third parties.</p>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">4. Third-Party Services</h2>
+    <p>We use trusted third-party providers to operate our platform:</p>
+    <ul class="terms-list">
+      <li><strong>OpenAI</strong> — AI content generation</li>
+      <li><strong>Stripe / PesaPal</strong> — Payment processing</li>
+      <li><strong>Resend</strong> — Transactional email delivery</li>
+      <li><strong>Supabase</strong> — File storage</li>
+      <li><strong>Copyleaks</strong> — Plagiarism detection</li>
+    </ul>
+    <p>Each provider operates under its own privacy policy and is bound by applicable data protection regulations.</p>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">5. Cookies & Sessions</h2>
+    <p>We use session cookies solely to keep you logged in. We do not use tracking cookies or advertising cookies.</p>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">6. Your Rights</h2>
+    <ul class="terms-list">
+      <li>You may request a copy of your personal data at any time</li>
+      <li>You may request deletion of your account and associated data</li>
+      <li>You may withdraw consent to email communications at any time</li>
+    </ul>
+    <p>To exercise these rights, contact us at <a href="mailto:pro@smart-study-guides.com" style="color:var(--accent);">pro@smart-study-guides.com</a>.</p>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">7. Data Retention</h2>
+    <p>We retain your account data for as long as your account is active. Assignment files are retained for 90 days after generation. You may request earlier deletion at any time.</p>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">8. Changes to This Policy</h2>
+    <p>We may update this policy periodically. Significant changes will be communicated by email. Continued use of the platform after changes constitutes acceptance.</p>
+  </div>
+
+  <div class="terms-section">
+    <h2 class="terms-h2">9. Contact</h2>
+    <p>For any privacy-related questions, contact us at <a href="mailto:pro@smart-study-guides.com" style="color:var(--accent);">pro@smart-study-guides.com</a>.</p>
+  </div>
+
+</div>
+
+<style>
+.terms-card { padding: 36px 40px; }
+.terms-intro { font-size: 14px; color: var(--slate-600); line-height: 1.75; margin: 0 0 28px; }
+.terms-section { margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+.terms-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.terms-h2 { font-size: 16px; font-weight: 800; color: var(--navy-900); margin: 0 0 12px; letter-spacing: -.1px; }
+.terms-card p { font-size: 14px; color: var(--slate-600); line-height: 1.75; margin: 0 0 10px; }
+.terms-card p:last-child { margin-bottom: 0; }
+.terms-list { padding-left: 20px; margin: 8px 0 10px; display: flex; flex-direction: column; gap: 6px; }
+.terms-list li { font-size: 14px; color: var(--slate-600); line-height: 1.6; }
+@media(max-width:600px) { .terms-card { padding: 22px 18px; } }
+</style>
+
+{% endblock %}

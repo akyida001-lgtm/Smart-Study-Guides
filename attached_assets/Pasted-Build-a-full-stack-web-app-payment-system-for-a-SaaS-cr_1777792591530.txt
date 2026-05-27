@@ -1,0 +1,86 @@
+Build a full-stack web app payment system for a SaaS credits platform.
+
+STACK:
+- Frontend: React (or Next.js)
+- Backend: Node.js + Express
+- Database: PostgreSQL (or SQLite for simplicity)
+- Payments: Flutterwave API
+
+CORE GOAL:
+Users buy digital credits (virtual balance) using:
+- Visa / Mastercard
+- Apple Pay / Google Pay (via card processing)
+- Mobile Money (M-Pesa where available via Flutterwave)
+
+FLOW:
+1. User selects a credit package (example: $12 = 10,000 credits)
+2. User clicks "Buy Credits"
+3. System redirects to Flutterwave checkout
+4. Payment is processed by Flutterwave
+5. Flutterwave sends webhook to backend confirming payment
+6. Backend verifies payment is successful
+7. System credits user account automatically
+8. User sees updated credit balance in dashboard
+
+PAYMENT INTEGRATION REQUIREMENTS:
+- Use Flutterwave hosted checkout OR inline checkout
+- Implement secure webhook endpoint:
+  POST /webhook/flutterwave
+- Verify transaction using Flutterwave API before crediting user
+- Prevent duplicate crediting (idempotency check using transaction ID)
+
+DATABASE TABLES:
+Users:
+- id
+- email
+- password_hash
+- credits_balance
+
+Transactions:
+- id
+- user_id
+- flutterwave_transaction_id
+- amount
+- currency
+- status
+- created_at
+
+FEATURES:
+- Login/Register system
+- User dashboard showing credit balance
+- Buy credits page
+- Transaction history
+- Admin panel (view users, transactions)
+
+SECURITY:
+- Verify webhook signatures
+- Never credit user before payment confirmation
+- Store transaction logs
+
+IMPORTANT BUSINESS LOGIC:
+- Credits are virtual only (not real money)
+- Only increase credits after successful Flutterwave payment
+- Prices must be in USD (system converts automatically for users in other countries)
+
+UI:
+- Simple SaaS dashboard
+- Clean “Buy Credits” button
+- Show pricing clearly ($12 = 10,000 credits)
+
+DEPLOYMENT:
+- Ready for Replit deployment
+- Environment variables for Flutterwave keys
+
+ENV VARIABLES:
+- FLW_PUBLIC_KEY
+- FLW_SECRET_KEY
+- FLW_WEBHOOK_SECRET
+
+OUTPUT:
+Provide full working code with:
+- Frontend pages
+- Backend API
+- Flutterwave integration
+- Webhook handler
+- Database schema
+- Basic UI styling

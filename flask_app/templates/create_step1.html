@@ -1,0 +1,796 @@
+{% extends "base.html" %}
+{% block title %}Create Assignment — Smart Study Guides{% endblock %}
+{% block content %}
+
+<!-- Hire-a-writer modal (shown when pages > 5) -->
+<div id="hire-modal" class="hire-modal-overlay" style="display:none;" onclick="closeHireModal(event)">
+  <div class="hire-modal-box">
+    <button class="hire-modal-close" onclick="dismissHireModal()">✕</button>
+
+    <div class="hire-modal-icon">✍️</div>
+    <h2 class="hire-modal-title">This assignment needs a human writer</h2>
+    <p class="hire-modal-lead">
+      You've entered <strong id="hire-modal-pages">6</strong> pages — that's beyond our AI limit of 5 pages.
+    </p>
+
+    <div class="hire-modal-why">
+      <div class="hire-why-title">Why a qualified human writer is the better choice:</div>
+      <ul class="hire-why-list">
+        <li>
+          <span class="hire-why-icon">🧠</span>
+          <span><strong>Sustained depth</strong> — AI loses coherence and begins repeating itself past 5 pages. A human writer maintains argument depth and flow throughout.</span>
+        </li>
+        <li>
+          <span class="hire-why-icon">🎯</span>
+          <span><strong>Complex structure</strong> — longer papers need nuanced sub-arguments, transitions, and chapter-level logic that AI cannot reliably produce.</span>
+        </li>
+        <li>
+          <span class="hire-why-icon">📚</span>
+          <span><strong>Accurate research</strong> — human writers verify sources, read full texts, and integrate evidence meaningfully — not just by abstract.</span>
+        </li>
+        <li>
+          <span class="hire-why-icon">✅</span>
+          <span><strong>Higher grades</strong> — instructors spot AI-generated inconsistencies in long papers much more easily. A human-written paper is harder to detect and better argued.</span>
+        </li>
+        <li>
+          <span class="hire-why-icon">🔒</span>
+          <span><strong>Full confidentiality</strong> — your assignment details are never shared beyond your assigned writer.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="hire-modal-actions">
+      <a class="btn accent full hire-cta"
+         href="mailto:writers@smartstudyguides.com?subject=Human+Writer+Request+%E2%80%94+{{ current_user.display_name|urlencode }}&body=Hi%2C%0A%0AI+need+a+human+writer+for+my+assignment.%0A%0ADetails%3A%0ATopic%3A+%0APages%3A+__ID_PAGES__%0ADeadline%3A+%0A%0AThank+you."
+         id="hire-email-btn">
+        ✉️ Contact a Human Writer
+      </a>
+      <button class="btn ghost full" onclick="dismissHireModal()" style="margin-top:8px;">
+        ← Go back and stay within 5 pages
+      </button>
+    </div>
+
+    <p class="hire-modal-note">
+      Our writers typically respond within 1–2 hours. Pricing is discussed per assignment.
+    </p>
+  </div>
+</div>
+
+<div class="page-header">
+  <h1>📝 Create Assignment</h1>
+</div>
+
+{% if is_free_trial %}
+<div class="flash info" style="margin-bottom:16px;border-left:4px solid var(--accent);background:#e6faf8;color:#0a4047;">
+  <strong>🎁 Free trial — 1 assignment included</strong><br>
+  You get one complete assignment (up to {{ free_trial_max_pages }} pages) free of charge. Download it, then choose a plan to continue.
+</div>
+{% endif %}
+
+<div class="wizard-steps">
+  <div class="wstep active"><span class="wstep-num">1</span><span class="wstep-label">Details</span></div>
+  <div class="wstep-line"></div>
+  <div class="wstep"><span class="wstep-num">2</span><span class="wstep-label">Sources</span></div>
+  <div class="wstep-line"></div>
+  <div class="wstep"><span class="wstep-num">3</span><span class="wstep-label">Annotate</span></div>
+  <div class="wstep-line"></div>
+  <div class="wstep"><span class="wstep-num">4</span><span class="wstep-label">Preview</span></div>
+</div>
+
+<div class="card wizard-card">
+
+  <!-- Mode tabs -->
+  <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:22px;">
+    <button type="button" id="tab-standard" onclick="switchMode('standard')"
+      style="flex:1;padding:11px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:.15s;">
+      📚 Academic
+    </button>
+    <button type="button" id="tab-simple" onclick="switchMode('simple')"
+      style="flex:1;padding:11px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--surface-2);color:var(--slate-600);transition:.15s;">
+      ✏️ No Citations
+    </button>
+    <button type="button" id="tab-open" onclick="switchMode('open')"
+      style="flex:1;padding:11px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--surface-2);color:var(--slate-600);transition:.15s;">
+      🖼️ Image / Task
+    </button>
+  </div>
+
+  <div id="mode-desc-standard" style="font-size:13px;color:var(--slate-500);margin-bottom:16px;">Full essay or report — we research sources, write, cite, and format.</div>
+  <div id="mode-desc-simple"   style="font-size:13px;color:var(--slate-500);margin-bottom:16px;display:none;">Reflection, discussion post, or creative essay — we write it without sources or a reference list.</div>
+  <div id="mode-desc-open"     style="font-size:13px;color:var(--slate-500);margin-bottom:16px;display:none;">Question, scenario, or picture — upload your image and we answer it directly. No citations needed.</div>
+
+  <form method="post" class="wizard-form" id="step1-form" onsubmit="return validateForm()">
+    <input type="hidden" name="assignment_type" id="assignment_type_input" value="standard">
+    <input type="hidden" name="instruction_image_url" id="instruction_image_url_input" value="">
+
+    <!-- ── TOPIC / INSTRUCTIONS (shared) ── -->
+    <div class="wf-field">
+      <label class="wf-label">Topic / instructions <span class="wf-required">*</span></label>
+
+      <!-- Standard: extract-text upload -->
+      <div id="std-upload-zone" class="instr-upload-zone" onclick="document.getElementById('instr-file-input').click()" ondragover="instrDragOver(event)" ondragleave="instrDragLeave(event)" ondrop="instrDrop(event)">
+        <input type="file" id="instr-file-input" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden;" onchange="instrFileSelected(this.files[0])">
+        <div class="iuz-icon" id="instr-upload-icon">📎</div>
+        <div class="iuz-label" id="instr-upload-label">Upload instruction file <span class="iuz-types">PDF, Word, or image</span></div>
+        <div class="iuz-hint">Click or drag & drop — text will be extracted and added to the box below</div>
+        <div class="iuz-spinner" id="instr-spinner" style="display:none;"><div class="iuz-spin-ring"></div><span>Reading file…</span></div>
+        <div class="iuz-success" id="instr-success" style="display:none;"></div>
+        <div class="iuz-error" id="instr-error" style="display:none;"></div>
+      </div>
+
+      <!-- Open: image direct upload -->
+      <div id="open-upload-zone" style="display:none;border:2px dashed var(--accent);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;background:var(--surface-2);transition:.15s;" onclick="document.getElementById('open-img-input').click()" ondragover="openDragOver(event)" ondragleave="openDragLeave(event)" ondrop="openDrop(event)">
+        <input type="file" id="open-img-input" accept=".jpg,.jpeg,.png,.webp,.gif" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden;" onchange="openImgSelected(this.files[0])">
+        <div id="open-upload-icon" style="font-size:32px;margin-bottom:8px;">🖼️</div>
+        <div id="open-upload-label" style="font-size:14px;font-weight:700;color:var(--navy-900);">Upload your image <span style="font-size:12px;font-weight:400;color:var(--slate-500);">JPG, PNG, WEBP, GIF</span></div>
+        <div id="open-upload-hint" style="font-size:12px;color:var(--slate-500);margin-top:4px;">The image is sent directly to AI — it sees exactly what you see</div>
+        <div id="open-spinner" style="display:none;margin-top:10px;"><div class="iuz-spin-ring"></div><span style="font-size:13px;color:var(--slate-500);">Uploading…</span></div>
+        <div id="open-img-preview" style="display:none;margin-top:12px;"><img id="open-preview-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);" src="" alt="preview"><div id="open-img-name" style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600;"></div></div>
+        <div id="open-upload-error" style="display:none;color:#ef4444;font-size:13px;margin-top:8px;"></div>
+      </div>
+
+      <textarea class="wf-textarea" name="topic" id="topic-textarea" required rows="5"
+        placeholder="e.g. Critically discuss the impact of remote work on organizational culture…"></textarea>
+      <div id="topic-hint-standard" class="wf-hint">Be as specific as possible — include the question, key arguments, or instructions from your lecturer.</div>
+      <div id="topic-hint-open" class="wf-hint" style="display:none;">Add any extra instructions here (optional if you uploaded an image above).</div>
+    </div>
+
+    <!-- Course name (standard only) -->
+    <div class="wf-field" id="field-course" style="position:relative;">
+      <label class="wf-label" for="course-input">Course name <span class="wf-required">*</span></label>
+      <input class="wf-input" type="text" name="course_name" id="course-input" required
+             placeholder="Type to search courses…" autocomplete="off"
+             oninput="courseSearch(this.value)"
+             onkeydown="courseKeydown(event)"
+             onfocus="courseSearch(this.value)"
+             onblur="setTimeout(closeCourseDropdown,200)" />
+      <div class="course-dropdown" id="course-dropdown"></div>
+      <div class="wf-hint">Start typing any part of the course name or code — click a suggestion to fill it in.</div>
+    </div>
+
+    <!-- Pages + Sources -->
+    <div class="wf-row">
+      <div class="wf-field">
+        <label class="wf-label">Number of pages <span class="wf-required">*</span></label>
+        {% if is_free_trial %}
+        <input class="wf-input" type="number" name="pages" id="pages-input"
+               min="1" max="{{ free_trial_max_pages }}" value="1" required oninput="updateCost()" />
+        <div class="wf-hint">265 words per page · <strong>free trial max {{ free_trial_max_pages }} pages</strong></div>
+        {% else %}
+        <input class="wf-input" type="number" name="pages" id="pages-input"
+               min="1" max="5" value="3" required oninput="updateCost()" />
+        <div class="wf-hint">265 words per page · <strong>max 5 pages</strong></div>
+        {% endif %}
+      </div>
+      <div class="wf-field" id="field-sources">
+        <label class="wf-label">Number of sources <span class="wf-required">*</span></label>
+        <input class="wf-input" type="number" name="num_sources" id="num_sources_input" min="1" max="20" value="4" required />
+      </div>
+    </div>
+
+    <!-- Style + Level -->
+    <div class="wf-row">
+      <div class="wf-field" id="field-style">
+        <label class="wf-label">Citation style <span class="wf-required">*</span></label>
+        <select class="wf-select" name="style" id="style-select" required>
+          <option>APA</option>
+          <option>MLA</option>
+          <option>Harvard</option>
+          <option>Chicago</option>
+        </select>
+      </div>
+      <div class="wf-field">
+        <label class="wf-label">Education level <span class="wf-required">*</span></label>
+        <select class="wf-select" name="level" required>
+          <option>High School</option>
+          <option selected>Undergraduate</option>
+          <option>Masters</option>
+          <option>PhD</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Optional title-page details -->
+    <div class="wf-optional-section">
+      <button type="button" class="wf-optional-toggle" id="tp-toggle" onclick="toggleTitlePage()">
+        <span id="tp-arrow">▶</span> Title page details <span class="wf-optional-badge">optional</span>
+      </button>
+      <div class="wf-optional-body" id="tp-body" style="display:none;">
+        <div class="wf-optional-hint">These details appear on the cover page of your document. Leave any blank to omit.</div>
+
+        <div class="wf-row">
+          <div class="wf-field">
+            <label class="wf-label">Student name</label>
+            <input class="wf-input" type="text" name="student_name"
+                   placeholder="e.g. Jane Doe  (leave blank to use your account name)" />
+          </div>
+          <div class="wf-field" style="position:relative;">
+            <label class="wf-label" for="school-input">School / Institution</label>
+            <input class="wf-input" type="text" name="school_name" id="school-input"
+                   placeholder="Type to search schools…" autocomplete="off"
+                   oninput="schoolSearch(this.value)"
+                   onkeydown="schoolKeydown(event)"
+                   onfocus="schoolSearch(this.value)"
+                   onblur="setTimeout(closeSchoolDropdown,200)" />
+            <div class="course-dropdown" id="school-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="wf-row">
+          <div class="wf-field">
+            <label class="wf-label">Instructor / Lecturer name</label>
+            <input class="wf-input" type="text" name="instructor_name"
+                   placeholder="e.g. Dr. A. Kamau" />
+          </div>
+          <div class="wf-field">
+            <label class="wf-label">Due date</label>
+            <input class="wf-input" type="date" name="due_date" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-actions">
+      <a class="btn ghost" href="{{ url_for('main.dashboard') }}">Cancel</a>
+      <button class="btn accent" type="submit" id="submit-btn">Continue to sources →</button>
+    </div>
+  </form>
+</div>
+
+<script>
+/* ── School autocomplete ── */
+var SCHOOLS = [
+  /* Canada — Universities */
+  "University of Toronto","McGill University","University of British Columbia","University of Waterloo",
+  "McMaster University","Queen's University","Western University","University of Ottawa",
+  "Simon Fraser University","University of Calgary","University of Alberta","Dalhousie University",
+  "University of Manitoba","University of Saskatchewan","Carleton University",
+  "Toronto Metropolitan University","York University","University of Victoria",
+  "University of Windsor","Brock University","Lakehead University","Trent University",
+  "Ontario Tech University","Wilfrid Laurier University","University of Guelph",
+  "Memorial University of Newfoundland","OCAD University","University of Regina",
+  /* Canada — Colleges */
+  "Conestoga College","Humber College","George Brown College","Seneca College",
+  "Centennial College","Sheridan College","Algonquin College","Fanshawe College",
+  "St. Lawrence College","Niagara College","Durham College","Georgian College",
+  "Mohawk College","Cambrian College","Sault College","Northern College",
+  "Loyalist College","St. Clair College","Canadore College","Confederation College",
+  /* USA */
+  "Harvard University","Massachusetts Institute of Technology","Stanford University",
+  "Yale University","Princeton University","Columbia University","University of Chicago",
+  "University of Pennsylvania","Duke University","Johns Hopkins University",
+  "Northwestern University","Dartmouth College","Brown University","Cornell University",
+  "Rice University","Vanderbilt University","Georgetown University","Tufts University",
+  "Boston University","Northeastern University","New York University","Emory University",
+  "University of California Los Angeles","University of California Berkeley",
+  "University of Michigan","University of Texas at Austin","University of Florida",
+  "Penn State University","Ohio State University","Arizona State University",
+  "Purdue University","Indiana University","University of Washington","University of Illinois",
+  "University of Wisconsin-Madison","University of Minnesota","Georgia Tech",
+  "University of North Carolina","University of Virginia","Wake Forest University",
+  /* UK */
+  "University of Oxford","University of Cambridge","Imperial College London",
+  "University College London","London School of Economics","University of Edinburgh",
+  "University of Manchester","University of Birmingham","University of Bristol",
+  "University of Warwick","King's College London","University of Leeds",
+  "University of Glasgow","University of Sheffield","University of Nottingham",
+  "University of Southampton","Durham University","University of Exeter","University of Bath",
+  "Newcastle University","Loughborough University","University of Liverpool",
+  "Queen Mary University of London","University of Reading","University of Surrey",
+  "Cardiff University","University of Aberdeen","Heriot-Watt University",
+  "University of Strathclyde","Open University","Brunel University London",
+  "City University of London","Coventry University","De Montfort University",
+  /* Germany */
+  "Technical University of Munich","Ludwig Maximilian University of Munich",
+  "Heidelberg University","Humboldt University of Berlin","Free University of Berlin",
+  "Technical University of Berlin","RWTH Aachen University","University of Hamburg",
+  "University of Cologne","University of Freiburg","University of Stuttgart",
+  "Goethe University Frankfurt","University of Tübingen","University of Münster",
+  "TU Dresden","University of Göttingen","University of Mainz","University of Bonn",
+  "University of Düsseldorf","University of Leipzig","University of Mannheim",
+  "Karlsruhe Institute of Technology","University of Erlangen-Nuremberg",
+  /* Ireland */
+  "Trinity College Dublin","University College Dublin","University College Cork",
+  "University of Galway","Dublin City University","Maynooth University",
+  "University of Limerick","Technological University Dublin","RCSI University of Medicine",
+  "Dublin Business School","Griffith College Dublin","Institute of Technology Sligo",
+  "Waterford Institute of Technology","Dundalk Institute of Technology",
+  /* Australia & New Zealand */
+  "University of Melbourne","Australian National University","University of Sydney",
+  "University of Queensland","Monash University","University of New South Wales",
+  "University of Adelaide","University of Western Australia","University of Technology Sydney",
+  "Macquarie University","RMIT University","Curtin University","Griffith University",
+  "Deakin University","La Trobe University","University of Auckland","Victoria University of Wellington",
+  /* Europe */
+  "ETH Zurich","EPFL (École Polytechnique Fédérale de Lausanne)",
+  "University of Amsterdam","Leiden University","Delft University of Technology",
+  "Maastricht University","Erasmus University Rotterdam","Uppsala University","Lund University",
+  "University of Copenhagen","KU Leuven","Ghent University","Université Paris-Saclay",
+  "Sciences Po","HEC Paris","INSEAD","IE Business School","Bocconi University",
+  /* Asia */
+  "National University of Singapore","Nanyang Technological University",
+  "University of Hong Kong","Chinese University of Hong Kong","University of Tokyo",
+  "Seoul National University","KAIST","Peking University","Tsinghua University",
+  /* Online / Other */
+  "University of the People","Coursera University","Western Governors University",
+  "Athabasca University","Open University (UK)",
+];
+
+var schoolIdx = -1;
+var schoolFiltered = [];
+
+function schoolSearch(val) {
+  var q = val.trim().toLowerCase();
+  var dd = document.getElementById('school-dropdown');
+  if (!q) { closeSchoolDropdown(); return; }
+  schoolFiltered = SCHOOLS.filter(function(s) {
+    return s.toLowerCase().includes(q);
+  }).slice(0, 12);
+  if (!schoolFiltered.length) { closeSchoolDropdown(); return; }
+  schoolIdx = -1;
+  dd.innerHTML = '';
+  schoolFiltered.forEach(function(s, i) {
+    var item = document.createElement('div');
+    item.className = 'course-dd-item';
+    var lo = s.toLowerCase(), qi = lo.indexOf(q);
+    if (qi >= 0) {
+      item.innerHTML = escHtml(s.slice(0, qi)) +
+        '<strong>' + escHtml(s.slice(qi, qi + q.length)) + '</strong>' +
+        escHtml(s.slice(qi + q.length));
+    } else {
+      item.textContent = s;
+    }
+    item.addEventListener('mousedown', function(e) { e.preventDefault(); selectSchool(s); });
+    dd.appendChild(item);
+  });
+  dd.style.display = 'block';
+}
+
+function schoolKeydown(e) {
+  var dd = document.getElementById('school-dropdown');
+  if (dd.style.display === 'none') return;
+  var items = dd.querySelectorAll('.course-dd-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); schoolIdx = Math.min(schoolIdx+1, items.length-1); highlightSchool(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); schoolIdx = Math.max(schoolIdx-1, -1); highlightSchool(items); }
+  else if (e.key === 'Enter' && schoolIdx >= 0) { e.preventDefault(); selectSchool(schoolFiltered[schoolIdx]); }
+  else if (e.key === 'Escape') { closeSchoolDropdown(); }
+}
+
+function highlightSchool(items) {
+  items.forEach(function(el, i) {
+    el.classList.toggle('active', i === schoolIdx);
+    if (i === schoolIdx) el.scrollIntoView({block:'nearest'});
+  });
+}
+
+function selectSchool(name) {
+  document.getElementById('school-input').value = name;
+  closeSchoolDropdown();
+}
+
+function closeSchoolDropdown() {
+  var dd = document.getElementById('school-dropdown');
+  if (dd) { dd.style.display = 'none'; schoolIdx = -1; }
+}
+
+/* ── Course autocomplete ── */
+var COURSES = [
+  /* Business & Management */
+  "Business Administration","Business Management","Business Economics","Business Studies",
+  "International Business","Entrepreneurship","Strategic Management","Operations Management",
+  "Supply Chain Management","Project Management","Human Resource Management","Organizational Behavior",
+  "Organizational Development","Marketing Management","Digital Marketing","Brand Management",
+  "Consumer Behavior","Advertising & Promotions","Sales Management","Retail Management",
+  "Financial Management","Corporate Finance","Investment Analysis","Banking & Finance",
+  "Accounting","Financial Accounting","Managerial Accounting","Auditing","Taxation",
+  "Public Administration","Non-profit Management","Healthcare Management","Hospitality Management",
+  "Tourism Management","Event Management","Real Estate Management","Logistics Management",
+  /* Economics */
+  "Economics","Microeconomics","Macroeconomics","International Economics","Development Economics",
+  "Behavioral Economics","Econometrics","Political Economy","Public Finance","Labour Economics",
+  "Agricultural Economics","Environmental Economics","Health Economics","Urban Economics",
+  /* Computer Science & IT */
+  "Computer Science","Software Engineering","Information Technology","Information Systems",
+  "Cybersecurity","Data Science","Artificial Intelligence","Machine Learning","Computer Networks",
+  "Database Management","Web Development","Mobile Application Development","Cloud Computing",
+  "Computer Architecture","Operating Systems","Programming Fundamentals","Algorithms & Data Structures",
+  "Human-Computer Interaction","Computer Graphics","Game Development","Blockchain Technology",
+  /* Engineering */
+  "Civil Engineering","Mechanical Engineering","Electrical Engineering","Electronics Engineering",
+  "Chemical Engineering","Aerospace Engineering","Environmental Engineering","Biomedical Engineering",
+  "Software Engineering","Industrial Engineering","Structural Engineering","Petroleum Engineering",
+  "Materials Science","Renewable Energy Engineering","Robotics","Telecommunications Engineering",
+  /* Sciences */
+  "Biology","Microbiology","Biochemistry","Genetics","Ecology","Marine Biology","Zoology","Botany",
+  "Chemistry","Organic Chemistry","Inorganic Chemistry","Analytical Chemistry","Physical Chemistry",
+  "Physics","Astrophysics","Quantum Mechanics","Thermodynamics","Nuclear Physics",
+  "Mathematics","Calculus","Linear Algebra","Statistics","Probability & Statistics","Discrete Mathematics",
+  "Applied Mathematics","Pure Mathematics","Numerical Analysis",
+  "Environmental Science","Earth Science","Geography","Geology","Meteorology","Oceanography",
+  "Neuroscience","Cognitive Science","Bioinformatics","Biotechnology","Pharmacology",
+  /* Health & Medicine */
+  "Nursing","Medicine","Public Health","Epidemiology","Nutrition","Pharmacy","Dentistry",
+  "Physiotherapy","Occupational Therapy","Midwifery","Medical Laboratory Science",
+  "Community Health","Mental Health","Health Promotion","Clinical Psychology",
+  "Anatomy","Physiology","Pathology","Immunology","Radiology",
+  /* Social Sciences */
+  "Psychology","Social Psychology","Developmental Psychology","Abnormal Psychology",
+  "Sociology","Anthropology","Political Science","International Relations","Criminology",
+  "Social Work","Gender Studies","African Studies","Cultural Studies","Urban Studies",
+  "Human Geography","Demography","Peace & Conflict Studies","Development Studies",
+  /* Arts & Humanities */
+  "English Literature","Creative Writing","Journalism","Mass Communication","Media Studies",
+  "Linguistics","French","Spanish","Arabic","Swahili","Chinese","German","Portuguese",
+  "History","Ancient History","Modern History","African History","Philosophy","Ethics",
+  "Religious Studies","Theology","Archaeology","Art History","Fine Arts","Music","Film Studies",
+  "Theatre & Drama","Fashion Design","Interior Design","Graphic Design","Photography",
+  /* Law */
+  "Law","Constitutional Law","Criminal Law","Commercial Law","International Law","Human Rights Law",
+  "Family Law","Environmental Law","Intellectual Property Law","Labour Law","Tax Law","Cyber Law",
+  /* Education */
+  "Education","Early Childhood Education","Primary Education","Secondary Education",
+  "Special Education","Educational Psychology","Curriculum Studies","Adult Education",
+  "Distance Education","Educational Technology","Physical Education","TESOL",
+  /* Agriculture & Environment */
+  "Agriculture","Agronomy","Animal Science","Horticulture","Forestry","Wildlife Management",
+  "Food Science","Food Technology","Fisheries","Soil Science","Crop Science","Agricultural Extension",
+  /* Architecture & Design */
+  "Architecture","Urban Planning","Interior Architecture","Landscape Architecture","Industrial Design",
+  /* Others */
+  "Statistics","Actuarial Science","Library & Information Science","Records Management",
+  "Disaster Management","Security Studies","Military Science","Ethics & Leadership",
+  "Entrepreneurship & Innovation","Research Methods","Academic Writing","Critical Thinking",
+];
+
+var courseIdx = -1;
+var courseFiltered = [];
+
+function courseSearch(val) {
+  var q = val.trim().toLowerCase();
+  var dd = document.getElementById('course-dropdown');
+  if (!q) { closeCourseDropdown(); return; }
+  courseFiltered = COURSES.filter(function(c) {
+    return c.toLowerCase().includes(q);
+  }).slice(0, 12);
+  if (!courseFiltered.length) { closeCourseDropdown(); return; }
+  courseIdx = -1;
+  dd.innerHTML = '';
+  courseFiltered.forEach(function(c, i) {
+    var item = document.createElement('div');
+    item.className = 'course-dd-item';
+    // Bold the matching part
+    var lo = c.toLowerCase(), qi = lo.indexOf(q);
+    if (qi >= 0) {
+      item.innerHTML = escHtml(c.slice(0, qi)) +
+        '<strong>' + escHtml(c.slice(qi, qi + q.length)) + '</strong>' +
+        escHtml(c.slice(qi + q.length));
+    } else {
+      item.textContent = c;
+    }
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      selectCourse(c);
+    });
+    dd.appendChild(item);
+  });
+  dd.style.display = 'block';
+}
+
+function courseKeydown(e) {
+  var dd = document.getElementById('course-dropdown');
+  if (dd.style.display === 'none') return;
+  var items = dd.querySelectorAll('.course-dd-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    courseIdx = Math.min(courseIdx + 1, items.length - 1);
+    highlightCourse(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    courseIdx = Math.max(courseIdx - 1, -1);
+    highlightCourse(items);
+  } else if (e.key === 'Enter' && courseIdx >= 0) {
+    e.preventDefault();
+    selectCourse(courseFiltered[courseIdx]);
+  } else if (e.key === 'Escape') {
+    closeCourseDropdown();
+  }
+}
+
+function highlightCourse(items) {
+  items.forEach(function(el, i) {
+    el.classList.toggle('active', i === courseIdx);
+    if (i === courseIdx) el.scrollIntoView({block:'nearest'});
+  });
+}
+
+function selectCourse(name) {
+  document.getElementById('course-input').value = name;
+  closeCourseDropdown();
+}
+
+function closeCourseDropdown() {
+  var dd = document.getElementById('course-dropdown');
+  if (dd) { dd.style.display = 'none'; courseIdx = -1; }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+var _blockedPages = 0;
+
+function updateCost() {
+  var input = document.getElementById('pages-input');
+  var pages = parseInt(input.value) || 0;
+
+  if (pages > 5) {
+    _blockedPages = pages;
+    // Snap the field back to 5
+    input.value = 5;
+    showHireModal(pages);
+    pages = 5;
+  }
+
+}
+
+function validateForm() {
+  var pages = parseInt(document.getElementById('pages-input').value) || 0;
+  if (pages > 5) {
+    showHireModal(pages);
+    return false;
+  }
+  return true;
+}
+
+function showHireModal(pages) {
+  document.getElementById('hire-modal-pages').textContent = pages;
+  // Pre-fill the page count in the email href
+  var link = document.getElementById('hire-email-btn');
+  link.href = link.href.replace('__ID_PAGES__', pages);
+  document.getElementById('hire-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function dismissHireModal() {
+  document.getElementById('hire-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function closeHireModal(e) {
+  if (e.target === document.getElementById('hire-modal')) dismissHireModal();
+}
+
+function toggleTitlePage() {
+  var body = document.getElementById('tp-body');
+  var arrow = document.getElementById('tp-arrow');
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  arrow.textContent = open ? '▶' : '▼';
+}
+
+/* ── Instruction file upload ── */
+function instrDragOver(e) {
+  e.preventDefault();
+  document.getElementById('instr-drop-zone').classList.add('drag-over');
+}
+function instrDragLeave(e) {
+  document.getElementById('instr-drop-zone').classList.remove('drag-over');
+}
+function instrDrop(e) {
+  e.preventDefault();
+  document.getElementById('instr-drop-zone').classList.remove('drag-over');
+  var file = e.dataTransfer.files[0];
+  if (file) instrFileSelected(file);
+}
+
+async function instrFileSelected(file) {
+  var zone    = document.getElementById('instr-drop-zone');
+  var icon    = document.getElementById('instr-upload-icon');
+  var label   = document.getElementById('instr-upload-label');
+  var hint    = zone.querySelector('.iuz-hint');
+  var spinner = document.getElementById('instr-spinner');
+  var success = document.getElementById('instr-success');
+  var errEl   = document.getElementById('instr-error');
+
+  icon.style.display    = 'none';
+  label.style.display   = 'none';
+  hint.style.display    = 'none';
+  success.style.display = 'none';
+  errEl.style.display   = 'none';
+  spinner.style.display = 'flex';
+  zone.classList.add('uploading');
+
+  try {
+    var fd = new FormData();
+    fd.append('file', file);
+    var resp = await fetch('/api/extract-file-text', { method: 'POST', body: fd });
+    var data = await resp.json();
+    spinner.style.display = 'none';
+
+    if (data.error) {
+      errEl.textContent   = '⚠ ' + data.error;
+      errEl.style.display = 'block';
+      icon.style.display  = 'block';
+      label.style.display = 'block';
+      hint.style.display  = 'block';
+      zone.classList.remove('uploading');
+      return;
+    }
+
+    // Append to or replace textarea content
+    var ta = document.getElementById('topic-textarea');
+    var extracted = data.text.trim();
+    if (ta.value.trim()) {
+      ta.value = ta.value.trim() + '\n\n' + extracted;
+    } else {
+      ta.value = extracted;
+    }
+    ta.rows = Math.max(8, Math.min(20, extracted.split('\n').length + 4));
+
+    success.textContent   = '✓ File read — ' + file.name;
+    success.style.display = 'block';
+    zone.classList.remove('uploading');
+    zone.classList.add('done');
+  } catch(err) {
+    spinner.style.display = 'none';
+    errEl.textContent     = '⚠ Upload failed — please try again.';
+    errEl.style.display   = 'block';
+    icon.style.display    = 'block';
+    label.style.display   = 'block';
+    hint.style.display    = 'block';
+    zone.classList.remove('uploading');
+  }
+}
+
+/* ── Mode switching ── */
+function switchMode(mode) {
+  document.getElementById('assignment_type_input').value = mode;
+
+  var isStandard = (mode === 'standard');
+  var isSimple   = (mode === 'simple');
+  var isOpen     = (mode === 'open');
+
+  // Tabs — highlight active
+  var tabs = { standard: 'tab-standard', simple: 'tab-simple', open: 'tab-open' };
+  Object.keys(tabs).forEach(function(m) {
+    var el = document.getElementById(tabs[m]);
+    var active = (m === mode);
+    el.style.background = active ? 'var(--accent)' : 'var(--surface-2)';
+    el.style.color      = active ? '#fff' : 'var(--slate-600)';
+  });
+
+  // Descriptions
+  document.getElementById('mode-desc-standard').style.display = isStandard ? 'block' : 'none';
+  document.getElementById('mode-desc-simple').style.display   = isSimple   ? 'block' : 'none';
+  document.getElementById('mode-desc-open').style.display     = isOpen     ? 'block' : 'none';
+
+  // Upload zones
+  document.getElementById('std-upload-zone').style.display  = isOpen ? 'none' : 'flex';
+  document.getElementById('open-upload-zone').style.display = isOpen ? 'block' : 'none';
+
+  // Topic hints
+  document.getElementById('topic-hint-standard').style.display = isOpen ? 'none' : 'block';
+  document.getElementById('topic-hint-open').style.display     = isOpen ? 'block' : 'none';
+
+  // Academic-only fields (sources count + citation style)
+  var courseEl   = document.getElementById('field-course');
+  var sourcesEl  = document.getElementById('field-sources');
+  var styleEl    = document.getElementById('field-style');
+  var courseInp  = document.getElementById('course-input');
+  var sourcesInp = document.getElementById('num_sources_input');
+  var styleInp   = document.getElementById('style-select');
+
+  if (isStandard) {
+    // Full academic mode — show everything
+    courseEl.style.display  = '';
+    sourcesEl.style.display = '';
+    styleEl.style.display   = '';
+    courseInp.setAttribute('required','');
+    sourcesInp.setAttribute('required','');
+    styleInp.setAttribute('required','');
+    document.getElementById('topic-textarea').placeholder = 'e.g. Critically discuss the impact of remote work on organizational culture…';
+    document.getElementById('topic-textarea').setAttribute('required','');
+    document.getElementById('submit-btn').textContent = 'Continue to sources →';
+
+  } else if (isSimple) {
+    // No citations mode — hide sources + style, keep course name
+    courseEl.style.display  = '';
+    sourcesEl.style.display = 'none';
+    styleEl.style.display   = 'none';
+    courseInp.setAttribute('required','');
+    sourcesInp.removeAttribute('required');
+    styleInp.removeAttribute('required');
+    document.getElementById('topic-textarea').placeholder = 'e.g. Write a 2-page reflection on leadership and personal growth…';
+    document.getElementById('topic-textarea').setAttribute('required','');
+    document.getElementById('submit-btn').textContent = 'Generate →';
+
+  } else {
+    // Open / Image mode — hide everything academic
+    courseEl.style.display  = 'none';
+    sourcesEl.style.display = 'none';
+    styleEl.style.display   = 'none';
+    courseInp.removeAttribute('required');
+    sourcesInp.removeAttribute('required');
+    styleInp.removeAttribute('required');
+    document.getElementById('topic-textarea').placeholder = 'Describe the task, question, or scenario (optional if you uploaded an image)…';
+    document.getElementById('topic-textarea').removeAttribute('required');
+    document.getElementById('submit-btn').textContent = 'Generate →';
+  }
+}
+
+/* ── Open Task image upload ── */
+function openDragOver(e) { e.preventDefault(); document.getElementById('open-upload-zone').style.borderColor='var(--navy-900)'; }
+function openDragLeave(e) { document.getElementById('open-upload-zone').style.borderColor='var(--accent)'; }
+function openDrop(e) {
+  e.preventDefault();
+  document.getElementById('open-upload-zone').style.borderColor='var(--accent)';
+  if (e.dataTransfer.files[0]) openImgSelected(e.dataTransfer.files[0]);
+}
+
+async function openImgSelected(file) {
+  var spinner   = document.getElementById('open-spinner');
+  var errEl     = document.getElementById('open-upload-error');
+  var preview   = document.getElementById('open-img-preview');
+  var icon      = document.getElementById('open-upload-icon');
+  var label     = document.getElementById('open-upload-label');
+  var hint      = document.getElementById('open-upload-hint');
+
+  icon.style.display    = 'none';
+  label.style.display   = 'none';
+  hint.style.display    = 'none';
+  preview.style.display = 'none';
+  errEl.style.display   = 'none';
+  spinner.style.display = 'flex';
+
+  try {
+    var fd = new FormData();
+    fd.append('file', file);
+    var resp = await fetch('/api/upload-instruction-image', { method: 'POST', body: fd });
+    var data = await resp.json();
+    spinner.style.display = 'none';
+
+    if (data.error) {
+      errEl.textContent   = '⚠ ' + data.error;
+      errEl.style.display = 'block';
+      icon.style.display  = 'block';
+      label.style.display = 'block';
+      hint.style.display  = 'block';
+      return;
+    }
+
+    // Store URL in hidden field
+    document.getElementById('instruction_image_url_input').value = data.url;
+
+    // Show preview
+    var img = document.getElementById('open-preview-img');
+    img.src = URL.createObjectURL(file);
+    document.getElementById('open-img-name').textContent = '✓ ' + file.name + ' — sent to AI';
+    preview.style.display = 'block';
+
+  } catch(err) {
+    spinner.style.display = 'none';
+    errEl.textContent     = '⚠ Upload failed — please try again.';
+    errEl.style.display   = 'block';
+    icon.style.display    = 'block';
+    label.style.display   = 'block';
+    hint.style.display    = 'block';
+  }
+}
+
+/* ── Open form validation ── */
+var _origValidateForm = validateForm;
+validateForm = function() {
+  var mode = document.getElementById('assignment_type_input').value;
+  if (mode === 'open') {
+    var hasImg  = !!document.getElementById('instruction_image_url_input').value;
+    var hasTxt  = !!(document.getElementById('topic-textarea').value || '').trim();
+    if (!hasImg && !hasTxt) {
+      alert('Please upload an image or enter a task description before continuing.');
+      return false;
+    }
+    return true;
+  }
+  return _origValidateForm();
+};
+</script>
+{% endblock %}

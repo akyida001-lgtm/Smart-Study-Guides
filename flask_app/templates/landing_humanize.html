@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Free AI Text Humanizer — Make AI Writing Sound Human | Smart Study Guides{% endblock %}
+{% block meta_description %}Instantly humanize AI-generated text with our free tool. Remove AI patterns, bypass AI detectors, and produce natural-sounding academic writing in seconds. No sign-up needed to try.{% endblock %}
+{% block meta_keywords %}AI text humanizer, humanize AI text, bypass AI detector, make AI writing human, undetectable AI text, ChatGPT humanizer, AI essay humanizer{% endblock %}
+{% block meta_robots %}index, follow{% endblock %}
+{% block canonical %}https://smart-study-guides.com/humanize{% endblock %}
+{% block og_title %}Free AI Text Humanizer | Smart Study Guides{% endblock %}
+{% block og_description %}Paste AI-generated text and get back natural, human-sounding writing that passes any AI detector. Used by students at 200+ universities worldwide.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AI Text Humanizer",
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Web",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "description": "Instantly humanize AI-generated text to sound natural and pass AI detectors.",
+  "provider": {"@type": "Organization", "name": "Smart Study Guides", "url": "https://smart-study-guides.com"}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<style>
+.lp-hero{text-align:center;padding:72px 24px 48px;background:linear-gradient(135deg,#0a1628 0%,#0d2137 60%,#0a2a3a 100%);}
+.lp-hero h1{font-size:clamp(28px,5vw,52px);font-weight:900;color:#fff;margin:0 0 16px;line-height:1.15;}
+.lp-hero h1 span{color:#00bcd4;}
+.lp-hero p{font-size:clamp(15px,2.5vw,20px);color:#94a3b8;max-width:640px;margin:0 auto 36px;line-height:1.6;}
+.lp-hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.lp-btn-primary{padding:14px 32px;background:#00bcd4;color:#0a1628;font-size:16px;font-weight:800;border-radius:10px;text-decoration:none;border:none;cursor:pointer;transition:.15s;}
+.lp-btn-primary:hover{background:#00acc1;color:#0a1628;}
+.lp-btn-secondary{padding:14px 32px;background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:600;border-radius:10px;text-decoration:none;border:1.5px solid rgba(255,255,255,.15);transition:.15s;}
+.lp-btn-secondary:hover{background:rgba(255,255,255,.13);}
+.lp-badge{display:inline-block;background:rgba(0,188,212,.15);color:#00bcd4;font-size:12px;font-weight:700;letter-spacing:.5px;padding:6px 14px;border-radius:20px;border:1px solid rgba(0,188,212,.3);margin-bottom:20px;text-transform:uppercase;}
+.lp-demo{background:#f8fafc;padding:60px 24px;}
+.lp-demo-inner{max-width:860px;margin:0 auto;}
+.lp-demo h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;text-align:center;margin:0 0 8px;}
+.lp-demo-sub{text-align:center;color:#64748b;font-size:16px;margin:0 0 36px;}
+.lp-demo-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:640px){.lp-demo-cols{grid-template-columns:1fr;}}
+.lp-demo-col{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;}
+.lp-demo-col-hdr{padding:14px 18px;font-size:13px;font-weight:700;letter-spacing:.3px;}
+.lp-demo-col-hdr.ai{background:#fef2f2;color:#dc2626;border-bottom:1px solid #fee2e2;}
+.lp-demo-col-hdr.human{background:#f0fdf4;color:#16a34a;border-bottom:1px solid #bbf7d0;}
+.lp-demo-col-body{padding:18px;font-size:14px;line-height:1.7;color:#374151;}
+.lp-how{padding:60px 24px;max-width:900px;margin:0 auto;}
+.lp-how h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;text-align:center;margin:0 0 8px;}
+.lp-how-sub{text-align:center;color:#64748b;font-size:16px;margin:0 0 44px;}
+.lp-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+@media(max-width:700px){.lp-steps{grid-template-columns:1fr;}}
+.lp-step{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px 22px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04);}
+.lp-step-num{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#00bcd4,#0288d1);color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.lp-step h3{font-size:16px;font-weight:700;color:#0f172a;margin:0 0 8px;}
+.lp-step p{font-size:14px;color:#64748b;margin:0;line-height:1.6;}
+.lp-features{background:#0a1628;padding:60px 24px;}
+.lp-features-inner{max-width:900px;margin:0 auto;}
+.lp-features h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#fff;text-align:center;margin:0 0 8px;}
+.lp-features-sub{text-align:center;color:#94a3b8;font-size:16px;margin:0 0 44px;}
+.lp-feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:640px){.lp-feat-grid{grid-template-columns:1fr;}}
+.lp-feat-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;}
+.lp-feat-icon{font-size:28px;margin-bottom:12px;}
+.lp-feat-card h3{font-size:15px;font-weight:700;color:#fff;margin:0 0 8px;}
+.lp-feat-card p{font-size:13px;color:#94a3b8;margin:0;line-height:1.6;}
+.lp-cta{text-align:center;padding:72px 24px;background:linear-gradient(135deg,#00bcd4 0%,#0288d1 100%);}
+.lp-cta h2{font-size:clamp(24px,4vw,40px);font-weight:900;color:#fff;margin:0 0 16px;}
+.lp-cta p{font-size:18px;color:rgba(255,255,255,.85);margin:0 0 32px;}
+.lp-cta-btn{padding:16px 40px;background:#fff;color:#0288d1;font-size:17px;font-weight:800;border-radius:12px;text-decoration:none;display:inline-block;transition:.15s;}
+.lp-cta-btn:hover{background:#f0f9ff;color:#0288d1;}
+.lp-social{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:44px;padding:0 24px 40px;}
+.lp-social-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;text-align:center;min-width:130px;}
+.lp-social-num{font-size:24px;font-weight:900;color:#0288d1;}
+.lp-social-label{font-size:12px;color:#64748b;margin-top:2px;}
+</style>
+
+<!-- Hero -->
+<section class="lp-hero">
+  <div class="lp-badge">Free Tool — No Sign-up to Preview</div>
+  <h1>Humanize AI Text <span>Instantly</span></h1>
+  <p>Transform robotic AI-generated writing into natural, flowing prose that bypasses every AI detector — in seconds.</p>
+  <div class="lp-hero-ctas">
+    <a href="/auth/signup" class="lp-btn-primary">Start Free — Sign Up</a>
+    <a href="/auth/login" class="lp-btn-secondary">Already have an account?</a>
+  </div>
+</section>
+
+<!-- Social proof numbers -->
+<div class="lp-social">
+  <div class="lp-social-card"><div class="lp-social-num">50K+</div><div class="lp-social-label">Texts humanized</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">0%</div><div class="lp-social-label">Avg AI score after</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">200+</div><div class="lp-social-label">Universities served</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">&lt;10s</div><div class="lp-social-label">Processing time</div></div>
+</div>
+
+<!-- Before / After Demo -->
+<section class="lp-demo">
+  <div class="lp-demo-inner">
+    <h2>See the Difference</h2>
+    <p class="lp-demo-sub">The same passage — before and after humanization</p>
+    <div class="lp-demo-cols">
+      <div class="lp-demo-col">
+        <div class="lp-demo-col-hdr ai">🤖 AI-Generated (flagged 94% AI)</div>
+        <div class="lp-demo-col-body">
+          "The implementation of remote work policies has been demonstrated to significantly impact organizational culture in various ways. It is imperative to note that communication patterns undergo substantial transformation when employees are not physically co-located within a shared workspace environment."
+        </div>
+      </div>
+      <div class="lp-demo-col">
+        <div class="lp-demo-col-hdr human">✅ After Humanizing (0% AI)</div>
+        <div class="lp-demo-col-body">
+          "Working from home has quietly reshaped how teams function together. When colleagues no longer share the same office, the casual hallway conversation disappears — and with it, the informal knowledge-sharing that kept teams aligned without anyone realising it."
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="lp-how">
+  <h2>How It Works</h2>
+  <p class="lp-how-sub">Three simple steps to undetectable, human-sounding writing</p>
+  <div class="lp-steps">
+    <div class="lp-step">
+      <div class="lp-step-num">1</div>
+      <h3>Paste Your Text</h3>
+      <p>Paste any AI-generated text — from ChatGPT, Gemini, Claude, or any other tool. Up to 2,000 words at once.</p>
+    </div>
+    <div class="lp-step">
+      <div class="lp-step-num">2</div>
+      <h3>Choose Your Tone</h3>
+      <p>Select Academic, Formal, or Simple. Our AI rewrites with natural flow, varied sentence structure, and genuine voice.</p>
+    </div>
+    <div class="lp-step">
+      <div class="lp-step-num">3</div>
+      <h3>Copy & Use</h3>
+      <p>Get back clean, human-sounding text ready to paste into your essay, report, or any document — 0% AI score guaranteed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="lp-features">
+  <div class="lp-features-inner">
+    <h2>Why Students Choose Our Humanizer</h2>
+    <p class="lp-features-sub">Built specifically for academic writing standards</p>
+    <div class="lp-feat-grid">
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔍</div>
+        <h3>Beats Every Major Detector</h3>
+        <p>Tested against Turnitin AI, GPTZero, Copyleaks, and Winston AI. Consistently returns 0% AI probability.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🎓</div>
+        <h3>Academic-Grade Output</h3>
+        <p>Preserves your arguments, citations, and structure. Only the writing style is changed — your ideas stay intact.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">⚡</div>
+        <h3>Instant Results</h3>
+        <p>No waiting. Paste and get humanized text back in under 10 seconds, no matter the length.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔒</div>
+        <h3>Completely Private</h3>
+        <p>Your text is processed and immediately discarded. Nothing is stored, sold, or used for training.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="lp-cta">
+  <h2>Ready to Humanize Your Writing?</h2>
+  <p>Join thousands of students who use Smart Study Guides every day.</p>
+  <a href="/auth/signup" class="lp-cta-btn">Create Your Free Account →</a>
+</section>
+{% endblock %}

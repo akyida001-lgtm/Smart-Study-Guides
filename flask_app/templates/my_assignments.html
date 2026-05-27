@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+{% block title %}My Assignments — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📂 My Assignments</h1>
+  <div style="display:flex;gap:8px;">
+    <a class="btn ghost" href="{{ url_for('main.post_human_assignment') }}">✍️ Human Writer</a>
+    <a class="btn accent" href="{{ url_for('main.new_assignment') }}">+ AI Assignment</a>
+  </div>
+</div>
+
+<!-- ── Bulk Action Toolbar (hidden until selection) ─────────────────────── -->
+<div id="bulk-bar" class="bulk-bar" style="display:none;">
+  <span id="bulk-count" class="bulk-count">0 selected</span>
+  <div class="bulk-actions">
+    <button id="bulk-download-btn" class="btn-sm accent" onclick="bulkDownload()">⬇ Download ZIP</button>
+    <button id="bulk-delete-btn" class="btn-sm danger" onclick="bulkDelete()">🗑 Delete</button>
+    <button class="btn-sm ghost" onclick="clearSelection()">✕ Clear</button>
+  </div>
+</div>
+
+<!-- ── AI Assignments ───────────────────────────────────────────────────────── -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;">
+  <h2 style="font-size:17px;font-weight:600;color:var(--slate-500);margin:0;letter-spacing:.4px;">
+    🤖 AI-Generated Assignments
+  </h2>
+  {% if assignments %}
+  <label class="select-all-label">
+    <input type="checkbox" id="ai-select-all" onchange="toggleAll('ai', this.checked)"> Select all
+  </label>
+  {% endif %}
+</div>
+
+{% if assignments %}
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:24px;">
+  <div class="asgn-table-wrap">
+    <table class="asgn-table">
+      <thead>
+        <tr>
+          <th style="width:36px;"></th>
+          <th>Topic</th>
+          <th>Pages</th>
+          <th>Style</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+        <tr id="ai-row-{{ a.id }}" class="asgn-row">
+          <td>
+            <input type="checkbox"
+              class="row-check ai-check"
+              data-id="{{ a.id }}"
+              data-type="ai"
+              data-has-file="{{ 'yes' if (a.status == 'complete' and a.docx_url) else 'no' }}"
+              onchange="onCheck()">
+          </td>
+          <td class="asgn-topic">{{ a.topic[:80] }}{% if a.topic|length > 80 %}…{% endif %}</td>
+          <td>{{ a.pages }}pg</td>
+          <td>{{ a.style }}</td>
+          <td>
+            {% if a.status == 'complete' %}
+              <span class="status-badge green">✅ Complete</span>
+            {% elif a.status == 'running' %}
+              <span class="status-badge blue">⏳ Generating</span>
+            {% elif a.status == 'queued' %}
+              <span class="status-badge yellow">🕐 Queued</span>
+            {% elif a.status == 'failed' %}
+              <span class="status-badge red">❌ Failed</span>
+            {% else %}
+              <span class="status-badge grey">{{ a.status }}</span>
+            {% endif %}
+          </td>
+          <td class="asgn-date">{{ a.created_at.strftime('%d %b %Y') }}</td>
+          <td style="text-align:right;">
+            {% set removal_done = a.ai_removal_jobs | selectattr('status','eq','completed') | selectattr('final_file_url') | list %}
+            {% set latest_removal = removal_done[-1] if removal_done else none %}
+            {% set removal_pending = a.ai_removal_jobs | rejectattr('status','eq','completed') | rejectattr('status','eq','failed') | list %}
+
+            {% if a.status == 'complete' and a.docx_url %}
+              {# ── AI file download ── #}
+              <a class="btn-sm accent" href="{{ a.docx_url }}" download title="Download AI-generated file">⬇ AI Draft</a>
+
+              {# ── AI Removal completed download ── #}
+              {% if latest_removal %}
+                <a class="btn-sm" href="{{ latest_removal.final_file_url }}"
+                   download="{{ latest_removal.final_file_name or 'rewritten_assignment' }}"
+                   title="AI score {{ latest_removal.final_ai_score }}%"
+                   style="background:#f0fdf4;color:#15803d;border:1.5px solid #4ade80;font-weight:700;margin-left:4px;">
+                  ⬇ Rewritten
+                </a>
+              {% elif removal_pending %}
+                <span class="btn-sm" style="background:#fffbeb;color:#92400e;border:1.5px solid #fbbf24;cursor:default;margin-left:4px;">
+                  ⏳ Rewriting…
+                </span>
+              {% else %}
+                <form method="POST" action="{{ url_for('main.submit_ai_removal', aid=a.id) }}" style="display:inline;margin-left:4px;">
+                  <input type="hidden" name="humanized_text" value="">
+                  <input type="hidden" name="ai_score" value="95">
+                  <button type="submit" class="btn-sm"
+                          style="background:#fff0f2;color:#c0283d;border:1.5px solid #e05b6f;font-weight:600;cursor:pointer;">
+                    ✍️ AI Removal
+                  </button>
+                </form>
+              {% endif %}
+
+              <a class="btn-sm ghost" href="{{ url_for('main.assignment_progress', aid=a.id) }}" style="margin-left:4px;">📋 View</a>
+
+              {% if a.review %}
+                <span class="btn-sm" style="background:#fefce8;color:#854d0e;border:1.5px solid #fbbf24;cursor:default;margin-left:4px;"
+                      title="{{ a.review.reason }}">
+                  {{ '⭐' * a.review.rating }} Rated
+                </span>
+              {% else %}
+                <button class="btn-sm" onclick="openReview({{ a.id }}, '{{ a.topic[:40]|replace("'","") }}')"
+                        style="background:#f0fdf4;color:#166534;border:1.5px solid #4ade80;font-weight:600;cursor:pointer;margin-left:4px;">
+                  ⭐ Rate
+                </button>
+              {% endif %}
+
+            {% elif a.status in ('running', 'queued') %}
+              <a class="btn-sm ghost" href="{{ url_for('main.assignment_progress', aid=a.id) }}">View</a>
+            {% elif a.status == 'failed' %}
+              <a class="btn-sm ghost" href="{{ url_for('main.assignment_progress', aid=a.id) }}">Details</a>
+            {% else %}
+              <a class="btn-sm ghost" href="{{ url_for('main.assignment_sources', aid=a.id) }}">Continue</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="asgn-summary" style="margin-bottom:32px;">
+  <span>{{ assignments|length }} assignment{{ 's' if assignments|length != 1 else '' }} total</span>
+  <span>·</span>
+  <span>{{ assignments|selectattr('status','eq','complete')|list|length }} completed</span>
+</div>
+
+{% else %}
+<div class="card empty-state" style="margin-bottom:32px;">
+  <div class="empty-icon">📄</div>
+  <h3>No AI assignments yet</h3>
+  <p>Create your first assignment and we'll research, write, and format it — delivered as a .docx file.</p>
+  <a class="btn accent" href="{{ url_for('main.new_assignment') }}">+ Create AI Assignment</a>
+</div>
+{% endif %}
+
+<!-- ── Human Writer Orders ─────────────────────────────────────────────────── -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;">
+  <h2 style="font-size:17px;font-weight:600;color:var(--slate-500);margin:0;letter-spacing:.4px;">
+    ✍️ Human Writer Orders
+  </h2>
+  {% if human_orders %}
+  <label class="select-all-label">
+    <input type="checkbox" id="hw-select-all" onchange="toggleAll('hw', this.checked)"> Select all
+  </label>
+  {% endif %}
+</div>
+
+{% if human_orders %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div class="asgn-table-wrap">
+    <table class="asgn-table">
+      <thead>
+        <tr>
+          <th style="width:36px;"></th>
+          <th>Title</th>
+          <th>Pages</th>
+          <th>Style</th>
+          <th>Priority</th>
+          <th>Deadline</th>
+          <th>Status</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in human_orders %}
+        <tr id="hw-row-{{ o.id }}" class="asgn-row">
+          <td>
+            <input type="checkbox"
+              class="row-check hw-check"
+              data-id="{{ o.id }}"
+              data-type="hw"
+              data-has-file="{{ 'yes' if (o.status == 'delivered' and o.final_file_url) else 'no' }}"
+              onchange="onCheck()">
+          </td>
+          <td class="asgn-topic">{{ o.title[:70] }}{% if o.title|length > 70 %}…{% endif %}</td>
+          <td>{{ o.num_pages }}pg</td>
+          <td>{{ o.format_style }}</td>
+          <td>
+            {% if o.priority == 'urgent' %}
+              <span class="status-badge red">🚨 Urgent</span>
+            {% else %}
+              <span class="status-badge grey">Std</span>
+            {% endif %}
+          </td>
+          <td class="asgn-date">{{ o.deadline.strftime('%d %b %Y') }}</td>
+          <td>
+            {% if o.status == 'delivered' %}<span class="status-badge green">✅ Delivered</span>
+            {% elif o.status == 'in_progress' %}<span class="status-badge blue">✏️ In Progress</span>
+            {% elif o.status == 'assigned' %}<span class="status-badge blue">👤 Assigned</span>
+            {% elif o.status == 'completed' %}<span class="status-badge yellow">✔ Completed</span>
+            {% else %}<span class="status-badge grey">⏳ Pending</span>{% endif %}
+          </td>
+          <td style="text-align:right;">
+            {% if o.status == 'delivered' and o.final_file_url %}
+              <a class="btn-sm accent" href="{{ o.final_file_url }}" download="{{ o.final_file_name or 'assignment' }}">⬇ Download</a>
+              <a class="btn-sm ghost" href="{{ url_for('main.human_order_detail', oid=o.id) }}" style="margin-left:4px;">View</a>
+            {% else %}
+              <a class="btn-sm ghost" href="{{ url_for('main.human_order_detail', oid=o.id) }}">View</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="asgn-summary">
+  {{ human_orders|length }} order{{ 's' if human_orders|length != 1 else '' }}
+  · {{ human_orders|selectattr('status','eq','delivered')|list|length }} delivered
+</div>
+
+{% else %}
+<div class="card empty-state">
+  <div class="empty-icon">✍️</div>
+  <h3>No human writer orders yet</h3>
+  <p>Submit an assignment and a qualified human writer will complete it for you — no AI involved.</p>
+  <a class="btn accent" href="{{ url_for('main.post_human_assignment') }}">✍️ Post Assignment</a>
+</div>
+{% endif %}
+
+<!-- ── Delete Confirmation Modal ─────────────────────────────────────────── -->
+<div id="delete-modal" class="bulk-modal-backdrop" style="display:none;" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="bulk-modal">
+    <div class="bulk-modal-icon">🗑</div>
+    <h3 class="bulk-modal-title">Delete selected?</h3>
+    <p class="bulk-modal-body" id="delete-modal-msg">This will permanently delete the selected assignments. This cannot be undone.</p>
+    <div class="bulk-modal-actions">
+      <button class="btn ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn danger" id="confirm-delete-btn" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Bulk toolbar ── */
+.bulk-bar {
+  position: sticky; top: 12px; z-index: 200;
+  background: #0a4047; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 8px 32px rgba(10,64,71,.35);
+  margin-bottom: 16px; animation: slideDown .18s ease;
+}
+@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+.bulk-count { font-size: 13px; font-weight: 600; color: #ffffff; white-space: nowrap; }
+.bulk-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+/* ── Select all label ── */
+.select-all-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--slate-400); cursor: pointer; user-select: none;
+}
+.select-all-label input { cursor: pointer; accent-color: var(--accent); }
+
+/* ── Row checkbox ── */
+.row-check { cursor: pointer; accent-color: var(--accent); width: 15px; height: 15px; }
+
+/* ── Checked row highlight ── */
+.asgn-row.is-checked { background: rgba(122,162,255,.07); }
+
+/* ── Danger btn ── */
+.btn-sm.danger { background: #ff6b6b; color: #fff; border-color: transparent; }
+.btn-sm.danger:hover { background: #e05555; }
+.btn.danger { background: #ff6b6b; color: #fff; border: none; }
+.btn.danger:hover { background: #e05555; }
+
+/* ── Delete modal ── */
+.bulk-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(6,17,43,.6);
+  z-index: 9000; display: flex; align-items: center; justify-content: center;
+}
+.bulk-modal {
+  background: #fff; border-radius: 16px; padding: 32px 28px 24px;
+  max-width: 380px; width: calc(100% - 32px); text-align: center;
+  box-shadow: 0 24px 64px rgba(6,17,43,.28);
+  animation: fc-open .2s ease both;
+}
+.bulk-modal-icon { font-size: 36px; margin-bottom: 12px; }
+.bulk-modal-title { font-size: 18px; font-weight: 700; margin: 0 0 8px; color: #0b1733; }
+.bulk-modal-body { font-size: 14px; color: #5b6c8a; margin: 0 0 24px; line-height: 1.5; }
+.bulk-modal-actions { display: flex; gap: 10px; justify-content: center; }
+.bulk-modal-actions .btn { min-width: 110px; }
+</style>
+
+<script>
+const AI_DELETE_URL  = "{{ url_for('main.bulk_delete_assignments') }}";
+const AI_DL_URL      = "{{ url_for('main.bulk_download_assignments') }}";
+const HW_DELETE_URL  = "{{ url_for('main.bulk_delete_human_orders') }}";
+const HW_DL_URL      = "{{ url_for('main.bulk_download_human_orders') }}";
+
+function getChecked() {
+  return [...document.querySelectorAll('.row-check:checked')];
+}
+
+function onCheck() {
+  const checked = getChecked();
+  const bar     = document.getElementById('bulk-bar');
+  const count   = document.getElementById('bulk-count');
+  const dlBtn   = document.getElementById('bulk-download-btn');
+
+  // highlight rows
+  document.querySelectorAll('.row-check').forEach(cb => {
+    cb.closest('tr').classList.toggle('is-checked', cb.checked);
+  });
+
+  if (checked.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  count.textContent = checked.length + ' selected';
+
+  // show download only if any checked item has a file
+  const hasFile = checked.some(cb => cb.dataset.hasFile === 'yes');
+  dlBtn.style.display = hasFile ? '' : 'none';
+
+  // sync "select all" checkboxes
+  const aiAll  = document.getElementById('ai-select-all');
+  const hwAll  = document.getElementById('hw-select-all');
+  if (aiAll) {
+    const aiCbs = [...document.querySelectorAll('.ai-check')];
+    aiAll.checked       = aiCbs.length && aiCbs.every(c => c.checked);
+    aiAll.indeterminate = !aiAll.checked && aiCbs.some(c => c.checked);
+  }
+  if (hwAll) {
+    const hwCbs = [...document.querySelectorAll('.hw-check')];
+    hwAll.checked       = hwCbs.length && hwCbs.every(c => c.checked);
+    hwAll.indeterminate = !hwAll.checked && hwCbs.some(c => c.checked);
+  }
+}
+
+function toggleAll(group, checked) {
+  const cls = group === 'ai' ? '.ai-check' : '.hw-check';
+  document.querySelectorAll(cls).forEach(cb => { cb.checked = checked; });
+  onCheck();
+}
+
+function clearSelection() {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  const aiAll = document.getElementById('ai-select-all');
+  const hwAll = document.getElementById('hw-select-all');
+  if (aiAll) { aiAll.checked = false; aiAll.indeterminate = false; }
+  if (hwAll) { hwAll.checked = false; hwAll.indeterminate = false; }
+  onCheck();
+}
+
+// ── Download ZIP ─────────────────────────────────────────────────────────────
+async function bulkDownload() {
+  const checked = getChecked();
+  const aiIds = checked.filter(c => c.dataset.type === 'ai' && c.dataset.hasFile === 'yes').map(c => +c.dataset.id);
+  const hwIds = checked.filter(c => c.dataset.type === 'hw' && c.dataset.hasFile === 'yes').map(c => +c.dataset.id);
+
+  if (!aiIds.length && !hwIds.length) {
+    alert('None of the selected items have a downloadable file yet.');
+    return;
+  }
+
+  const dlBtn = document.getElementById('bulk-download-btn');
+  dlBtn.disabled = true;
+  dlBtn.textContent = '⏳ Preparing…';
+
+  try {
+    if (aiIds.length) await downloadZip(AI_DL_URL, aiIds, 'ai_assignments.zip');
+    if (hwIds.length) await downloadZip(HW_DL_URL, hwIds, 'human_orders.zip');
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+  } finally {
+    dlBtn.disabled = false;
+    dlBtn.textContent = '⬇ Download ZIP';
+  }
+}
+
+async function downloadZip(url, ids, filename) {
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ids})
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || 'Server error');
+  }
+  const blob = await resp.blob();
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Delete ───────────────────────────────────────────────────────────────────
+let _pendingDeleteIds = { ai: [], hw: [] };
+
+function bulkDelete() {
+  const checked = getChecked();
+  _pendingDeleteIds = {
+    ai: checked.filter(c => c.dataset.type === 'ai').map(c => +c.dataset.id),
+    hw: checked.filter(c => c.dataset.type === 'hw').map(c => +c.dataset.id),
+  };
+  const total = _pendingDeleteIds.ai.length + _pendingDeleteIds.hw.length;
+  document.getElementById('delete-modal-msg').textContent =
+    `You're about to permanently delete ${total} item${total > 1 ? 's' : ''}. This cannot be undone.`;
+  document.getElementById('delete-modal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+}
+
+// ── Review modal ─────────────────────────────────────────────────────────────
+const REVIEW_REASONS = {
+  5: ["Excellent quality", "Delivered on time", "Well researched", "Perfectly formatted", "Exceeded my expectations"],
+  4: ["Good quality overall", "Mostly satisfied", "Well structured", "Good research", "Minor tweaks needed"],
+  3: ["Average quality", "Met basic requirements", "Some improvements needed", "Decent effort"],
+  2: ["Below expectations", "Needs major revision", "Poor formatting", "Weak research"],
+  1: ["Very poor quality", "Completely off-topic", "Missed all requirements", "Unacceptable work"]
+};
+let _reviewAid = null;
+
+function openReview(aid, topic) {
+  _reviewAid = aid;
+  document.getElementById('review-modal-topic').textContent = topic;
+  _selectStar(0);
+  document.getElementById('review-modal').style.display = 'flex';
+}
+
+function closeReview() {
+  document.getElementById('review-modal').style.display = 'none';
+  _reviewAid = null;
+}
+
+function _selectStar(n) {
+  document.querySelectorAll('.rv-star').forEach((s, i) => {
+    s.textContent = i < n ? '⭐' : '☆';
+    s.dataset.active = i < n ? '1' : '0';
+  });
+  document.getElementById('rv-selected-rating').value = n;
+  const reasonWrap = document.getElementById('rv-reasons');
+  reasonWrap.innerHTML = '';
+  if (n > 0) {
+    REVIEW_REASONS[n].forEach(r => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'rv-chip';
+      chip.textContent = r;
+      chip.onclick = function() {
+        document.querySelectorAll('.rv-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        document.getElementById('rv-selected-reason').value = r;
+      };
+      reasonWrap.appendChild(chip);
+    });
+  }
+}
+
+async function submitReview() {
+  const rating = parseInt(document.getElementById('rv-selected-rating').value || '0');
+  const reason = document.getElementById('rv-selected-reason').value;
+  if (!rating) { alert('Please select a star rating.'); return; }
+  if (!reason) { alert('Please choose a reason.'); return; }
+
+  const btn = document.getElementById('rv-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const r = await fetch(`/assignment/${_reviewAid}/review`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ rating, reason })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      // Replace the Rate button with a Rated badge
+      const rateBtn = document.querySelector(`button[onclick*="openReview(${_reviewAid},"]`);
+      if (rateBtn) {
+        const badge = document.createElement('span');
+        badge.className = 'btn-sm';
+        badge.title = reason;
+        badge.style.cssText = 'background:#fefce8;color:#854d0e;border:1.5px solid #fbbf24;cursor:default;margin-left:4px;';
+        badge.textContent = '⭐'.repeat(rating) + ' Rated';
+        rateBtn.replaceWith(badge);
+      }
+      closeReview();
+    } else {
+      alert(d.error || 'Something went wrong.');
+      btn.disabled = false;
+      btn.textContent = 'Submit Review';
+    }
+  } catch(e) {
+    alert('Network error. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Submit Review';
+  }
+}
+
+async function confirmDelete() {
+  const btn = document.getElementById('confirm-delete-btn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+
+  try {
+    const reqs = [];
+    if (_pendingDeleteIds.ai.length)
+      reqs.push(fetch(AI_DELETE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ids: _pendingDeleteIds.ai}) }));
+    if (_pendingDeleteIds.hw.length)
+      reqs.push(fetch(HW_DELETE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ids: _pendingDeleteIds.hw}) }));
+
+    await Promise.all(reqs);
+
+    // Remove rows from DOM
+    _pendingDeleteIds.ai.forEach(id => document.getElementById('ai-row-' + id)?.remove());
+    _pendingDeleteIds.hw.forEach(id => document.getElementById('hw-row-' + id)?.remove());
+
+    closeDeleteModal();
+    clearSelection();
+  } catch(e) {
+    alert('Delete failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Delete';
+  }
+}
+</script>
+
+<!-- ── Review Modal ──────────────────────────────────────────────────────── -->
+<div id="review-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--surface);border-radius:16px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);">Rate your assignment</div>
+        <div id="review-modal-topic" style="font-size:13px;color:var(--slate-400);margin-top:2px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+      </div>
+      <button onclick="closeReview()" style="background:none;border:none;font-size:20px;color:var(--slate-400);cursor:pointer;padding:0 0 0 8px;line-height:1;">×</button>
+    </div>
+
+    <!-- Stars -->
+    <div style="display:flex;gap:8px;margin:18px 0 10px;justify-content:center;">
+      {% for i in range(1,6) %}
+      <button class="rv-star" data-n="{{ i }}" onclick="_selectStar({{ i }})"
+              style="font-size:32px;background:none;border:none;cursor:pointer;padding:0;line-height:1;transition:transform .1s;"
+              onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">☆</button>
+      {% endfor %}
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--slate-400);margin-bottom:16px;">
+      Tap a star to rate (5 = excellent, 1 = poor)
+    </div>
+
+    <!-- Reason chips -->
+    <div style="font-size:12px;font-weight:600;color:var(--slate-400);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Choose a reason</div>
+    <div id="rv-reasons" style="display:flex;flex-wrap:wrap;gap:8px;min-height:36px;margin-bottom:20px;"></div>
+
+    <input type="hidden" id="rv-selected-rating" value="0">
+    <input type="hidden" id="rv-selected-reason" value="">
+
+    <button id="rv-submit-btn" onclick="submitReview()" class="btn accent" style="width:100%;padding:13px;">
+      Submit Review
+    </button>
+  </div>
+</div>
+
+<style>
+.rv-chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--slate-300);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.rv-chip.active,
+.rv-chip:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Subscription Activated — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div style="max-width:520px;margin:40px auto;text-align:center;">
+  <div class="card" style="padding:40px 32px;">
+    {% if activated %}
+      <div style="font-size:64px;margin-bottom:16px;">🎉</div>
+      <h1 style="margin:0 0 8px;font-size:26px;color:var(--navy-900);">Subscription Activated!</h1>
+      {% if sub %}
+        <p style="color:var(--slate-500);font-size:15px;margin:0 0 24px;line-height:1.6;">
+          Your <strong>{{ sub.plan | capitalize }}</strong> plan is now active.
+          {% if sub.end_date %}
+            It runs until <strong>{{ sub.end_date.strftime('%d %b %Y') }}</strong>.
+          {% endif %}
+        </p>
+        {% set plan_info = plans.get(sub.plan, {}) %}
+        <div class="card" style="background:var(--surface-2);margin-bottom:24px;text-align:left;padding:20px 24px;">
+          <div style="font-weight:700;margin-bottom:12px;color:var(--navy-900);">What's included:</div>
+          <ul style="margin:0;padding-left:18px;color:var(--slate-600);line-height:2;">
+            <li>
+              {% if plan_info.get('daily_limit') %}
+                {{ plan_info.daily_limit }} AI assignments per day
+              {% else %}
+                Unlimited AI assignments per day
+              {% endif %}
+            </li>
+            <li>Humanizer tool — unlimited use</li>
+            <li>AI Checker tool — unlimited use</li>
+            <li>All citation styles supported</li>
+            <li>Real academic sources included</li>
+          </ul>
+        </div>
+      {% endif %}
+      <a class="btn accent" href="{{ url_for('main.new_assignment') }}" style="margin-right:8px;">✍️ Create Your First Assignment</a>
+      <a class="btn ghost" href="{{ url_for('main.dashboard') }}">Go to Dashboard</a>
+    {% else %}
+      <div style="font-size:64px;margin-bottom:16px;">⏳</div>
+      <h1 style="margin:0 0 8px;font-size:26px;color:var(--navy-900);">Payment Processing</h1>
+      <p style="color:var(--slate-500);font-size:15px;margin:0 0 24px;line-height:1.6;">
+        Your payment is being verified. Your subscription will activate within a few minutes.
+        You'll receive a notification when it's ready.
+      </p>
+      <a class="btn accent" href="{{ url_for('main.dashboard') }}">Go to Dashboard</a>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

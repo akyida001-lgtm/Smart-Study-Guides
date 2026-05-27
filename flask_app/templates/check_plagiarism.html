@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Plagiarism Checker — Smart Study Guides{% endblock %}
+{% block content %}
+<div class="tool-page">
+  <div class="tool-header">
+    <h1>📋 Plagiarism Checker</h1>
+    <p class="tool-sub">Paste your text below. We scan it against billions of web pages and academic databases via Copyleaks.</p>
+  </div>
+
+  <div class="tool-single-col">
+    <div class="tool-col">
+      <div class="tool-col-header">
+        <span class="tool-col-label">Your text</span>
+        <div class="tool-meta-row">
+          <span id="wc-in" class="wc-badge">0 words</span>
+        </div>
+      </div>
+      <textarea id="text-in" class="tool-textarea"
+                placeholder="Paste the text you want to check for plagiarism…"
+                rows="12" oninput="updateMeta(this.value)"></textarea>
+      <button id="check-btn" class="btn accent full tool-btn" onclick="runCheck()">
+        📋 Check for Plagiarism
+      </button>
+      <div id="tool-error" class="tool-error" style="display:none;"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" class="plg-results" style="display:none;">
+
+      <!-- Overall summary -->
+      <div class="plg-summary" id="plg-summary">
+        <div class="plg-summary-scores">
+          <div class="plg-summary-item plg-original">
+            <div class="plg-summary-label">Original</div>
+            <div class="plg-summary-val" id="sum-orig-val">—</div>
+          </div>
+          <div class="plg-summary-divider"></div>
+          <div class="plg-summary-item plg-similar">
+            <div class="plg-summary-label">Similarity</div>
+            <div class="plg-summary-val" id="sum-sim-val">—</div>
+          </div>
+        </div>
+        <div class="plg-bar-wrap">
+          <div class="plg-bar-orig" id="bar-orig"></div>
+          <div class="plg-bar-sim"  id="bar-sim"></div>
+        </div>
+        <div class="plg-verdict" id="plg-verdict"></div>
+        <div class="plg-words"   id="plg-words"></div>
+      </div>
+
+      <!-- Matched sources -->
+      <div class="plg-sources-wrap" id="plg-sources-wrap" style="display:none;">
+        <div class="plg-sources-title">Matched Sources</div>
+        <div class="plg-sources-list" id="plg-sources-list"></div>
+      </div>
+
+      <!-- No matches -->
+      <div class="plg-no-sources" id="plg-no-sources" style="display:none;">
+        <span>✅ No matching sources found — your text appears to be original.</span>
+      </div>
+
+      <!-- Download report -->
+      <div id="download-row" class="report-download-row" style="display:none;">
+        <button class="btn report-dl-btn" id="dl-plg-btn" onclick="downloadPlgPdf()">
+          ⬇ Download Copyleaks Report (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display:none;">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <p id="loading-msg">Scanning for plagiarism…<br/><small>This may take 30–90 seconds</small></p>
+  </div>
+</div>
+
+<style>
+/* ── Plagiarism checker ─────────────────────────────────────────────────── */
+.plg-results { margin-top: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+.plg-summary {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.plg-summary-scores {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.plg-summary-item { flex: 1; text-align: center; }
+.plg-summary-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--slate-500); margin-bottom: 6px; }
+.plg-summary-val   { font-size: 36px; font-weight: 800; }
+.plg-original .plg-summary-val { color: #16a34a; }
+.plg-similar  .plg-summary-val { color: #dc2626; }
+.plg-summary-divider { width: 1px; height: 56px; background: var(--border); margin: 0 20px; }
+
+.plg-bar-wrap  { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--slate-100); margin-bottom: 14px; }
+.plg-bar-orig  { background: #22c55e; height: 100%; transition: width .5s; }
+.plg-bar-sim   { background: #ef4444; height: 100%; transition: width .5s; }
+
+.plg-verdict { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.plg-verdict.vd-safe   { color: #16a34a; }
+.plg-verdict.vd-warn   { color: #d97706; }
+.plg-verdict.vd-danger { color: #dc2626; }
+.plg-words { font-size: 12px; color: var(--slate-500); }
+
+/* Sources list */
+.plg-sources-wrap {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.plg-sources-title { font-size: 13px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; }
+
+.plg-src-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.plg-src-row:last-child { border-bottom: none; }
+
+.plg-src-pct {
+  min-width: 52px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+}
+.plg-src-pct.safe   { color: #16a34a; }
+.plg-src-pct.warn   { color: #d97706; }
+.plg-src-pct.danger { color: #dc2626; }
+
+.plg-src-bar-wrap { flex: 0 0 90px; height: 6px; background: var(--slate-100); border-radius: 3px; overflow: hidden; }
+.plg-src-bar-fill { height: 100%; border-radius: 3px; }
+.plg-src-bar-fill.safe   { background: #22c55e; }
+.plg-src-bar-fill.warn   { background: #f59e0b; }
+.plg-src-bar-fill.danger { background: #ef4444; }
+
+.plg-src-info { flex: 1; min-width: 0; }
+.plg-src-title { font-size: 13px; font-weight: 600; color: var(--navy-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plg-src-url   { font-size: 11px; color: var(--slate-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plg-src-url a { color: var(--accent); text-decoration: none; }
+.plg-src-url a:hover { text-decoration: underline; }
+
+.plg-no-sources {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 20px 24px;
+  font-size: 14px;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+/* Not-configured notice */
+.plg-not-configured {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 18px 20px;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+</style>
+
+<script>
+var _jobId = null;
+var _pollTimer = null;
+var _lastJobId = null;
+
+(function(){
+  var saved = localStorage.getItem('ssg_plagiarism_text');
+  if (saved) {
+    document.getElementById('text-in').value = saved;
+    localStorage.removeItem('ssg_plagiarism_text');
+    updateMeta(saved);
+  }
+})();
+
+function updateMeta(val){
+  var words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
+  document.getElementById('wc-in').textContent = words + ' words';
+}
+
+function runCheck(){
+  var text = document.getElementById('text-in').value.trim();
+  var words = text === '' ? 0 : text.split(/\s+/).length;
+
+  if (words < 10)   { showError('Please paste at least 10 words.'); return; }
+  if (words > 3000) { showError('Too long — maximum 3,000 words.'); return; }
+
+  hideError();
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('check-btn').disabled = true;
+
+  var fd = new FormData();
+  fd.append('text', text);
+
+  fetch('/api/plagiarism/start', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.error){ hideBusy(); showError(data.error); return; }
+      _jobId = data.job_id;
+      _lastJobId = data.job_id;
+      _pollTimer = setInterval(pollJob, 3000);
+    })
+    .catch(function(){
+      hideBusy();
+      showError('Request failed. Please try again.');
+    });
+}
+
+function pollJob(){
+  if (!_jobId) return;
+  fetch('/api/plagiarism/poll/' + _jobId)
+    .then(function(r){ return r.json(); })
+    .then(function(job){
+      if (job.status === 'done'){
+        clearInterval(_pollTimer);
+        hideBusy();
+        showResults(job.result);
+      } else if (job.status === 'error'){
+        clearInterval(_pollTimer);
+        hideBusy();
+        showError(job.error || 'Scan failed. Please try again.');
+      }
+      /* still running → keep polling */
+    })
+    .catch(function(){
+      /* network hiccup — keep polling */
+    });
+}
+
+function verdictInfo(sim){
+  if (sim >= 30) return { icon:'🚨', text:'High similarity — likely to be flagged for plagiarism', cls:'vd-danger' };
+  if (sim >= 15) return { icon:'⚠️',  text:'Moderate similarity — review matched sources',          cls:'vd-warn'   };
+  return          { icon:'✅', text:'Low similarity — text appears mostly original',              cls:'vd-safe'   };
+}
+
+function srcClass(pct){
+  return pct >= 30 ? 'danger' : pct >= 15 ? 'warn' : 'safe';
+}
+
+function showResults(data){
+  var sim  = data.similarity;
+  var orig = Math.max(0, 100 - sim);
+
+  document.getElementById('sum-orig-val').textContent = orig.toFixed(1) + '%';
+  document.getElementById('sum-sim-val').textContent  = sim.toFixed(1)  + '%';
+  document.getElementById('bar-orig').style.width = orig + '%';
+  document.getElementById('bar-sim').style.width  = sim  + '%';
+
+  var vd = verdictInfo(sim);
+  var el = document.getElementById('plg-verdict');
+  el.textContent = vd.icon + ' ' + vd.text;
+  el.className   = 'plg-verdict ' + vd.cls;
+
+  document.getElementById('plg-words').textContent = data.words + ' words analyzed';
+
+  var sources = data.sources || [];
+  if (sources.length > 0){
+    var list = document.getElementById('plg-sources-list');
+    list.innerHTML = '';
+    sources.forEach(function(src){
+      var cls = srcClass(src.match_pct);
+      var row = document.createElement('div');
+      row.className = 'plg-src-row';
+      var urlHtml = src.url
+        ? '<a href="' + escHtml(src.url) + '" target="_blank" rel="noopener">' + escHtml(src.url) + '</a>'
+        : '<em>No URL</em>';
+      row.innerHTML =
+        '<div class="plg-src-pct ' + cls + '">' + src.match_pct.toFixed(1) + '%</div>' +
+        '<div class="plg-src-bar-wrap"><div class="plg-src-bar-fill ' + cls + '" style="width:' + Math.min(src.match_pct, 100) + '%"></div></div>' +
+        '<div class="plg-src-info">' +
+          '<div class="plg-src-title">' + escHtml(src.title) + '</div>' +
+          '<div class="plg-src-url">' + urlHtml + '</div>' +
+        '</div>';
+      list.appendChild(row);
+    });
+    document.getElementById('plg-sources-wrap').style.display = 'block';
+    document.getElementById('plg-no-sources').style.display   = 'none';
+  } else {
+    document.getElementById('plg-sources-wrap').style.display = 'none';
+    document.getElementById('plg-no-sources').style.display   = 'block';
+  }
+
+  document.getElementById('results-section').style.display = 'flex';
+  document.getElementById('download-row').style.display = 'block';
+}
+
+function downloadPlgPdf(){
+  if (!_lastJobId){ return; }
+  var btn = document.getElementById('dl-plg-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating PDF…';
+
+  var url = '/api/reports/plagiarism/' + _lastJobId + '/pdf';
+  fetch(url)
+    .then(function(r){
+      if (!r.ok){ throw new Error('PDF generation failed'); }
+      return r.blob();
+    })
+    .then(function(blob){
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'plagiarism_report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      btn.disabled = false;
+      btn.textContent = '⬇ Download Copyleaks Report (PDF)';
+    })
+    .catch(function(){
+      alert('Could not generate PDF. Please try again.');
+      btn.disabled = false;
+      btn.textContent = '⬇ Download Copyleaks Report (PDF)';
+    });
+}
+
+function hideBusy(){
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('check-btn').disabled = false;
+}
+
+function escHtml(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showError(msg){
+  var el = document.getElementById('tool-error');
+  el.innerHTML = '⚠️ ' + escHtml(msg);
+  el.style.display = 'block';
+}
+function hideError(){
+  document.getElementById('tool-error').style.display = 'none';
+}
+</script>
+{% endblock %}

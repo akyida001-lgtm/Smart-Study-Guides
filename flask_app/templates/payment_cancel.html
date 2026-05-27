@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Payment Cancelled — Smart Study Guides{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+
+<div class="pay-cancel-page">
+  <div class="pay-cancel-icon">↩️</div>
+  <h1 class="pay-cancel-title">Payment Cancelled</h1>
+  <p class="pay-cancel-sub">No charge was made. Your credits balance is unchanged.</p>
+
+  <div class="pay-cancel-actions">
+    <a class="btn accent full" href="{{ url_for('main.buy_credits') }}">Try Again</a>
+    <a class="btn ghost full" href="{{ url_for('main.dashboard') }}">Back to Dashboard</a>
+  </div>
+
+  <p class="pay-cancel-note">
+    Need help? <a href="{{ url_for('main.chat_page') }}" style="color:var(--accent);">Chat with support</a>
+  </p>
+</div>
+
+<style>
+.pay-cancel-page {
+  max-width: 420px; margin: 0 auto; text-align: center; padding: 40px 0;
+}
+.pay-cancel-icon { font-size: 52px; margin-bottom: 16px; }
+.pay-cancel-title { font-size: 24px; font-weight: 800; color: var(--navy-900); margin: 0 0 8px; }
+.pay-cancel-sub { color: var(--slate-500); font-size: 15px; margin: 0 0 32px; }
+.pay-cancel-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.pay-cancel-note { font-size: 13px; color: var(--slate-400); }
+</style>
+
+{% endblock %}

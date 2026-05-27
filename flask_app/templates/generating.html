@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% block title %}Generating… — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>✨ Generating your assignment</h1>
+</div>
+
+<div class="card wizard-card" style="max-width:620px;">
+  <div class="gen-status-icon" id="gen-icon">⏳</div>
+  <div class="wizard-card-title" id="gen-title">Working on it…</div>
+  <div class="wizard-card-sub" id="gen-step">Starting up…</div>
+
+  <div class="gen-progress-wrap">
+    <div class="gen-progress-bar" id="bar"></div>
+  </div>
+  <div class="gen-percent"><span id="pct">0</span>%</div>
+
+  <div class="gen-steps-list">
+    <div class="gen-step-item" id="gsi-humanize">🤖 Humanizing content</div>
+    <div class="gen-step-item" id="gsi-format">📄 Formatting document</div>
+    <div class="gen-step-item" id="gsi-building">🏗️ Building Word file</div>
+    <div class="gen-step-item" id="gsi-deliver">📧 Delivering to email</div>
+  </div>
+
+  <!-- Done section -->
+  <div id="done-section" style="display:none;margin-top:28px;">
+
+    <div style="font-size:48px;text-align:center;margin-bottom:10px;">🎉</div>
+    <div class="wizard-card-title" style="text-align:center;">Your paper is ready!</div>
+    <div class="wizard-card-sub" style="text-align:center;margin-bottom:20px;">Download below or check your email.</div>
+
+    <!-- Primary action buttons -->
+    <div class="done-btn-row">
+      <a class="btn accent" id="dl-btn" href="#" style="flex:1;text-align:center;font-size:15px;padding:13px 0;">
+        ⬇ Download .docx
+      </a>
+      <button class="btn ghost" id="rubric-toggle-btn" onclick="toggleRubricPanel()"
+              style="flex:1;font-size:15px;padding:13px 0;">
+        📋 Mark with Rubric
+      </button>
+    </div>
+
+    {% if a.pages >= 5 %}
+    <!-- Human agent notice for large assignments -->
+    <div class="done-agent-banner">
+      <span style="font-size:22px;">👤</span>
+      <div>
+        <strong>Human Agent Review</strong><br/>
+        <span style="font-size:13px;">Your {{ a.pages }}-page assignment qualifies for human quality review.
+        Contact our team for a detailed check.</span>
+      </div>
+      <a class="btn-sm accent" href="mailto:support@smartstudyguides.com?subject=Human+Review+Request+%23{{ a.id }}&body=Assignment+ID:+{{ a.id }}%0ATopic:+{{ a.topic[:80]|urlencode }}"
+         style="white-space:nowrap;">Contact us</a>
+    </div>
+    {% endif %}
+
+    <!-- Rubric marking panel (hidden by default) -->
+    <div id="rubric-panel" style="display:none;margin-top:20px;">
+      <div class="rubric-panel-head">📋 Mark against your rubric</div>
+      <p class="rubric-panel-sub">Upload your rubric (photo, scan, or PDF). The AI will mark your paper against the rubric criteria — grammar is not assessed.</p>
+
+      <div class="rubric-upload-zone" id="rub-zone">
+        <input type="file" id="rubric-file" accept="image/jpeg,image/png,image/webp,application/pdf"
+               class="rubric-upload-input" onchange="rubricFileChanged(this)" />
+        <div id="rub-body" class="rubric-upload-body">
+          <div style="font-size:32px;">📄</div>
+          <p style="margin:6px 0 0;font-size:13px;color:#64748b;">
+            <strong>Click to upload rubric</strong> — JPG, PNG, WEBP or PDF · max 10 MB
+          </p>
+        </div>
+        <div id="rub-preview" style="display:none;padding:14px;text-align:center;">
+          <img id="rub-img" src="" style="max-height:120px;border-radius:6px;display:none;" />
+          <p id="rub-name" style="font-size:13px;margin:6px 0 0;word-break:break-all;"></p>
+          <button type="button" onclick="clearRubric()" style="font-size:11px;color:#e53e3e;background:none;border:none;cursor:pointer;margin-top:4px;">✕ Remove</button>
+        </div>
+      </div>
+
+      <button class="btn accent full" id="mark-btn" onclick="submitRubric()" style="margin-top:14px;font-size:15px;padding:13px;" disabled>
+        <span id="mark-btn-text">Select a rubric file first</span>
+      </button>
+
+      <!-- Marking result -->
+      <div id="marking-result" style="display:none;margin-top:20px;">
+        <div class="marking-result-head">📊 Marking Result</div>
+        <div class="marking-result-body" id="marking-body"></div>
+        <button onclick="window.print()" class="btn ghost" style="margin-top:12px;width:100%;">🖨 Print result</button>
+      </div>
+
+      <div id="mark-error" class="flash error" style="display:none;margin-top:12px;"></div>
+    </div>
+
+    <!-- AI Removal by Human Writers -->
+    <div style="margin-top:18px;border:2px solid #e05b6f;border-radius:14px;padding:18px 20px;background:#fff8f9;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:22px;">✍️</span>
+        <div>
+          <div style="font-weight:700;color:#c0283d;font-size:15px;">Worried about AI detection?</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:2px;">Send your paper to a human writer for a guaranteed 0% AI rewrite — delivered in 30–60 minutes.</div>
+        </div>
+      </div>
+      <button type="button" class="btn accent" onclick="togglePreHumanizeRemoval()"
+              id="pre-removal-toggle-btn"
+              style="width:100%;background:#c0283d;border-color:#c0283d;font-size:14px;padding:11px 0;">
+        ✍️ Send to Human Writers — Remove All AI
+      </button>
+      <div id="pre-removal-form-wrap" style="display:none;margin-top:14px;">
+        <form method="POST" action="{{ url_for('main.submit_ai_removal', aid=a.id) }}">
+          <input type="hidden" name="humanized_text" value="">
+          <input type="hidden" name="ai_score" value="95">
+          <div style="margin-bottom:10px;">
+            <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Any notes for the writer? <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>
+            <textarea name="notes" rows="3" placeholder="e.g. Keep the same structure, maintain APA citations, tone should be academic…"
+                      style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea>
+          </div>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+            ⏱ <strong>Deadline:</strong> 30 min (≤800 words) · 60 min (longer papers)
+          </div>
+          <button type="submit" class="btn accent"
+                  style="width:100%;background:#c0283d;border-color:#c0283d;font-size:14px;padding:11px 0;">
+            Submit for AI Removal
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <a class="btn ghost full" href="{{ url_for('main.my_assignments') }}" style="margin-top:14px;">📂 My Assignments</a>
+
+    {% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+    <div id="admin-copy-row" style="display:none;margin-top:14px;padding:12px 14px;background:rgba(99,102,241,.07);border:1.5px solid #6366f1;border-radius:12px;">
+      <div style="font-size:11px;font-weight:700;color:#6366f1;margin-bottom:8px;letter-spacing:.5px;">ADMIN — COPY TOOLS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <button class="admin-copy-btn" id="copy-url-btn" onclick="adminCopy(docxUrl, this)">📋 Copy download URL</button>
+        <button class="admin-copy-btn" id="copy-marking-btn" style="display:none;" onclick="adminCopy(document.getElementById('marking-body').innerText, this)">📋 Copy marking result</button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div id="err-section" class="flash error" style="display:none;margin-top:24px;"></div>
+</div>
+
+<script>
+const aid = {{ a.id }};
+let docxUrl = '';
+
+const stepMap = {
+  'humanize':   'gsi-humanize',
+  'humanizing': 'gsi-humanize',
+  'checking':   'gsi-humanize',
+  'format':     'gsi-format',
+  'formatting': 'gsi-format',
+  'building':   'gsi-building',
+  'uploading':  'gsi-building',
+  'deliver':    'gsi-deliver',
+  'sending':    'gsi-deliver',
+  'email':      'gsi-deliver',
+};
+
+function highlightStep(stepText) {
+  if (!stepText) return;
+  const lower = stepText.toLowerCase();
+  Object.entries(stepMap).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('active', 'done');
+    if (lower.includes(key)) el.classList.add('active');
+  });
+}
+
+async function poll() {
+  try {
+    const r = await fetch(`/api/assignments/${aid}/status`);
+    const d = await r.json();
+    document.getElementById('gen-step').textContent = d.step || 'Processing…';
+    document.getElementById('pct').textContent = d.percent || 0;
+    document.getElementById('bar').style.width = (d.percent || 0) + '%';
+    highlightStep(d.step);
+
+    if (d.status === 'complete') {
+      document.getElementById('gen-icon').textContent = '✅';
+      document.getElementById('gen-title').textContent = 'Done!';
+      document.getElementById('done-section').style.display = 'block';
+      docxUrl = d.docx_url || '#';
+      document.getElementById('dl-btn').href = docxUrl;
+      document.querySelectorAll('.gen-step-item').forEach(el => el.classList.add('done'));
+      document.getElementById('bar').style.width = '100%';
+      document.getElementById('pct').textContent = '100';
+      // Show admin copy panel
+      const acr = document.getElementById('admin-copy-row');
+      if (acr) acr.style.display = 'block';
+      return;
+    }
+    if (d.status === 'failed') {
+      document.getElementById('gen-icon').textContent = '❌';
+      document.getElementById('gen-title').textContent = 'Generation failed';
+      const e = document.getElementById('err-section');
+      e.style.display = 'block';
+      e.textContent = d.error || 'Something went wrong. Please try again.';
+      return;
+    }
+    setTimeout(poll, 2500);
+  } catch(e) {
+    setTimeout(poll, 4000);
+  }
+}
+poll();
+
+// AI Removal toggle (pre-humanize)
+function togglePreHumanizeRemoval() {
+  const wrap = document.getElementById('pre-removal-form-wrap');
+  const btn  = document.getElementById('pre-removal-toggle-btn');
+  const open = wrap.style.display !== 'none';
+  wrap.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '✍️ Send to Human Writers — Remove All AI' : '✕ Cancel';
+}
+
+// Rubric panel toggle
+function toggleRubricPanel() {
+  const panel = document.getElementById('rubric-panel');
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  document.getElementById('rubric-toggle-btn').textContent = open ? '📋 Mark with Rubric' : '✕ Close rubric panel';
+}
+
+// File handling
+function rubricFileChanged(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('rub-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  document.getElementById('rub-body').style.display = 'none';
+  document.getElementById('rub-preview').style.display = 'block';
+  const img = document.getElementById('rub-img');
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; img.style.display = 'block'; };
+    reader.readAsDataURL(file);
+  } else {
+    img.style.display = 'none';
+  }
+  document.getElementById('mark-btn').disabled = false;
+  document.getElementById('mark-btn-text').textContent = '🔍 Mark my paper now';
+}
+
+function clearRubric() {
+  document.getElementById('rubric-file').value = '';
+  document.getElementById('rub-body').style.display = 'flex';
+  document.getElementById('rub-preview').style.display = 'none';
+  document.getElementById('mark-btn').disabled = true;
+  document.getElementById('mark-btn-text').textContent = 'Select a rubric file first';
+}
+
+// Submit rubric for marking
+async function submitRubric() {
+  const fileInput = document.getElementById('rubric-file');
+  if (!fileInput.files.length) return;
+
+  const btn = document.getElementById('mark-btn');
+  btn.disabled = true;
+  document.getElementById('mark-btn-text').textContent = '⏳ Marking… this may take a minute';
+  document.getElementById('mark-error').style.display = 'none';
+  document.getElementById('marking-result').style.display = 'none';
+
+  const fd = new FormData();
+  fd.append('rubric', fileInput.files[0]);
+
+  try {
+    const r = await fetch(`/api/assignments/${aid}/mark-with-rubric`, {
+      method: 'POST', body: fd,
+    });
+    const d = await r.json();
+    if (d.error) {
+      document.getElementById('mark-error').textContent = '⚠️ ' + d.error;
+      document.getElementById('mark-error').style.display = 'block';
+    } else {
+      renderMarkingResult(d.result);
+    }
+  } catch(e) {
+    document.getElementById('mark-error').textContent = '⚠️ Network error — please try again.';
+    document.getElementById('mark-error').style.display = 'block';
+  }
+
+  btn.disabled = false;
+  document.getElementById('mark-btn-text').textContent = '🔍 Mark again';
+}
+
+// Render markdown-style result
+function renderMarkingResult(text) {
+  let html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^## (.+)$/gm, '<h3 class="mr-h3">$1</h3>')
+    .replace(/^---+$/gm, '<hr class="mr-hr"/>')
+    .replace(/\n/g, '<br/>');
+  document.getElementById('marking-body').innerHTML = html;
+  document.getElementById('marking-result').style.display = 'block';
+  document.getElementById('marking-result').scrollIntoView({behavior:'smooth'});
+  const cmb = document.getElementById('copy-marking-btn');
+  if (cmb) cmb.style.display = 'inline-flex';
+}
+</script>
+{% endblock %}

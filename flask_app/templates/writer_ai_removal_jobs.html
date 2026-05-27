@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}AI Removal Jobs — Writer Portal{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1>✍️ AI Removal Jobs</h1>
+    <p style="color:var(--slate-400);margin-top:4px;">{{ jobs|length }} job{{ 's' if jobs|length != 1 else '' }} assigned to you</p>
+  </div>
+  <a href="{{ url_for('main.writer_available') }}" class="btn ghost">← Writer Portal</a>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+  <div class="flash {{ cat }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+{% if not jobs %}
+<div class="card" style="text-align:center;padding:40px;color:var(--slate-400);">No jobs assigned to you yet.</div>
+{% else %}
+
+{% for job in jobs %}
+<div class="card" style="margin-bottom:16px;{% if job.is_overdue and job.status != 'completed' %}border-left:4px solid #ff6b6b;{% elif job.status == 'completed' %}border-left:4px solid #16a34a;{% else %}border-left:4px solid #ffd166;{% endif %}">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);">{{ job.assignment.topic[:80] }}</div>
+      <div style="font-size:13px;color:var(--slate-400);margin-top:2px;">
+        {{ (job.word_count or 0)|int }} words ·
+        Submitted {{ job.submitted_at.strftime('%H:%M %d %b') }}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;
+        {% if job.status == 'completed' %}background:#14532d;color:#4ade80;
+        {% else %}background:#1e3a8a;color:#93c5fd;{% endif %}">
+        {{ job.STATUS_LABELS.get(job.status, job.status) }}
+      </span>
+      {% if job.status != 'completed' %}
+      <span style="font-size:13px;font-weight:700;color:{% if job.is_overdue %}#ff6b6b{% else %}#ffd166{% endif %};">
+        {% if job.is_overdue %}⚠️ Overdue{% else %}⏰ {{ job.deadline_minutes }} min left{% endif %}
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Score info -->
+  <div style="background:#450a0a;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px;font-weight:800;color:#ff6b6b;">{{ job.original_ai_score }}% AI</span>
+    <span style="color:#fca5a5;font-size:13px;">This text needs to be rewritten to score below 1% AI. Target: fully human-sounding academic writing.</span>
+  </div>
+
+  {% if job.student_notes %}
+  <div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--slate-300);">
+    <strong style="color:var(--slate-400);">Student notes:</strong> {{ job.student_notes }}
+  </div>
+  {% endif %}
+
+  <!-- Original text -->
+  <div style="margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Original Text (rewrite this)</div>
+    <div style="background:var(--surface-2);border-radius:8px;padding:14px;max-height:280px;overflow-y:auto;">
+      <pre style="white-space:pre-wrap;font-size:13px;color:var(--slate-300);font-family:inherit;margin:0;line-height:1.7;">{{ job.original_text }}</pre>
+    </div>
+    <button onclick="navigator.clipboard.writeText(document.querySelectorAll('pre')[{{ loop.index0 }}].textContent)" class="btn ghost" style="margin-top:8px;padding:6px 14px;font-size:12px;">📋 Copy Text</button>
+  </div>
+
+  {% if job.status != 'completed' %}
+  <!-- Upload form -->
+  <form method="POST" action="{{ url_for('main.writer_upload_ai_removal', job_id=job.id) }}" enctype="multipart/form-data">
+    <div style="font-size:12px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Submit Completed Work</div>
+
+    <textarea name="final_text" placeholder="Paste your rewritten text here (required — used for automatic AI detection)" rows="8"
+      style="width:100%;padding:12px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:13px;line-height:1.7;font-family:inherit;resize:vertical;margin-bottom:10px;"></textarea>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <label style="flex:1;min-width:200px;">
+        <div style="font-size:12px;color:var(--slate-400);margin-bottom:4px;">Upload .docx file (optional)</div>
+        <input type="file" name="file" accept=".docx,.doc,.pdf,.txt" style="width:100%;padding:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;">
+      </label>
+    </div>
+
+    <button type="submit" class="btn accent" style="padding:12px 28px;font-size:15px;font-weight:700;">
+      ✅ Submit & Run AI Detection
+    </button>
+  </form>
+
+  {% else %}
+  <div style="background:#052e16;border-radius:10px;padding:14px 18px;display:flex;gap:16px;align-items:center;">
+    <div>
+      <div style="font-size:12px;color:#86efac;margin-bottom:2px;">Final AI Score</div>
+      <div style="font-size:26px;font-weight:800;color:#4ade80;">{{ job.final_ai_score }}%</div>
+    </div>
+    <div style="color:#4ade80;font-size:13px;">✅ Completed {{ job.completed_at.strftime('%H:%M %d %b') }}</div>
+    {% if job.final_file_url %}
+    <a href="{{ job.final_file_url }}" class="btn ghost" style="margin-left:auto;padding:8px 14px;font-size:13px;">⬇ Download</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}

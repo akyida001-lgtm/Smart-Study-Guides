@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+{% block title %}Humanize Text — Smart Study Guides{% endblock %}
+{% block content %}
+<div class="tool-page">
+  <div class="tool-header">
+    <h1>✍️ Humanize Text</h1>
+    <p class="tool-sub">AI-detected sentences are highlighted in the original panel. Review and refine until your text is clean.</p>
+  </div>
+
+  <!-- ── Input area (shown before first humanize) ── -->
+  <div id="input-phase">
+    <div class="tool-single-col">
+      <div class="tool-col">
+        <div class="tool-col-header">
+          <span class="tool-col-label">Original text</span>
+          <div class="tool-meta-row">
+            <span id="wc-in" class="wc-badge">0 words</span>
+          </div>
+        </div>
+        <textarea id="text-in" class="tool-textarea" placeholder="Paste your AI-written text here…" rows="14" maxlength="30000"
+                  oninput="updateWordCount(this.value)"></textarea>
+
+        <div class="tool-tone-row">
+          <label class="tool-tone-label">Tone:</label>
+          <label class="tone-opt"><input type="radio" name="tone" value="academic" checked /> Academic</label>
+          <label class="tone-opt"><input type="radio" name="tone" value="formal" /> More formal</label>
+          <label class="tone-opt"><input type="radio" name="tone" value="simple" /> Simple</label>
+        </div>
+
+        <button id="humanize-btn" class="btn accent full tool-btn" onclick="runHumanize(false)">
+          ✍️ Humanize now
+        </button>
+        <div id="tool-error" class="tool-error" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Results area (shown after humanize) ── -->
+  <div id="results-phase" style="display:none;">
+    <div class="hum-results-grid">
+
+      <!-- LEFT: Original with AI highlights -->
+      <div class="hum-panel">
+        <div class="hum-panel-header">
+          <span class="hum-panel-title">📄 Original (AI content highlighted)</span>
+          <span class="hum-wc-badge" id="orig-wc-badge"></span>
+        </div>
+        <div class="hum-legend-row">
+          <span class="hum-legend-ai">■ AI-detected</span>
+          <span class="hum-legend-human">■ Human-written</span>
+        </div>
+        <div class="hum-doc-scroll" id="orig-highlighted"></div>
+      </div>
+
+      <!-- RIGHT: Humanized result + action bar -->
+      <div class="hum-panel">
+        <div class="hum-panel-header">
+          <span class="hum-panel-title">✨ Humanized Result</span>
+          <span class="hum-wc-badge" id="hum-wc-badge"></span>
+        </div>
+
+        <!-- Action button bar (matches screenshot) -->
+        <div class="hum-action-bar">
+          <!-- Humanize More (with dropdown) -->
+          <div class="hum-btn-group">
+            <button class="hum-ab-btn hum-ab-primary" onclick="runHumanizeMore()">
+              <span class="hum-ab-icon">⚡</span> Humanize More
+            </button>
+            <button class="hum-ab-dropdown-toggle hum-ab-primary" onclick="toggleMoreDropdown(event)" aria-label="More options">▾</button>
+            <div class="hum-dropdown" id="more-dropdown" style="display:none;">
+              <button class="hum-dropdown-item" onclick="setToneAndRun('academic')">Academic tone</button>
+              <button class="hum-dropdown-item" onclick="setToneAndRun('formal')">More formal</button>
+              <button class="hum-dropdown-item" onclick="setToneAndRun('simple')">Simple &amp; clear</button>
+            </div>
+          </div>
+
+          <!-- Deep Scan toggle -->
+          <button class="hum-ab-btn" id="deep-scan-btn" onclick="toggleDeepScan()" title="Run AI detection on humanized result">
+            <span class="hum-ab-icon">🔍</span> <span id="deep-scan-label">Deep Scan</span>
+          </button>
+
+          <!-- Compare -->
+          <button class="hum-ab-btn" id="compare-btn" onclick="toggleCompare()" title="Show side-by-side diff">
+            <span class="hum-ab-icon">⊡</span> Compare
+          </button>
+        </div>
+
+        <!-- Humanized text (normal view) -->
+        <div class="hum-doc-scroll" id="hum-text-view" style="display:none;">
+          <div class="hum-doc-content" id="hum-text-content"></div>
+        </div>
+
+        <!-- Compare diff view (hidden by default) -->
+        <div class="hum-doc-scroll" id="hum-diff-view" style="display:none;">
+          <div class="hum-diff-legend">
+            <span class="hum-diff-del-label">— Removed</span>
+            <span class="hum-diff-ins-label">+ Added</span>
+          </div>
+          <div class="hum-doc-content" id="hum-diff-content"></div>
+        </div>
+
+        <!-- Deep scan results -->
+        <div class="hum-deepscan-results" id="deep-scan-results" style="display:none;"></div>
+
+        <!-- Done info + copy -->
+        <div class="hum-done-row" id="hum-done-row" style="display:none;">
+          <span class="hum-done-text" id="hum-done-text"></span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn ghost" style="font-size:13px;padding:7px 14px;" onclick="reCheck()">🤖 Check AI score</button>
+            {% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+            <button class="admin-copy-btn" onclick="adminCopy(currentHumanized, this)">📋 Copy result</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit / start over -->
+    <div class="hum-restart-row">
+      <button class="btn ghost" style="font-size:13px;" onclick="startOver()">← Edit original text</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display:none;">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <p id="loading-msg">Humanizing your text…<br/><small>This usually takes 15–45 seconds</small></p>
+  </div>
+</div>
+
+<script>
+/* ── State ── */
+var originalText   = '';
+var currentHumanized = '';
+var compareMode    = false;
+var deepScanOn     = false;
+
+/* ── Pre-fill from AI checker redirect ── */
+(function(){
+  var saved = localStorage.getItem('ssg_humanize_text');
+  if (saved) {
+    document.getElementById('text-in').value = saved;
+    localStorage.removeItem('ssg_humanize_text');
+    updateWordCount(saved);
+  }
+})();
+
+function updateWordCount(val){
+  var words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
+  document.getElementById('wc-in').textContent = words + ' words';
+}
+
+/* ──────────────────────────────────────────────
+   DIFF / HIGHLIGHT LOGIC
+   Splits both texts into sentences, computes
+   word-overlap similarity, marks low-similarity
+   original sentences as "AI" (red + bold).
+─────────────────────────────────────────────── */
+function splitSentences(text){
+  /* split on . ! ? followed by whitespace or end */
+  return text.match(/[^.!?]+[.!?]+[\s]*/g) || [text];
+}
+
+function wordSet(s){
+  var words = s.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(Boolean);
+  var set = {};
+  words.forEach(function(w){ set[w] = 1; });
+  return set;
+}
+
+function jaccard(a, b){
+  var sa = wordSet(a), sb = wordSet(b);
+  var inter = 0, union = 0;
+  var all = {};
+  Object.keys(sa).forEach(function(k){ all[k]=1; });
+  Object.keys(sb).forEach(function(k){ all[k]=1; });
+  Object.keys(all).forEach(function(k){
+    if (sa[k] && sb[k]) inter++;
+    union++;
+  });
+  return union === 0 ? 1 : inter / union;
+}
+
+function buildHighlightedOriginal(origText, humText){
+  var origSents = splitSentences(origText);
+  var humSents  = splitSentences(humText);
+
+  var html = '';
+  origSents.forEach(function(sent){
+    /* find best matching sentence in humanized */
+    var best = 0;
+    humSents.forEach(function(hs){
+      var sim = jaccard(sent, hs);
+      if (sim > best) best = sim;
+    });
+    /* low similarity → sentence was AI-generated (significantly rewritten) */
+    var isAI = best < 0.55;
+    if (isAI){
+      html += '<span class="hum-ai-sent">' + escHtml(sent) + '</span>';
+    } else {
+      html += '<span class="hum-human-sent">' + escHtml(sent) + '</span>';
+    }
+  });
+  return html;
+}
+
+/* Word-level diff for Compare view */
+function buildDiff(origText, humText){
+  var origWords = origText.split(/(\s+)/);
+  var humWords  = humText.split(/(\s+)/);
+
+  /* Simple greedy diff — good enough for display */
+  var oSet = {};
+  origWords.forEach(function(w,i){ oSet[w.toLowerCase()] = i; });
+
+  var html = '<div class="hum-diff-orig-block"><strong>Original</strong><br>';
+  origWords.forEach(function(w){
+    if (/^\s+$/.test(w)){ html += w; return; }
+    var inHum = humWords.some(function(h){ return h.toLowerCase() === w.toLowerCase(); });
+    html += inHum
+      ? escHtml(w)
+      : '<span class="hum-diff-del">' + escHtml(w) + '</span>';
+  });
+  html += '</div><div class="hum-diff-ins-block"><strong>Humanized</strong><br>';
+  humWords.forEach(function(w){
+    if (/^\s+$/.test(w)){ html += w; return; }
+    var inOrig = origWords.some(function(o){ return o.toLowerCase() === w.toLowerCase(); });
+    html += inOrig
+      ? escHtml(w)
+      : '<span class="hum-diff-ins">' + escHtml(w) + '</span>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ──────────────────────────────────────────────
+   CORE: run humanization
+─────────────────────────────────────────────── */
+function doHumanize(textToSend, tone, loadingMsg){
+  document.getElementById('loading-msg').innerHTML = loadingMsg;
+  document.getElementById('loading-overlay').style.display = 'flex';
+  hideError();
+
+  var fd = new FormData();
+  fd.append('text', textToSend);
+  fd.append('tone', tone);
+
+  return fetch('/humanize', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      document.getElementById('loading-overlay').style.display = 'none';
+      if (data.error){ showError(data.error); throw new Error(data.error); }
+      return data.result;
+    })
+    .catch(function(e){
+      document.getElementById('loading-overlay').style.display = 'none';
+      if (e.message && e.message !== 'Failed to fetch') showError(e.message);
+      else showError('Request failed. Please try again.');
+      throw e;
+    });
+}
+
+function showResults(orig, humanized){
+  originalText     = orig;
+  currentHumanized = humanized;
+  compareMode      = false;
+
+  /* Switch views */
+  document.getElementById('input-phase').style.display   = 'none';
+  document.getElementById('results-phase').style.display = 'block';
+  document.getElementById('compare-btn').classList.remove('active');
+
+  /* Word counts */
+  var origWc = orig.trim().split(/\s+/).length;
+  var humWc  = humanized.trim().split(/\s+/).length;
+  document.getElementById('orig-wc-badge').textContent = origWc + ' words';
+  document.getElementById('hum-wc-badge').textContent  = humWc  + ' words';
+
+  /* Highlighted original */
+  document.getElementById('orig-highlighted').innerHTML = buildHighlightedOriginal(orig, humanized);
+
+  /* Humanized normal view */
+  document.getElementById('hum-text-content').textContent = humanized;
+  document.getElementById('hum-text-view').style.display  = 'block';
+  document.getElementById('hum-diff-view').style.display  = 'none';
+  document.getElementById('deep-scan-results').style.display = 'none';
+
+  /* Done row */
+  document.getElementById('hum-done-text').textContent = '✅ Done! ' + humWc + ' words humanized.';
+  document.getElementById('hum-done-row').style.display = 'flex';
+
+  /* Auto-run deep scan every time results are shown */
+  deepScanOn = true;
+  document.getElementById('deep-scan-btn').classList.add('active');
+  document.getElementById('deep-scan-label').textContent = 'Deep Scan On';
+  runDeepScan();
+}
+
+/* ── Entry points ── */
+function runHumanize(fromResults){
+  var text, tone;
+  if (fromResults){
+    text = originalText;
+    tone = 'academic';
+  } else {
+    text = document.getElementById('text-in').value.trim();
+    tone = document.querySelector('input[name="tone"]:checked').value;
+  }
+  var words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words < 10)   { showError('Please paste at least 10 words.'); return; }
+  if (words > 3000) { showError('Text is too long. Maximum 3,000 words.'); return; }
+
+  doHumanize(text, tone, 'Humanizing your text…<br/><small>This usually takes 15–45 seconds</small>')
+    .then(function(result){ showResults(text, result); });
+}
+
+/* Humanize More → take the already-humanized text and push it through again */
+function runHumanizeMore(){
+  closeDropdown();
+  if (!currentHumanized){ return; }
+  doHumanize(currentHumanized, 'academic', '⚡ Humanizing further…<br/><small>Refining your text</small>')
+    .then(function(result){ showResults(originalText, result); });
+}
+
+/* Rehumanize → restart from the original text */
+function runRehumanize(){
+  if (!originalText){ return; }
+  var tone = 'academic';
+  doHumanize(originalText, tone, '↻ Rehumanizing from original…<br/><small>This usually takes 15–45 seconds</small>')
+    .then(function(result){ showResults(originalText, result); });
+}
+
+/* ── Tone + run from dropdown ── */
+function setToneAndRun(tone){
+  closeDropdown();
+  if (!currentHumanized){ return; }
+  doHumanize(currentHumanized, tone, '⚡ Humanizing with ' + tone + ' tone…<br/><small>Refining your text</small>')
+    .then(function(result){ showResults(originalText, result); });
+}
+
+/* ── Compare toggle ── */
+function toggleCompare(){
+  compareMode = !compareMode;
+  var btn = document.getElementById('compare-btn');
+  if (compareMode){
+    btn.classList.add('active');
+    document.getElementById('hum-diff-content').innerHTML = buildDiff(originalText, currentHumanized);
+    document.getElementById('hum-text-view').style.display = 'none';
+    document.getElementById('hum-diff-view').style.display = 'block';
+  } else {
+    btn.classList.remove('active');
+    document.getElementById('hum-text-view').style.display = 'block';
+    document.getElementById('hum-diff-view').style.display = 'none';
+  }
+}
+
+/* ── Deep Scan toggle ── */
+function toggleDeepScan(){
+  deepScanOn = !deepScanOn;
+  var btn = document.getElementById('deep-scan-btn');
+  var lbl = document.getElementById('deep-scan-label');
+  if (deepScanOn){
+    btn.classList.add('active');
+    lbl.textContent = 'Deep Scan On';
+    runDeepScan();
+  } else {
+    btn.classList.remove('active');
+    lbl.textContent = 'Deep Scan';
+    document.getElementById('deep-scan-results').style.display = 'none';
+  }
+}
+
+function runDeepScan(){
+  var resultsEl = document.getElementById('deep-scan-results');
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = '<div class="hum-scan-loading"><span class="lv-spin"></span> Scanning…</div>';
+
+  var fd = new FormData();
+  fd.append('text', currentHumanized);
+
+  fetch('/check-ai', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.error){ resultsEl.innerHTML = '<div class="hum-scan-error">⚠ ' + escHtml(data.error) + '</div>'; return; }
+      var ai    = data.ai_score;
+      var human = data.human_pct !== undefined ? data.human_pct : (100 - ai);
+      var cls   = ai >= 70 ? 'danger' : ai >= 40 ? 'warn' : 'safe';
+      var icon  = ai >= 70 ? '🚨' : ai >= 40 ? '⚠️' : '✅';
+
+      var html = '<div class="hum-scan-header">' + icon + ' Deep Scan Results</div>';
+      html += '<div class="hum-scan-summary">';
+      html += '<div class="hum-scan-score hum-scan-ai"><div class="hum-scan-val ' + cls + '">' + ai.toFixed(1) + '%</div><div class="hum-scan-lbl">AI</div></div>';
+      html += '<div class="hum-scan-score hum-scan-human"><div class="hum-scan-val safe">' + human.toFixed(1) + '%</div><div class="hum-scan-lbl">Human</div></div>';
+      html += '</div>';
+
+      if (data.detectors && data.detectors.length){
+        html += '<div class="hum-scan-detectors">';
+        data.detectors.forEach(function(d){
+          var dc = d.ai_pct >= 70 ? 'danger' : d.ai_pct >= 40 ? 'warn' : 'safe';
+          html += '<div class="hum-scan-det-row">';
+          html += '<span class="hum-scan-det-name">' + d.icon + ' ' + escHtml(d.name) + '</span>';
+          html += '<span class="hum-scan-det-bar-wrap"><span class="hum-scan-det-bar ' + dc + '" style="width:' + d.ai_pct + '%"></span></span>';
+          html += '<span class="hum-scan-det-pct ' + dc + '">' + d.ai_pct.toFixed(1) + '% AI</span>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+      resultsEl.innerHTML = html;
+    })
+    .catch(function(){
+      resultsEl.innerHTML = '<div class="hum-scan-error">⚠ Scan failed — please try again.</div>';
+    });
+}
+
+/* ── Dropdown helpers ── */
+function toggleMoreDropdown(e){
+  e.stopPropagation();
+  var dd = document.getElementById('more-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+function closeDropdown(){
+  document.getElementById('more-dropdown').style.display = 'none';
+}
+document.addEventListener('click', closeDropdown);
+
+/* ── Start over ── */
+function startOver(){
+  document.getElementById('text-in').value = originalText;
+  updateWordCount(originalText);
+  document.getElementById('input-phase').style.display   = 'block';
+  document.getElementById('results-phase').style.display = 'none';
+}
+
+/* ── Send to AI checker ── */
+function reCheck(){
+  localStorage.setItem('ssg_ai_check_text', currentHumanized);
+  window.location.href = '/check-ai';
+}
+
+/* ── Error helpers ── */
+function showError(msg){
+  var el = document.getElementById('tool-error');
+  el.innerHTML = '⚠️ ' + escHtml(msg);
+  el.style.display = 'block';
+}
+function hideError(){
+  var el = document.getElementById('tool-error');
+  if (el) el.style.display = 'none';
+}
+</script>
+{% endblock %}

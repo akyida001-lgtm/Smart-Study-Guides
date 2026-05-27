@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Profile — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>👤 Profile</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+{% endwith %}
+
+<div class="profile-layout">
+
+  <!-- Left: Edit name -->
+  <div class="profile-col">
+    <div class="card">
+      <div class="card-section-title">Personal details</div>
+      <form method="post" action="{{ url_for('main.profile') }}" class="wizard-form">
+        <div class="wf-field">
+          <label class="wf-label">First name</label>
+          <input class="wf-input" name="first_name" value="{{ user_rec.first_name or '' }}" placeholder="Your first name" />
+        </div>
+        <div class="wf-field">
+          <label class="wf-label">Last name</label>
+          <input class="wf-input" name="last_name" value="{{ user_rec.last_name or '' }}" placeholder="Your last name" />
+        </div>
+        <div class="wf-field">
+          <label class="wf-label">Phone number <span style="color:var(--slate-500);font-size:12px;font-weight:400;">(optional — for SMS alerts)</span></label>
+          <input class="wf-input" name="phone" value="{{ user_rec.phone or '' }}" placeholder="+254712345678" type="tel" />
+          <div class="wf-hint">Include country code, e.g. +254… · Used only for important account notifications.</div>
+        </div>
+        <div class="wf-field">
+          <label class="wf-label">Email address</label>
+          <input class="wf-input" value="{{ user_rec.email }}" disabled style="opacity:0.55;cursor:not-allowed;" />
+          <div class="wf-hint">Email cannot be changed here.</div>
+        </div>
+        <div class="wf-actions" style="justify-content:flex-start;">
+          <button class="btn accent" type="submit">Save changes</button>
+        </div>
+      </form>
+    </div>
+
+    {% if user_rec.auth_provider == 'email' or not user_rec.auth_provider %}
+    <div class="card" style="margin-top:16px;">
+      <div class="card-section-title">Password</div>
+      <p style="font-size:14px;color:var(--slate-500);margin:0 0 14px;">Change your password using the forgot-password flow.</p>
+      <a class="btn ghost" href="{{ url_for('auth.forgot') }}">🔑 Reset password</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Account info -->
+  <div class="profile-col">
+    <div class="card">
+      <div class="card-section-title">Account summary</div>
+      <div class="profile-info-rows">
+        <div class="profile-info-row">
+          <span class="pinfo-key">Sign-in method</span>
+          <span class="pinfo-val" style="text-transform:capitalize;">
+            {% if user_rec.auth_provider == 'google' %}🔵 Google{% else %}📧 Email / password{% endif %}
+          </span>
+        </div>
+        <div class="profile-info-row">
+          <span class="pinfo-key">Plan</span>
+          <span class="pinfo-val highlight">{{ active_plan | capitalize if active_plan else 'No active plan' }}</span>
+        </div>
+        <div class="profile-info-row">
+          <span class="pinfo-key">Member since</span>
+          <span class="pinfo-val">{{ user_rec.created_at.strftime('%B %Y') if user_rec.created_at else 'N/A' }}</span>
+        </div>
+        {% if user_rec.referral_code %}
+        <div class="profile-info-row">
+          <span class="pinfo-key">Referral code</span>
+          <span class="pinfo-val mono">{{ user_rec.referral_code }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-section-title">Subscription</div>
+      {% if active_plan %}
+      <div class="credits-info-box">
+        <div class="cib-balance">
+          <span class="cib-amount plan-name-{{ active_plan }}">{{ active_plan | capitalize }}</span>
+          <span class="cib-unit">plan active</span>
+        </div>
+      </div>
+      <a class="btn ghost full" href="{{ url_for('main.subscription_manage') }}" style="margin-top:14px;">📋 Manage subscription</a>
+      {% else %}
+      <p style="color:var(--slate-400);font-size:14px;margin:0 0 12px;">You don't have an active plan.</p>
+      <a class="btn accent full" href="{{ url_for('main.pricing') }}">View Plans &amp; Subscribe →</a>
+      {% endif %}
+      <a class="btn ghost full" href="{{ url_for('main.transactions') }}" style="margin-top:8px;">🧾 Billing history</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

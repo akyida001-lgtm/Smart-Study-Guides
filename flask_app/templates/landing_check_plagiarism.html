@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Free Plagiarism Checker for Students — Instant Results | Smart Study Guides{% endblock %}
+{% block meta_description %}Check your essay or assignment for plagiarism before submitting. Our plagiarism checker compares against billions of web pages and academic papers. Fast, accurate, free to try.{% endblock %}
+{% block meta_keywords %}plagiarism checker, free plagiarism checker, check essay plagiarism, plagiarism detector, similarity checker, academic plagiarism tool, turnitin alternative, plagiarism check free{% endblock %}
+{% block meta_robots %}index, follow{% endblock %}
+{% block canonical %}https://smart-study-guides.com/check-plagiarism{% endblock %}
+{% block og_title %}Free Plagiarism Checker for Students | Smart Study Guides{% endblock %}
+{% block og_description %}Instantly check any text for plagiarism against billions of sources. Get a detailed similarity report before you submit your assignment.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Plagiarism Checker",
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Web",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "description": "Check essays and assignments for plagiarism against billions of academic and web sources. Fast, accurate similarity reports.",
+  "provider": {"@type": "Organization", "name": "Smart Study Guides", "url": "https://smart-study-guides.com"}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<style>
+.lp-hero{text-align:center;padding:72px 24px 48px;background:linear-gradient(135deg,#0a1628 0%,#0d2137 60%,#0a2a3a 100%);}
+.lp-hero h1{font-size:clamp(28px,5vw,52px);font-weight:900;color:#fff;margin:0 0 16px;line-height:1.15;}
+.lp-hero h1 span{color:#00bcd4;}
+.lp-hero p{font-size:clamp(15px,2.5vw,20px);color:#94a3b8;max-width:640px;margin:0 auto 36px;line-height:1.6;}
+.lp-hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.lp-btn-primary{padding:14px 32px;background:#00bcd4;color:#0a1628;font-size:16px;font-weight:800;border-radius:10px;text-decoration:none;border:none;cursor:pointer;transition:.15s;}
+.lp-btn-primary:hover{background:#00acc1;color:#0a1628;}
+.lp-btn-secondary{padding:14px 32px;background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:600;border-radius:10px;text-decoration:none;border:1.5px solid rgba(255,255,255,.15);transition:.15s;}
+.lp-btn-secondary:hover{background:rgba(255,255,255,.13);}
+.lp-badge{display:inline-block;background:rgba(0,188,212,.15);color:#00bcd4;font-size:12px;font-weight:700;letter-spacing:.5px;padding:6px 14px;border-radius:20px;border:1px solid rgba(0,188,212,.3);margin-bottom:20px;text-transform:uppercase;}
+.lp-social{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:44px;padding:0 24px 40px;}
+.lp-social-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;text-align:center;min-width:130px;}
+.lp-social-num{font-size:24px;font-weight:900;color:#16a34a;}
+.lp-social-label{font-size:12px;color:#64748b;margin-top:2px;}
+.lp-report{background:#f8fafc;padding:60px 24px;}
+.lp-report-inner{max-width:720px;margin:0 auto;text-align:center;}
+.lp-report-inner h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;margin:0 0 8px;}
+.lp-report-sub{color:#64748b;font-size:16px;margin:0 0 36px;}
+.lp-report-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px;text-align:left;box-shadow:0 4px 20px rgba(0,0,0,.06);}
+.lp-rep-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.lp-rep-score{text-align:center;}
+.lp-rep-score-num{font-size:48px;font-weight:900;color:#16a34a;line-height:1;}
+.lp-rep-score-label{font-size:12px;color:#64748b;margin-top:4px;}
+.lp-rep-sources{font-size:13px;color:#64748b;}
+.lp-rep-sources strong{color:#0f172a;}
+.lp-rep-match{background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:12px 16px;font-size:13px;color:#713f12;margin-bottom:8px;line-height:1.6;}
+.lp-rep-match-src{font-size:12px;color:#92400e;margin-top:4px;}
+.lp-rep-clean{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;font-size:13px;color:#14532d;margin-bottom:8px;line-height:1.6;}
+.lp-rep-clean-src{font-size:12px;color:#166534;margin-top:4px;}
+.lp-how{padding:60px 24px;max-width:900px;margin:0 auto;}
+.lp-how h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;text-align:center;margin:0 0 8px;}
+.lp-how-sub{text-align:center;color:#64748b;font-size:16px;margin:0 0 44px;}
+.lp-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+@media(max-width:700px){.lp-steps{grid-template-columns:1fr;}}
+.lp-step{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px 22px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04);}
+.lp-step-num{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#0d9488);color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.lp-step h3{font-size:16px;font-weight:700;color:#0f172a;margin:0 0 8px;}
+.lp-step p{font-size:14px;color:#64748b;margin:0;line-height:1.6;}
+.lp-features{background:#0a1628;padding:60px 24px;}
+.lp-features-inner{max-width:900px;margin:0 auto;}
+.lp-features h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#fff;text-align:center;margin:0 0 8px;}
+.lp-features-sub{text-align:center;color:#94a3b8;font-size:16px;margin:0 0 44px;}
+.lp-feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:640px){.lp-feat-grid{grid-template-columns:1fr;}}
+.lp-feat-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;}
+.lp-feat-icon{font-size:28px;margin-bottom:12px;}
+.lp-feat-card h3{font-size:15px;font-weight:700;color:#fff;margin:0 0 8px;}
+.lp-feat-card p{font-size:13px;color:#94a3b8;margin:0;line-height:1.6;}
+.lp-cta{text-align:center;padding:72px 24px;background:linear-gradient(135deg,#16a34a 0%,#0d9488 100%);}
+.lp-cta h2{font-size:clamp(24px,4vw,40px);font-weight:900;color:#fff;margin:0 0 16px;}
+.lp-cta p{font-size:18px;color:rgba(255,255,255,.85);margin:0 0 32px;}
+.lp-cta-btn{padding:16px 40px;background:#fff;color:#16a34a;font-size:17px;font-weight:800;border-radius:12px;text-decoration:none;display:inline-block;transition:.15s;}
+.lp-cta-btn:hover{background:#f0fdf4;color:#16a34a;}
+</style>
+
+<!-- Hero -->
+<section class="lp-hero">
+  <div class="lp-badge">Checks Billions of Web & Academic Sources</div>
+  <h1>Plagiarism Checker <span>for Students</span></h1>
+  <p>Submit with confidence. Check your essay or assignment against billions of web pages, journals, and academic papers — and get a detailed similarity report in seconds.</p>
+  <div class="lp-hero-ctas">
+    <a href="/auth/signup" class="lp-btn-primary">Check for Free — Sign Up</a>
+    <a href="/auth/login" class="lp-btn-secondary">Log in to your account</a>
+  </div>
+</section>
+
+<!-- Social proof -->
+<div class="lp-social">
+  <div class="lp-social-card"><div class="lp-social-num">1B+</div><div class="lp-social-label">Sources checked against</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">99.2%</div><div class="lp-social-label">Detection accuracy</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">30K+</div><div class="lp-social-label">Reports generated</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">PDF</div><div class="lp-social-label">Exportable report</div></div>
+</div>
+
+<!-- Sample report -->
+<section class="lp-report">
+  <div class="lp-report-inner">
+    <h2>What Your Report Looks Like</h2>
+    <p class="lp-report-sub">Matched sources are highlighted — you see the original URL and similarity percentage</p>
+    <div class="lp-report-card">
+      <div class="lp-rep-hdr">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:4px;">Similarity Report</div>
+          <div class="lp-rep-sources">Checked against <strong>1.2 billion</strong> sources · 347 words analyzed</div>
+        </div>
+        <div class="lp-rep-score">
+          <div class="lp-rep-score-num">4%</div>
+          <div class="lp-rep-score-label">Similarity Score</div>
+        </div>
+      </div>
+      <div class="lp-rep-clean">
+        "The transformation of supply chain management over the past decade reflects broader shifts in how companies think about risk, resilience, and the true cost of efficiency."
+        <div class="lp-rep-clean-src">✅ Original — no matches found</div>
+      </div>
+      <div class="lp-rep-match">
+        "Just-in-time manufacturing principles were first popularized by Toyota in the 1970s as part of the Toyota Production System."
+        <div class="lp-rep-match-src">⚠ 94% match · wikipedia.org/wiki/Just-in-time_manufacturing</div>
+      </div>
+      <div class="lp-rep-clean">
+        "Modern supply chains must now balance cost efficiency against the lessons learned from disruptions like the 2021 semiconductor shortage."
+        <div class="lp-rep-clean-src">✅ Original — no matches found</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="lp-how">
+  <h2>How It Works</h2>
+  <p class="lp-how-sub">Thorough checks done in three simple steps</p>
+  <div class="lp-steps">
+    <div class="lp-step">
+      <div class="lp-step-num">1</div>
+      <h3>Paste Your Text</h3>
+      <p>Paste your essay, report, or any piece of writing up to 3,000 words. No file upload required — just paste and go.</p>
+    </div>
+    <div class="lp-step">
+      <div class="lp-step-num">2</div>
+      <h3>We Scan Everything</h3>
+      <p>Our engine compares your text against billions of sources — websites, academic journals, student essay databases, and published books.</p>
+    </div>
+    <div class="lp-step">
+      <div class="lp-step-num">3</div>
+      <h3>Download Your Report</h3>
+      <p>Receive a color-coded similarity report with matched source URLs and percentage scores. Exportable as a PDF.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="lp-features">
+  <div class="lp-features-inner">
+    <h2>Everything You Need Before You Submit</h2>
+    <p class="lp-features-sub">Comprehensive coverage, honest results</p>
+    <div class="lp-feat-grid">
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🌐</div>
+        <h3>Billions of Sources</h3>
+        <p>Includes web pages, Wikipedia, academic journals (PubMed, IEEE, JSTOR), open-access repositories, and student paper databases.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔗</div>
+        <h3>Source URLs Shown</h3>
+        <p>Every match comes with the exact URL of the original source so you can verify and properly cite the material.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">📄</div>
+        <h3>PDF Report Export</h3>
+        <p>Download a formatted PDF report to keep for your records or to share with your tutor as proof of originality.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔒</div>
+        <h3>Your Work Stays Private</h3>
+        <p>We never store your text or add it to any database. Your work is scanned and immediately discarded.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="lp-cta">
+  <h2>Know Before You Submit</h2>
+  <p>Stop guessing. Check your work for plagiarism in under 30 seconds.</p>
+  <a href="/auth/signup" class="lp-cta-btn">Create Your Free Account →</a>
+</section>
+{% endblock %}

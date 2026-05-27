@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}AI Checker — Smart Study Guides{% endblock %}
+{% block content %}
+<div class="tool-page">
+  <div class="tool-header">
+    <h1>🤖 AI Detection Checker</h1>
+    <p class="tool-sub">Paste your text below. Detection is powered by Ryter Pro's AI analysis engine.</p>
+  </div>
+
+  <div class="tool-single-col">
+    <div class="tool-col">
+      <div class="tool-col-header">
+        <span class="tool-col-label">Paste your text</span>
+        <div class="tool-meta-row">
+          <span id="wc-in" class="wc-badge">0 words</span>
+        </div>
+      </div>
+      <textarea id="text-in" class="tool-textarea" placeholder="Paste the text you want to check here…" rows="12"
+                oninput="updateMeta(this.value)"></textarea>
+      <button id="check-btn" class="btn accent full tool-btn" onclick="runCheck()">🤖 Run AI Detection</button>
+      <div id="tool-error" class="tool-error" style="display:none;"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" class="aichk-results" style="display:none;">
+
+      <!-- Overall summary bar -->
+      <div class="aichk-summary">
+        <div class="aichk-summary-scores">
+          <div class="aichk-summary-item aichk-ai">
+            <div class="aichk-summary-label">AI Content</div>
+            <div class="aichk-summary-val" id="sum-ai-val">—</div>
+          </div>
+          <div class="aichk-summary-divider"></div>
+          <div class="aichk-summary-item aichk-human">
+            <div class="aichk-summary-label">Human</div>
+            <div class="aichk-summary-val" id="sum-human-val">—</div>
+          </div>
+        </div>
+        <div class="aichk-bar-wrap">
+          <div class="aichk-bar-ai"   id="bar-ai"></div>
+          <div class="aichk-bar-human" id="bar-human"></div>
+        </div>
+        <div class="aichk-verdict" id="aichk-verdict"></div>
+        <div class="aichk-words"   id="aichk-words"></div>
+      </div>
+
+      <!-- Source label -->
+      <div class="aichk-detectors-wrap">
+        <div class="aichk-detectors-title">Detection Engine</div>
+        <div style="font-size:13px;color:var(--slate-500);padding:10px 0;">
+          Powered by <strong>Ryter Pro</strong>. We only show you what we actually measured — no estimated or simulated results.
+        </div>
+      </div>
+
+      <!-- Humanize CTA -->
+      <div id="humanize-cta" class="checker-cta" style="display:none;">
+        <p>⚠️ High AI score detected. Want to fix it?</p>
+        <button class="btn accent" onclick="sendToHumanizer()">✍️ Humanize this text</button>
+      </div>
+
+      <!-- Download report -->
+      <div id="download-row" class="report-download-row" style="display:none;">
+        <button class="btn report-dl-btn" id="dl-ai-btn" onclick="downloadAiPdf()">
+          ⬇ Download AI Report (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay" style="display:none;">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <p>Running AI detection…<br/><small>This takes a few seconds</small></p>
+  </div>
+</div>
+
+<script>
+var lastText = '';
+var lastAiResult = null;
+
+(function(){
+  var saved = localStorage.getItem('ssg_ai_check_text');
+  if (saved) {
+    document.getElementById('text-in').value = saved;
+    localStorage.removeItem('ssg_ai_check_text');
+    updateMeta(saved);
+  }
+})();
+
+function updateMeta(val){
+  var words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
+  document.getElementById('wc-in').textContent = words + ' words';
+}
+
+function runCheck(){
+  var text = document.getElementById('text-in').value.trim();
+  var words = text === '' ? 0 : text.split(/\s+/).length;
+  lastText = text;
+
+  if (words < 10)   { showError('Please paste at least 10 words.'); return; }
+  if (words > 3000) { showError('Too long — maximum 3,000 words.'); return; }
+
+  hideError();
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('check-btn').disabled = true;
+
+  var fd = new FormData();
+  fd.append('text', text);
+
+  fetch('/check-ai', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('check-btn').disabled = false;
+      if (data.error) { showError(data.error); return; }
+      showResults(data);
+    })
+    .catch(function(){
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('check-btn').disabled = false;
+      showError('Request failed. Please try again.');
+    });
+}
+
+function verdictInfo(ai){
+  if (ai >= 70) return { icon:'🚨', text:'High — likely to be flagged',   cls:'vd-danger' };
+  if (ai >= 40) return { icon:'⚠️',  text:'Moderate — consider humanizing', cls:'vd-warn'   };
+  return          { icon:'✅', text:'Low — looks human-written',         cls:'vd-safe'   };
+}
+
+function detectorClass(ai){
+  return ai >= 70 ? 'det-danger' : ai >= 40 ? 'det-warn' : 'det-safe';
+}
+
+function showResults(data){
+  var ai    = data.ai_score;
+  var human = data.human_pct !== undefined ? data.human_pct : (100 - ai);
+  var words = data.words;
+
+  // Summary bar
+  document.getElementById('sum-ai-val').textContent    = ai.toFixed(1) + '%';
+  document.getElementById('sum-human-val').textContent = human.toFixed(1) + '%';
+  document.getElementById('bar-ai').style.width        = ai + '%';
+  document.getElementById('bar-human').style.width     = human + '%';
+
+  var vd = verdictInfo(ai);
+  var verdEl = document.getElementById('aichk-verdict');
+  verdEl.textContent = vd.icon + ' ' + vd.text;
+  verdEl.className   = 'aichk-verdict ' + vd.cls;
+
+  document.getElementById('aichk-words').textContent = words + ' words analyzed';
+
+  // Humanize CTA
+  document.getElementById('humanize-cta').style.display = ai >= 40 ? 'block' : 'none';
+  document.getElementById('results-section').style.display = 'block';
+  document.getElementById('download-row').style.display = 'block';
+  lastAiResult = data;
+}
+
+function sendToHumanizer(){
+  localStorage.setItem('ssg_ai_check_text', lastText);
+  window.location.href = '/humanize';
+}
+
+function downloadAiPdf(){
+  if (!lastAiResult){ return; }
+  var btn = document.getElementById('dl-ai-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating PDF…';
+
+  fetch('/api/reports/ai/pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ai_score:  lastAiResult.ai_score,
+      human_pct: lastAiResult.human_pct,
+      detectors: lastAiResult.detectors || [],
+      words:     lastAiResult.words,
+      text:      lastText,
+    }),
+  })
+  .then(function(r){
+    if (!r.ok){ throw new Error('PDF generation failed'); }
+    return r.blob();
+  })
+  .then(function(blob){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai_detection_report.pdf';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+    btn.disabled = false;
+    btn.textContent = '⬇ Download AI Report (PDF)';
+  })
+  .catch(function(e){
+    alert('Could not generate PDF. Please try again.');
+    btn.disabled = false;
+    btn.textContent = '⬇ Download AI Report (PDF)';
+  });
+}
+
+function showError(msg){
+  var el = document.getElementById('tool-error');
+  el.innerHTML = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+function hideError(){
+  document.getElementById('tool-error').style.display = 'none';
+}
+</script>
+{% endblock %}

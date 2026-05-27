@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Set new password — Smart Study Guides{% endblock %}
+{% block layout %}
+<div class="auth-shell auth-shell--centered">
+  <div class="auth-panel-right" style="flex:1;max-width:480px;">
+    <div class="auth-form-wrap">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="auth-alert auth-alert--{{ cat }}">
+            {% if cat == 'error' %}⚠️{% else %}✅{% endif %} {{ msg }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <h1 class="auth-title">Set a new password</h1>
+      <p class="auth-sub">Choose a strong password for your account.</p>
+
+      <form method="post" class="auth-form">
+        <div class="auth-field">
+          <label class="auth-label" for="new-password">New password <span class="auth-hint">(min 8 characters)</span></label>
+          <div class="auth-pw-wrap">
+            <input class="auth-input" id="new-password" name="password" type="password"
+                   placeholder="Create a strong password" required minlength="8" autocomplete="new-password"
+                   oninput="updateStrength(this.value)" />
+            <button type="button" class="auth-pw-toggle" tabindex="-1" onclick="togglePw('new-password',this)" aria-label="Show password">
+              <span class="pw-eye">👁</span>
+            </button>
+          </div>
+          <div class="auth-strength">
+            <div class="auth-strength-bar" id="strength-bar"></div>
+          </div>
+          <div class="auth-strength-label" id="strength-label"></div>
+        </div>
+        <button class="auth-submit-btn" type="submit">Update password</button>
+      </form>
+      <p class="auth-switch"><a href="{{ url_for('auth.login') }}">← Back to sign in</a></p>
+    </div>
+  </div>
+</div>
+<script>
+function togglePw(id, btn){
+  var inp = document.getElementById(id);
+  var showing = inp.type === 'text';
+  inp.type = showing ? 'password' : 'text';
+  btn.querySelector('.pw-eye').textContent = showing ? '👁' : '🙈';
+}
+function updateStrength(val){
+  var bar = document.getElementById('strength-bar');
+  var lbl = document.getElementById('strength-label');
+  if (!bar) return;
+  var score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  bar.style.width = val.length === 0 ? '0%' : Math.max(20, score * 25) + '%';
+  bar.className = 'auth-strength-bar ' + (['','pw-weak','pw-fair','pw-good','pw-strong'][score] || 'pw-strong');
+  lbl.textContent = val.length === 0 ? '' : (['','Weak','Fair','Good','Strong'][score] || 'Strong');
+}
+</script>
+{% endblock %}

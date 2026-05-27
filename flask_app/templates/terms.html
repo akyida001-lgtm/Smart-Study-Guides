@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Terms & Conditions — Smart Study Guides{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom:32px;">
+  <div>
+    <h1>📜 Terms &amp; Conditions</h1>
+    <p style="margin:4px 0 0;color:var(--slate-500);font-size:14px;">
+      Last updated: {{ last_updated }}
+    </p>
+  </div>
+</div>
+
+<div class="card terms-card">
+
+  <p class="terms-intro">
+    Please read these Terms and Conditions carefully before using Smart Study Guides. By creating an account or using any part of our platform, you agree to be bound by these terms.
+  </p>
+
+  <!-- 1 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">1. Acceptance of Terms</h2>
+    <p>By accessing or using Smart Study Guides ("the Platform", "we", "us", "our"), you confirm that you are at least 18 years of age, have read and understood these Terms, and agree to be bound by them. If you do not agree to these Terms, you must not use the Platform.</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">2. Description of Services</h2>
+    <p>Smart Study Guides is an AI-powered writing assistance platform that provides the following services:</p>
+    <ul class="terms-list">
+      <li><strong>Assignment Generation:</strong> AI-assisted academic paper writing with real cited sources</li>
+      <li><strong>Humanize Tool:</strong> Rewriting of AI-generated content to reduce AI detection scores</li>
+      <li><strong>AI Checker:</strong> Analysis of text for AI-generated content percentage</li>
+      <li><strong>Career Section (Free):</strong> Generation of professional career documents including CVs, cover letters, LinkedIn bios, personal statements, reference letters, interview preparation materials, and job descriptions</li>
+    </ul>
+    <p>We reserve the right to modify, suspend, or discontinue any part of the Platform at any time with or without notice.</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">3. User Accounts</h2>
+    <p>To access most features of the Platform, you must register for an account. You agree to:</p>
+    <ul class="terms-list">
+      <li>Provide accurate and complete registration information</li>
+      <li>Maintain the security of your password and accept responsibility for all activity under your account</li>
+      <li>Notify us immediately of any unauthorised use of your account</li>
+      <li>Not share your account credentials with any third party</li>
+    </ul>
+    <p>We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">4. Subscriptions and Payments</h2>
+    <p><strong>Subscription model:</strong> Access to the Platform's core features requires an active subscription. Plans are available on a monthly, half-year, or yearly basis. Each plan includes a defined daily assignment generation limit.</p>
+    <p><strong>Billing:</strong> Subscription payments are processed securely through Stripe. By subscribing, you authorise us to charge your selected payment method for the stated subscription amount.</p>
+    <p><strong>Non-refundable:</strong> All subscription payments are final and non-refundable, except where required by applicable law.</p>
+    <p><strong>Pricing:</strong> We reserve the right to change subscription pricing at any time. Price changes will not affect active subscription periods already paid for.</p>
+    <p><strong>Referral unlock:</strong> Users who refer others to the Platform who subsequently subscribe may unlock certain features at no additional cost, subject to the referred user maintaining an active subscription.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">5. Acceptable Use</h2>
+    <p>You agree to use the Platform only for lawful purposes and in a manner that does not infringe the rights of others. You must not:</p>
+    <ul class="terms-list">
+      <li>Use the Platform to produce content intended to deceive, defraud, or harm others</li>
+      <li>Submit content that is defamatory, obscene, unlawful, or infringes third-party intellectual property rights</li>
+      <li>Attempt to reverse engineer, scrape, or extract data from the Platform</li>
+      <li>Use automated tools or bots to interact with the Platform without our written consent</li>
+      <li>Resell or redistribute Platform outputs commercially without our prior written approval</li>
+      <li>Share your account with others or create multiple accounts to circumvent subscription limits</li>
+    </ul>
+    <p>We reserve the right to suspend or terminate access for any user found to be in breach of these terms.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">6. Academic Integrity Disclaimer</h2>
+    <p>Smart Study Guides provides AI writing assistance as a <strong>learning and productivity tool</strong>. Users are solely responsible for how they use the content generated by the Platform.</p>
+    <p>We strongly encourage users to comply with the academic integrity policies of their institution. Submitting AI-generated content as your own original work may violate your institution's honour code or academic policies. The Platform accepts no liability for any academic or disciplinary consequences arising from the use of its outputs.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">7. AI-Generated Content</h2>
+    <p>All content generated by the Platform is produced by artificial intelligence models. We do not guarantee the accuracy, completeness, originality, or suitability of any generated content for any specific purpose. You are responsible for reviewing, verifying, and editing all outputs before use.</p>
+    <p>Generated content may occasionally contain factual inaccuracies, outdated information, or references that are imprecise. Always verify facts from authoritative primary sources before submitting any work.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">8. Intellectual Property</h2>
+    <p><strong>Platform content:</strong> All software, design, branding, and proprietary technology of the Platform are owned by Smart Study Guides and protected by applicable intellectual property laws.</p>
+    <p><strong>Generated content:</strong> Subject to your compliance with these Terms, you retain ownership of the content generated for you through the Platform. We do not claim ownership of your outputs.</p>
+    <p><strong>Your inputs:</strong> By submitting content to the Platform (topic descriptions, personal information, job details, etc.), you grant us a limited licence to process that content solely for the purpose of delivering the requested service.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">9. Privacy</h2>
+    <p>Our collection and use of your personal data is governed by our Privacy Policy. By using the Platform, you consent to the processing of your information as described therein. We take reasonable technical and organisational measures to protect your data.</p>
+    <p>We do not sell your personal data to third parties. Certain service providers (such as payment processors and AI model providers) may process data on our behalf under appropriate data processing agreements.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">10. Disclaimers and Limitation of Liability</h2>
+    <p>The Platform is provided <strong>"as is"</strong> and <strong>"as available"</strong> without warranties of any kind, either express or implied, including but not limited to fitness for a particular purpose or non-infringement.</p>
+    <p>To the maximum extent permitted by law, Smart Study Guides shall not be liable for:</p>
+    <ul class="terms-list">
+      <li>Any indirect, incidental, special, or consequential damages</li>
+      <li>Loss of profits, data, or academic standing</li>
+      <li>Service interruptions or errors in generated content</li>
+      <li>Any outcomes resulting from reliance on AI-generated content</li>
+    </ul>
+    <p>Our total cumulative liability to you shall not exceed the total amount paid by you in subscription fees in the six (6) months preceding the claim.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">11. Termination</h2>
+    <p>You may close your account at any time by contacting us. Upon termination, your access to the Platform will cease and any remaining subscription period will be forfeited unless otherwise required by law.</p>
+    <p>We may suspend or terminate your account immediately if you breach these Terms, engage in fraudulent activity, or pose a risk to the security or integrity of the Platform.</p>
+  </div>
+
+  <!-- 12 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">12. Changes to These Terms</h2>
+    <p>We may update these Terms from time to time. When we do, we will update the "Last updated" date at the top of this page. Continued use of the Platform following any changes constitutes your acceptance of the revised Terms. We encourage you to review this page periodically.</p>
+  </div>
+
+  <!-- 13 -->
+  <div class="terms-section">
+    <h2 class="terms-h2">13. Governing Law</h2>
+    <p>These Terms shall be governed by and construed in accordance with applicable law. Any disputes arising out of or in connection with these Terms shall be subject to the exclusive jurisdiction of the competent courts in the relevant jurisdiction.</p>
+  </div>
+
+  <!-- 14 -->
+  <div class="terms-section" style="margin-bottom:0;">
+    <h2 class="terms-h2">14. Contact Us</h2>
+    <p>If you have any questions about these Terms, please contact us through the in-app support chat or reach out via our official contact channels. We are happy to help.</p>
+    <button class="btn accent" onclick="openFloatingChat()" style="margin-top:12px;">
+      💬 Contact Support
+    </button>
+  </div>
+
+</div>
+
+<style>
+.terms-card { padding: 36px 40px; max-width: 820px; margin: 0 auto; }
+.terms-intro {
+  font-size: 15px; color: var(--slate-600); line-height: 1.7;
+  border-left: 3px solid var(--accent); padding-left: 16px;
+  margin-bottom: 32px;
+}
+.terms-section { margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--surface-2); }
+.terms-h2 {
+  font-size: 16px; font-weight: 800; color: var(--navy-900);
+  margin: 0 0 12px; letter-spacing: -.1px;
+}
+.terms-card p { font-size: 14px; color: var(--slate-600); line-height: 1.75; margin: 0 0 10px; }
+.terms-card p:last-child { margin-bottom: 0; }
+.terms-list {
+  padding-left: 20px; margin: 8px 0 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.terms-list li { font-size: 14px; color: var(--slate-600); line-height: 1.6; }
+
+@media(max-width:600px) {
+  .terms-card { padding: 22px 18px; }
+}
+</style>
+
+{% endblock %}

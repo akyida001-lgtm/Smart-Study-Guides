@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Verify Your Identity — Smart Study Guides{% endblock %}
+{% block layout %}
+<div class="auth-shell auth-shell--centered">
+  <div class="auth-panel-right" style="flex:1;max-width:480px;">
+    <div class="auth-form-wrap">
+
+      <div style="font-size:48px;text-align:center;margin-bottom:12px;">🪪</div>
+      <h1 class="auth-title" style="text-align:center;">Verify your identity</h1>
+      <p class="auth-sub" style="text-align:center;max-width:380px;margin:0 auto 24px;">
+        To keep things fair, each person may only have one account.
+        Enter your government-issued ID or passport number to continue.
+      </p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="auth-alert auth-alert--{{ cat }}">
+            {% if cat == 'error' %}⚠️{% else %}✅{% endif %} {{ msg }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('auth.complete_id') }}"
+            class="auth-form" id="id-form" novalidate>
+
+        <div class="auth-field">
+          <label class="auth-label" for="id_type">Document type</label>
+          <select class="auth-input auth-select" id="id_type" name="id_type" required>
+            <option value="" disabled selected>Select document type…</option>
+            <option value="passport">Passport</option>
+            <option value="national_id">National ID / ID Card</option>
+          </select>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="id_number">
+            Document number
+            <span class="auth-hint">(kept private)</span>
+          </label>
+          <input class="auth-input" id="id_number" name="id_number" type="text"
+                 placeholder="e.g. A12345678" required autocomplete="off"
+                 style="letter-spacing:0.08em;text-transform:uppercase;" />
+          <p class="auth-id-notice">🔒 Your number is converted to a private fingerprint — it is never stored in readable form.</p>
+        </div>
+
+        <button class="auth-submit-btn" type="submit" id="id-btn">
+          <span class="btn-text">Verify &amp; continue</span>
+          <span class="btn-spinner" style="display:none;">Verifying…</span>
+        </button>
+      </form>
+
+      <p class="auth-switch" style="margin-top:20px;text-align:center;">
+        <a href="{{ url_for('auth.logout') }}">Sign out</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('id_number').addEventListener('input', function () {
+  var pos = this.selectionStart;
+  this.value = this.value.toUpperCase();
+  this.setSelectionRange(pos, pos);
+});
+
+document.getElementById('id-form').addEventListener('submit', function () {
+  var btn = document.getElementById('id-btn');
+  btn.disabled = true;
+  btn.querySelector('.btn-text').style.display = 'none';
+  btn.querySelector('.btn-spinner').style.display = 'inline';
+});
+</script>
+{% endblock %}

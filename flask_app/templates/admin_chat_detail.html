@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Chat #{{ sess.id }} — Support{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+  <a href="{{ url_for('main.admin_chats') }}" class="btn-sm ghost">← All chats</a>
+  <h1 style="margin:0;">Chat with {{ sess.user.display_name }}</h1>
+  <span style="font-size:12px;color:#64748b;margin-left:auto;">{{ sess.user.email }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
+
+<!-- ── Chat column ──────────────────────────────────────────────── -->
+<div>
+<div class="chat-page-wrap" style="max-width:100%;">
+  <div class="chat-header">
+    <div class="chat-agent-avatar" style="background:#e0f2fe;color:#0369a1;">{{ sess.user.display_name[0].upper() }}</div>
+    <div>
+      <div class="chat-agent-name">{{ sess.user.display_name }}</div>
+      <div class="chat-agent-status">
+        {% if sess.status == 'closed' %}
+        <span style="color:#e53e3e;">● Closed</span>
+        {% elif sess.has_human %}
+        <span style="color:#16a34a;">● Human agent active</span>
+        {% else %}
+        <span style="color:#f59e0b;">● AI holding</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="chat-header-right">
+      {% if sess.status == 'open' %}
+      <button onclick="closeChat()" class="btn-sm ghost" style="font-size:11px;color:#e53e3e;">Close chat</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    {% for m in sess.messages %}
+    <div id="msg-{{ m.id }}" class="chat-bubble-wrap {{ 'user-side' if m.sender == 'user' else 'agent-side' }}">
+      <div class="chat-bubble {{ 'bubble-user' if m.sender == 'user' else ('bubble-staff' if m.sender == 'staff' else 'bubble-ai') }}">
+        {{ m.content }}
+      </div>
+      <div class="chat-meta">
+        {{ '🧑‍🎓 Student' if m.sender == 'user' else ('👤 You (staff)' if m.sender == 'staff' else '🤖 AI') }}
+        · {{ m.created_at.strftime('%H:%M') }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if sess.status == 'open' %}
+  <div class="chat-input-row">
+    <textarea id="chat-input" class="chat-textarea" rows="1"
+              placeholder="Reply as support agent…"
+              onkeydown="handleKey(event)"
+              oninput="autoGrow(this)"></textarea>
+    <button class="chat-send-btn" id="chat-send-btn" onclick="sendReply()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+  <div class="chat-footer-note">Replying as a human agent — AI auto-reply is now disabled for this student.</div>
+  {% else %}
+  <div class="chat-footer-note" style="color:#e53e3e;">This chat is closed. No new replies can be sent.</div>
+  {% endif %}
+</div>
+
+<script>
+const sid = {{ sess.id }};
+var lastMsgId = {{ sess.messages[-1].id if sess.messages else 0 }};
+var pollTimer = null;
+var sending = false;
+
+// Scroll to bottom on load
+document.getElementById('chat-messages').scrollTop = 999999;
+
+{% if sess.status == 'open' %}
+pollTimer = setInterval(poll, 3000);
+{% endif %}
+
+async function poll() {
+  try {
+    const r = await fetch(`/api/chat/${sid}/messages?after=${lastMsgId}`);
+    const msgs = await r.json();
+    msgs.forEach(m => { appendMessage(m); lastMsgId = m.id; });
+  } catch(e) {}
+}
+
+async function sendReply() {
+  if (sending) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  sending = true;
+  input.value = '';
+  autoGrow(input);
+  document.getElementById('chat-send-btn').disabled = true;
+
+  try {
+    const r = await fetch(`/api/admin/chat/${sid}/send`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: text}),
+    });
+    const d = await r.json();
+    if (d.id) { appendMessage(d); lastMsgId = d.id; }
+  } catch(e) {}
+
+  sending = false;
+  document.getElementById('chat-send-btn').disabled = false;
+  input.focus();
+}
+
+async function closeChat() {
+  if (!confirm('Close this chat? The student will be notified.')) return;
+  await fetch(`/api/admin/chat/${sid}/close`, {method:'POST'});
+  location.reload();
+}
+
+function appendMessage(m) {
+  const wrap = document.getElementById('chat-messages');
+  if (document.getElementById('msg-' + m.id)) return;
+  const div = document.createElement('div');
+  div.id = 'msg-' + m.id;
+  div.className = 'chat-bubble-wrap ' + (m.sender === 'user' ? 'user-side' : 'agent-side');
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ' + (m.sender === 'user' ? 'bubble-user' :
+                      m.sender === 'staff' ? 'bubble-staff' : 'bubble-ai');
+  bubble.textContent = m.content;
+
+  const meta = document.createElement('div');
+  meta.className = 'chat-meta';
+  meta.textContent = (m.sender === 'user' ? '🧑‍🎓 Student' :
+                      m.sender === 'staff' ? '👤 You (staff)' : '🤖 AI')
+                     + ' · ' + m.ts;
+
+  div.appendChild(bubble); div.appendChild(meta);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+</script>
+</div><!-- end chat column -->
+
+<!-- ── Student Documents sidebar ────────────────────────────────── -->
+<div>
+  <div class="card" style="padding:18px 20px;">
+    <div style="font-size:13px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;">
+      📂 Student's Documents
+    </div>
+
+    {% if student_assignments %}
+      {% for a in student_assignments %}
+      <details style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">
+        <summary style="padding:12px 14px;cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.4;">
+            {{ a.topic[:55] }}{% if a.topic|length > 55 %}…{% endif %}
+          </div>
+          <div style="font-size:11px;color:var(--slate-400);">
+            {{ a.pages }}pg · {{ a.style }} · {{ a.education_level.replace('_',' ').title() if a.education_level else '' }} · {{ a.created_at.strftime('%d %b %Y') }}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;" onclick="event.stopPropagation()">
+            {% if a.docx_url %}
+            <a href="{{ a.docx_url }}" target="_blank"
+               style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;text-decoration:none;">
+              ⬇ Download
+            </a>
+            <button onclick="copyToClipboard('{{ a.docx_url }}')"
+                    style="font-size:12px;padding:4px 10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);cursor:pointer;">
+              🔗 Copy Link
+            </button>
+            {% else %}
+            <span style="font-size:12px;color:var(--slate-400);">No file</span>
+            {% endif %}
+          </div>
+        </summary>
+
+        <!-- Expanded: full instructions + sources -->
+        <div style="border-top:1px solid var(--border);padding:14px;">
+
+          <!-- Meta info -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            {% if a.course_name %}<span style="font-size:11px;background:var(--surface-2);padding:3px 8px;border-radius:5px;color:var(--slate-300);">📚 {{ a.course_name }}</span>{% endif %}
+            {% if a.instructor_name %}<span style="font-size:11px;background:var(--surface-2);padding:3px 8px;border-radius:5px;color:var(--slate-300);">👤 {{ a.instructor_name }}</span>{% endif %}
+            {% if a.school_name %}<span style="font-size:11px;background:var(--surface-2);padding:3px 8px;border-radius:5px;color:var(--slate-300);">🏫 {{ a.school_name }}</span>{% endif %}
+            {% if a.due_date %}<span style="font-size:11px;background:var(--surface-2);padding:3px 8px;border-radius:5px;color:#fbbf24;">📅 Due {{ a.due_date }}</span>{% endif %}
+          </div>
+
+          <!-- Full topic / instructions -->
+          <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Instructions</div>
+          <div style="font-size:12px;color:var(--slate-300);line-height:1.6;background:var(--surface-2);border-radius:7px;padding:10px 12px;max-height:140px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;margin-bottom:12px;">{{ a.topic }}</div>
+
+          {% if a.instruction_image_url %}
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Instruction Image</div>
+            <a href="{{ a.instruction_image_url }}" target="_blank">
+              <img src="{{ a.instruction_image_url }}" style="max-width:100%;border-radius:7px;border:1px solid var(--border);">
+            </a>
+          </div>
+          {% endif %}
+
+          <!-- Sources -->
+          {% if a.sources %}
+          <div style="font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Sources Used ({{ a.sources|length }})</div>
+          {% for s in a.sources %}
+          <div style="font-size:12px;padding:7px 10px;background:var(--surface-2);border-radius:7px;margin-bottom:5px;line-height:1.5;">
+            <div style="font-weight:600;color:var(--text);">{{ s.title or 'Untitled source' }}</div>
+            {% if s.url %}
+            <a href="{{ s.url }}" target="_blank" style="color:var(--accent);font-size:11px;word-break:break-all;">{{ s.url[:60] }}{% if s.url|length > 60 %}…{% endif %}</a>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% else %}
+          <div style="font-size:12px;color:var(--slate-400);">No sources recorded.</div>
+          {% endif %}
+
+        </div>
+      </details>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center;color:var(--slate-400);font-size:13px;padding:20px 0;">
+        No completed assignments yet.
+      </div>
+    {% endif %}
+  </div>
+</div><!-- end sidebar -->
+
+</div><!-- end grid -->
+
+<style>
+@media (max-width: 800px) {
+  div[style*="grid-template-columns:1fr 320px"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+<script>
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    alert('Download link copied to clipboard!');
+  });
+}
+</script>
+
+{% endblock %}

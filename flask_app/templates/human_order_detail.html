@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>✍️ Order #{{ order.id }} — Human Writer</h1>
+  <a class="btn ghost" href="{{ url_for('main.my_assignments') }}">← My Assignments</a>
+</div>
+
+<!-- Status Tracker -->
+{% set steps = [('pending','Pending'),('assigned','Assigned'),('in_progress','In Progress'),('completed','Completed'),('delivered','Delivered')] %}
+{% set step_keys = ['pending','assigned','in_progress','completed','delivered'] %}
+{% set cur_idx = step_keys.index(order.status) if order.status in step_keys else 0 %}
+
+<div class="card hu-tracker-card">
+  <div class="hu-tracker">
+    {% for key, label in steps %}
+    {% set i = loop.index0 %}
+    <div class="hu-step {% if i < cur_idx %}done{% elif i == cur_idx %}active{% endif %}">
+      <div class="hu-step-circle">{% if i < cur_idx %}✓{% else %}{{ loop.index }}{% endif %}</div>
+      <div class="hu-step-label">{{ label }}</div>
+    </div>
+    {% if not loop.last %}<div class="hu-step-line {% if i < cur_idx %}done{% endif %}"></div>{% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Delivery banner -->
+{% if order.status == 'delivered' and order.final_file_url %}
+<div class="hu-delivery-banner">
+  <span>🎉 Your assignment is ready!</span>
+  <a class="btn accent" href="{{ order.final_file_url }}" download="{{ order.final_file_name or 'assignment' }}">
+    ⬇ Download Assignment
+  </a>
+</div>
+{% endif %}
+
+<div class="hu-detail-grid">
+
+  <!-- LEFT: Order details -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin:0 0 16px;">📄 Assignment Details</h3>
+      <div class="hu-dl">
+        <dt>Title</dt><dd>{{ order.title }}</dd>
+        <dt>Subject</dt><dd>{{ order.subject }}</dd>
+        <dt>Academic Level</dt><dd>{{ order.academic_level.replace('_',' ').title() }}</dd>
+        <dt>Citation Style</dt><dd>{{ order.format_style }}</dd>
+        <dt>Pages</dt><dd>{{ order.num_pages }}</dd>
+        <dt>References</dt><dd>{{ order.num_references }}</dd>
+        <dt>Priority</dt>
+        <dd>
+          {% if order.priority == 'urgent' %}
+            <span class="status-badge red">🚨 Urgent</span>
+          {% else %}
+            <span class="status-badge grey">Standard</span>
+          {% endif %}
+        </dd>
+        <dt>Deadline</dt><dd>{{ order.deadline.strftime('%d %b %Y, %H:%M') }} UTC</dd>
+        <dt>Pages</dt><dd>{{ order.num_pages }}</dd>
+        <dt>Status</dt>
+        <dd>
+          {% if order.status == 'delivered' %}<span class="status-badge green">✅ Delivered</span>
+          {% elif order.status == 'in_progress' %}<span class="status-badge blue">✏️ In Progress</span>
+          {% elif order.status == 'assigned' %}<span class="status-badge blue">👤 Assigned</span>
+          {% elif order.status == 'completed' %}<span class="status-badge yellow">✔ Completed</span>
+          {% else %}<span class="status-badge grey">⏳ Pending</span>{% endif %}
+        </dd>
+        {% if order.writer %}
+        <dt>Writer</dt><dd>{{ order.writer.display_name }}</dd>
+        {% endif %}
+        {% if order.writer_confirmed_human %}
+        <dt>Verification</dt><dd><span class="status-badge green">✅ Human-written confirmed</span></dd>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin:0 0 12px;">📝 Instructions</h3>
+      <div class="hu-instructions">{{ order.instructions }}</div>
+    </div>
+
+    {% set brief_files = order.files | selectattr('file_type','eq','brief') | list %}
+    {% if brief_files %}
+    <div class="card">
+      <h3 style="margin:0 0 12px;">📎 Attached Files</h3>
+      {% for f in brief_files %}
+      <a href="{{ f.file_url }}" target="_blank" class="hu-file-link">📄 {{ f.file_name }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: Messages -->
+  <div>
+    <div class="card hu-msg-card">
+      <h3 style="margin:0 0 16px;">💬 Messages</h3>
+      <div class="hu-msg-thread" id="msgThread">
+        {% for m in order.messages %}
+        <div class="hu-msg-bubble {{ 'hu-msg-mine' if m.sender_id == current_user.id else 'hu-msg-theirs' }}">
+          <div class="hu-msg-meta">{{ m.sender.display_name }} · {{ m.created_at.strftime('%d %b %H:%M') }}</div>
+          <div class="hu-msg-text">{{ m.content }}</div>
+        </div>
+        {% else %}
+        <div class="hu-msg-empty" id="emptyMsg">No messages yet. Send a message to your writer.</div>
+        {% endfor %}
+      </div>
+      <div class="hu-msg-input-wrap">
+        <textarea id="msgInput" class="hu-msg-input" rows="2"
+                  placeholder="Type a message… (Enter to send, Shift+Enter for new line)"></textarea>
+        <button class="btn accent hu-msg-send" onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ORDER_ID = {{ order.id }};
+let lastMsgId  = {{ order.messages[-1].id if order.messages else 0 }};
+
+function renderMsg(m) {
+  const mine = {{ 'true' if current_user.is_staff else 'false' }} ? m.sender_role === 'writer' : m.sender_role === 'student';
+  const div  = document.createElement('div');
+  div.className = 'hu-msg-bubble ' + (mine ? 'hu-msg-mine' : 'hu-msg-theirs');
+  div.innerHTML = `<div class="hu-msg-meta">${m.sender_name} · ${m.ts}</div>
+                   <div class="hu-msg-text">${m.content.replace(/</g,'&lt;')}</div>`;
+  return div;
+}
+
+async function sendMsg() {
+  const input = document.getElementById('msgInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const res = await fetch(`/api/human-orders/${ORDER_ID}/message`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({content: text})
+  });
+  if (res.ok) {
+    const m   = await res.json();
+    document.getElementById('emptyMsg')?.remove();
+    const thread = document.getElementById('msgThread');
+    thread.appendChild(renderMsg(m));
+    thread.scrollTop = thread.scrollHeight;
+    lastMsgId = m.id;
+  }
+}
+
+document.getElementById('msgInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+
+// Poll for new messages every 8 s
+setInterval(async () => {
+  const res  = await fetch(`/api/human-orders/${ORDER_ID}/messages?after=${lastMsgId}`);
+  const msgs = await res.json();
+  if (msgs.length) {
+    document.getElementById('emptyMsg')?.remove();
+    const thread = document.getElementById('msgThread');
+    msgs.forEach(m => { thread.appendChild(renderMsg(m)); lastMsgId = m.id; });
+    thread.scrollTop = thread.scrollHeight;
+  }
+}, 8000);
+
+// Poll order status for live delivery detection
+{% if order.status != 'delivered' %}
+setInterval(async () => {
+  const res  = await fetch(`/api/human-orders/${ORDER_ID}/status`);
+  const data = await res.json();
+  if (data.status === 'delivered' && data.final_file_url) {
+    location.reload();
+  }
+}, 15000);
+{% endif %}
+</script>
+{% endblock %}

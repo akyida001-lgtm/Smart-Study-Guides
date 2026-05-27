@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Preview — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📝 Create Assignment</h1>
+</div>
+
+<div class="wizard-steps">
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Details</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Sources</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Annotate</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep active"><span class="wstep-num">4</span><span class="wstep-label">Preview</span></div>
+</div>
+
+<div class="card wizard-card">
+  <div class="wizard-card-title">Review & generate</div>
+  <div class="wizard-card-sub">Confirm everything looks right, then hit Generate.</div>
+
+  {% if is_free_trial %}
+  <div class="flash info" style="margin-bottom:16px;border-left:4px solid var(--accent);background:#e6faf8;color:#0a4047;">
+    <strong>🎁 Free trial assignment</strong> — Up to 2 pages included at no charge. Once you download it, you'll need a subscription to generate more.
+  </div>
+  {% endif %}
+
+  <!-- Stats row -->
+  <div class="preview-stats">
+    <div class="pstat">
+      <div class="pstat-label">Pages</div>
+      <div class="pstat-val">{{ a.pages }}</div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-label">Word count</div>
+      <div class="pstat-val">~{{ a.word_count }}</div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-label">Your plan</div>
+      <div class="pstat-val">
+        {% if is_free_trial %}
+          <span style="color:var(--accent);">Free Trial</span>
+        {% elif active_sub %}
+          {{ active_sub.plan | capitalize }}
+        {% else %}
+          <span style="color:#ef4444;">None</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-label">Today's usage</div>
+      <div class="pstat-val {% if not can_generate %}pstat-danger{% endif %}">
+        {% if is_free_trial %}
+          1/1
+        {% elif active_sub %}
+          {% if daily_limit %}{{ today_count }}/{{ daily_limit }}{% else %}{{ today_count }}/∞{% endif %}
+        {% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignment details -->
+  {% set is_admin = current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'simonedwardj@yahoo.com']) %}
+  <div class="preview-detail-block">
+    <div class="preview-detail-label">
+      Topic / Instructions
+      {% if is_admin %}<button class="admin-copy-btn" onclick="adminCopy({{ a.topic|tojson }}, this)">📋 Copy</button>{% endif %}
+    </div>
+    <div class="preview-detail-text">{{ a.topic }}</div>
+  </div>
+  {% if a.course_name %}
+  <div class="preview-detail-block" style="margin-top:8px;">
+    <div class="preview-detail-label">
+      Course
+      {% if is_admin %}<button class="admin-copy-btn" onclick="adminCopy({{ a.course_name|tojson }}, this)">📋 Copy</button>{% endif %}
+    </div>
+    <div class="preview-detail-text">{{ a.course_name }}</div>
+  </div>
+  {% endif %}
+  <div class="preview-detail-row">
+    <span><strong>Style:</strong> {{ a.style }}</span>
+    <span><strong>Level:</strong> {{ a.education_level }}</span>
+    <span><strong>Sources:</strong> {{ a.sources|length }}</span>
+  </div>
+  {% if a.student_name or a.school_name or a.instructor_name or a.due_date %}
+  <div class="preview-detail-row" style="flex-wrap:wrap;gap:8px;margin-top:6px;font-size:13px;color:var(--slate-600);">
+    {% if a.student_name %}<span>👤 {{ a.student_name }}</span>{% endif %}
+    {% if a.school_name %}<span>🏫 {{ a.school_name }}</span>{% endif %}
+    {% if a.instructor_name %}<span>👨‍🏫 Instructor: {{ a.instructor_name }}</span>{% endif %}
+    {% if a.due_date %}<span>📅 Due: {{ a.due_date }}</span>{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Sources -->
+  {% if a.sources %}
+  <div class="preview-sources-label">Sources</div>
+  <div id="sources-list">
+    {% for s in a.sources %}
+    <div class="src-card" data-id="{{ s.id }}">
+      <div class="src-header">
+        <div class="src-title">{{ s.title or 'Untitled source' }}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          {% if is_admin %}
+          <button type="button" class="admin-copy-btn" onclick="adminCopy({{ (s.title ~ '\n' ~ (s.url or '') ~ '\n' ~ (s.summary or ''))|tojson }}, this)">📋 Copy</button>
+          {% endif %}
+          {% if not s.is_user_provided %}
+          <button type="button" class="btn-sm ghost" onclick="replaceSrc(this, {{ s.id }})">Replace</button>
+          {% endif %}
+        </div>
+      </div>
+      {% if s.url %}<div class="src-url"><a href="{{ s.url }}" target="_blank">{{ s.url[:70] }}</a></div>{% endif %}
+      {% if s.summary %}<div class="src-summary">{{ s.summary[:300] }}{% if s.summary|length > 300 %}…{% endif %}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Humanization options -->
+  <div style="margin-top:24px;padding:20px;background:var(--surface-2);border-radius:12px;border:1px solid var(--border);">
+    <div style="font-size:13px;font-weight:700;color:var(--navy-900);margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+      🤖 Humanization Settings
+      <span style="font-size:11px;font-weight:400;color:var(--slate-500);">Customise how the AI rewrites your paper to bypass detection</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--slate-600);display:block;margin-bottom:6px;">✍️ Writing Style</label>
+        <select id="sel-style" name="humanize_style"
+          style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--navy-900);font-size:13px;cursor:pointer;">
+          <option value="academic" selected>📚 Academic</option>
+          <option value="general">🌐 General</option>
+          <option value="more_human">💬 More Human</option>
+          <option value="high_quality">⭐ High Quality</option>
+          <option value="simplify">✂️ Simplify</option>
+          <option value="formal">🎩 Formal</option>
+          <option value="informal">😊 Informal</option>
+          <option value="blog">📝 Blog</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--slate-600);display:block;margin-bottom:6px;">⚡ Humanization Model</label>
+        <select id="sel-model" name="humanize_model"
+          style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--navy-900);font-size:13px;cursor:pointer;">
+          <option value="basic">🔵 Basic</option>
+          <option value="advanced" selected>🟣 Advanced (Recommended)</option>
+          <option value="aggressive">🔴 Aggressive (Max bypass)</option>
+          <option value="beta">🧪 Beta</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate button -->
+  <form method="post" action="{{ url_for('main.start_assignment', aid=a.id) }}" style="margin-top:20px;" id="gen-form">
+    <input type="hidden" name="humanize_style" id="hf-style" value="academic">
+    <input type="hidden" name="humanize_model" id="hf-model" value="advanced">
+    <script>
+      document.getElementById('sel-style').addEventListener('change', function(){
+        document.getElementById('hf-style').value = this.value;
+      });
+      document.getElementById('sel-model').addEventListener('change', function(){
+        document.getElementById('hf-model').value = this.value;
+      });
+    </script>
+    {% if can_generate %}
+      <button class="btn accent full" type="submit" style="font-size:16px;padding:14px;">
+        ✨ Generate now
+      </button>
+      <div class="wf-hint" style="text-align:center;margin-top:8px;">
+        Delivery to your email usually takes 3–10 minutes.
+      </div>
+    {% elif gen_reason == 'daily_limit' %}
+      <div class="flash error" style="margin-bottom:14px;">
+        You've used all {{ daily_limit }} assignments for today on the {{ active_sub.plan | capitalize }} plan.
+        Come back tomorrow or upgrade your plan.
+      </div>
+      <a class="btn accent full" href="{{ url_for('main.pricing') }}">⬆️ Upgrade Plan</a>
+    {% else %}
+      <div class="flash error" style="margin-bottom:14px;">
+        You need an active subscription to generate assignments.
+      </div>
+      <a class="btn accent full" href="{{ url_for('main.pricing') }}">💳 View Plans</a>
+    {% endif %}
+  </form>
+
+  <div class="wf-actions" style="margin-top:12px;">
+    {% if a.assignment_type == 'open' %}
+      <a class="btn ghost" href="{{ url_for('main.new_assignment') }}">← Back</a>
+    {% else %}
+      <a class="btn ghost" href="{{ url_for('main.assignment_sources', aid=a.id) }}">← Back to sources</a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+async function replaceSrc(btn, sid) {
+  btn.disabled = true; btn.textContent = '…';
+  const card = btn.closest('.src-card');
+  try {
+    const r = await fetch("{{ url_for('main.api_auto_sources', aid=a.id) }}", {method:'POST'});
+    if (!r.ok) { card.remove(); return; }
+    const s = await r.json();
+    card.querySelector('.src-title').textContent = s.title || 'Untitled';
+    const urlEl = card.querySelector('.src-url');
+    if (s.url) {
+      if (urlEl) urlEl.innerHTML = `<a href="${s.url}" target="_blank">${s.url.slice(0,70)}</a>`;
+    }
+    const sumEl = card.querySelector('.src-summary');
+    if (s.summary && sumEl) sumEl.textContent = s.summary.slice(0,300);
+  } catch(e) { card.remove(); }
+  finally { btn.disabled = false; btn.textContent = 'Replace'; }
+}
+</script>
+{% endblock %}

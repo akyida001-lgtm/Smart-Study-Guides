@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.doc_label }} — Career Section{% endblock %}
+{% block container_class %}{% endblock %}
+{% block content %}
+
+<div class="jdl-page">
+
+  <!-- ── Top bar ── -->
+  <div class="jdl-topbar">
+    <div class="jdl-topbar-left">
+      <a href="{{ url_for('main.job_docs') }}" class="jdl-back">← Back</a>
+      <div>
+        <div class="jdl-doc-type">{{ doc.doc_label }}</div>
+        <div class="jdl-doc-meta">For {{ details.full_name }} · {{ doc.created_at.strftime('%d %b %Y') }}</div>
+      </div>
+    </div>
+    <div class="jdl-topbar-right">
+      <span class="jdl-status-chip" id="status-chip">
+        <span class="jdl-dot"></span> Writing…
+      </span>
+      <button class="btn ghost jdl-action-btn" id="copy-btn" onclick="copyDoc()" style="display:none;">📋 Copy</button>
+    </div>
+  </div>
+
+  <!-- ── Document live output ── -->
+  <div class="jdl-paper-wrap">
+    <div class="jdl-paper" id="doc-output">
+      <span class="jdl-cursor" id="jdl-cursor">|</span>
+    </div>
+  </div>
+
+  <!-- ── Done bar (hidden until complete) ── -->
+  <div class="jdl-done-bar" id="done-bar" style="display:none;">
+    <span class="jdl-done-label">✅ Document complete!</span>
+
+    <!-- Download area — manual trigger, expands to Word + PDF buttons -->
+    <div class="jdl-docx-wrap" id="docx-wrap">
+      <button class="btn accent jdl-docx-btn ready" id="docx-btn" onclick="_buildDocx()">
+        📄 Build Document
+      </button>
+    </div>
+
+    <a class="btn ghost jdl-action-btn" href="{{ url_for('main.job_docs') }}">Create another →</a>
+  </div>
+
+</div>
+
+<style>
+.jdl-page {
+  max-width: 860px; margin: 0 auto;
+  display: flex; flex-direction: column;
+  min-height: calc(100vh - 80px); padding-bottom: 64px;
+}
+
+/* ── Topbar ── */
+.jdl-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+}
+.jdl-topbar-left  { display: flex; align-items: center; gap: 14px; }
+.jdl-topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.jdl-back { font-size: 13px; color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.jdl-back:hover { text-decoration: underline; }
+.jdl-doc-type { font-size: 16px; font-weight: 700; color: var(--navy-900); }
+.jdl-doc-meta { font-size: 12px; color: var(--slate-400); margin-top: 2px; }
+
+.jdl-status-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #eef6ff; border: 1px solid #bfdbfe; border-radius: 999px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; color: #1d4ed8;
+}
+.jdl-status-chip.done  { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.jdl-status-chip.error { background: #fff4f4; border-color: #fca5a5; color: #dc2626; }
+.jdl-dot { width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; animation: blink 1s ease-in-out infinite; }
+.jdl-status-chip.done  .jdl-dot { background: #22c55e; animation: none; }
+.jdl-status-chip.error .jdl-dot { background: #ef4444; animation: none; }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.2; } }
+.jdl-action-btn { font-size: 13px; padding: 7px 14px; }
+
+/* ── Paper ── */
+.jdl-paper-wrap { flex: 1; display: flex; flex-direction: column; }
+.jdl-paper {
+  background: #fff; border: 1px solid var(--surface-2); border-radius: 12px;
+  padding: 48px 52px; font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 15px; line-height: 1.85; color: #1a1a1a; min-height: 640px;
+  white-space: pre-wrap; word-break: break-word;
+  box-shadow: 0 4px 24px rgba(6,17,43,.08); position: relative;
+}
+@media(max-width: 560px) { .jdl-paper { padding: 28px 22px; font-size: 14px; } }
+.jdl-cursor {
+  display: inline-block; color: var(--accent); font-weight: 700;
+  animation: cursor-blink .6s step-end infinite;
+  font-family: monospace; font-size: 18px; line-height: 1;
+  vertical-align: middle; margin-left: 1px;
+}
+@keyframes cursor-blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+/* ── Done bar ── */
+.jdl-done-bar {
+  position: sticky; bottom: 0; left: 0; right: 0;
+  background: #f0fdf4; border-top: 2px solid #bbf7d0;
+  padding: 14px 20px; display: flex; align-items: center;
+  gap: 10px; flex-wrap: wrap; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #166534;
+  border-radius: 0 0 12px 12px; margin-top: 16px;
+}
+.jdl-done-bar .btn { font-size: 13px; padding: 8px 16px; }
+.jdl-done-label { white-space: nowrap; }
+
+/* ── Word download button states ── */
+.jdl-docx-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-width: 200px; justify-content: center;
+}
+.jdl-docx-btn:disabled { opacity: .75; cursor: wait; }
+.jdl-docx-btn.ready    { opacity: 1;   cursor: pointer; }
+.jdl-docx-btn.error-state { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+
+/* ── Dual download buttons ── */
+.jdl-dl-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.jdl-dl-btn   { font-size: 13px; padding: 8px 16px; font-weight: 600; white-space: nowrap; }
+.jdl-dl-pdf   {
+  background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;
+}
+.jdl-dl-pdf:hover { background: #fecaca; border-color: #f87171; }
+
+/* Spinner inside button */
+.jdl-btn-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  animation: spin .7s linear infinite;
+  display: inline-block; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+</style>
+
+<script>
+var DOC_ID     = {{ doc.id }};
+var STREAM_URL = '/job-docs/' + DOC_ID + '/stream';
+var EXPORT_URL = '/job-docs/' + DOC_ID + '/export-docx';
+
+var output   = document.getElementById('doc-output');
+var cursor   = document.getElementById('jdl-cursor');
+var chip     = document.getElementById('status-chip');
+var doneBar  = document.getElementById('done-bar');
+var docxBtn  = document.getElementById('docx-btn');
+var fullText = '';
+
+/* ── SSE Streaming ──────────────────────────────────────────────────────── */
+var evtSource = new EventSource(STREAM_URL);
+
+evtSource.onmessage = function (e) {
+  if (e.data === '[DONE]') {
+    evtSource.close();
+    cursor.remove();
+    chip.className = 'jdl-status-chip done';
+    chip.innerHTML = '<span class="jdl-dot"></span> Complete';
+    document.getElementById('copy-btn').style.display = '';
+    doneBar.style.display = 'flex';
+    return;
+  }
+  if (e.data.startsWith('[ERROR]')) {
+    evtSource.close();
+    cursor.remove();
+    chip.className = 'jdl-status-chip error';
+    chip.innerHTML = '<span class="jdl-dot"></span> Error';
+    output.textContent = (fullText || '') + '\n\n⚠️ ' + e.data.replace('[ERROR]', '').trim();
+    return;
+  }
+  try {
+    var payload = JSON.parse(e.data);
+    var token   = payload.token || '';
+    fullText   += token;
+    var textNode = output.firstChild;
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+      textNode.textContent = fullText;
+    } else {
+      output.insertBefore(document.createTextNode(fullText), cursor);
+    }
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  } catch(err) { /* ignore bad JSON */ }
+};
+
+evtSource.onerror = function () {
+  evtSource.close();
+  chip.className = 'jdl-status-chip error';
+  chip.innerHTML = '<span class="jdl-dot"></span> Connection lost';
+};
+
+/* ── Build Word + PDF ────────────────────────────────────────────────────── */
+function _buildDocx() {
+  docxBtn.disabled = true;
+  docxBtn.className = 'btn accent jdl-docx-btn';
+  docxBtn.innerHTML = '<span class="jdl-btn-spinner"></span> Building files…';
+
+  fetch(EXPORT_URL, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (res.error) throw new Error(res.error);
+      var wrap = document.getElementById('docx-wrap');
+      wrap.innerHTML =
+        '<div class="jdl-dl-group">' +
+          '<a class="btn accent jdl-dl-btn" href="' + res.url + '" download="' + (res.filename || 'document.docx') + '" target="_blank">' +
+            '📝 Download Word' +
+          '</a>' +
+          (res.pdf_url
+            ? '<a class="btn jdl-dl-btn jdl-dl-pdf" href="' + res.pdf_url + '" download="' + (res.pdf_filename || 'document.pdf') + '" target="_blank">' +
+                '📕 Download PDF' +
+              '</a>'
+            : '') +
+        '</div>';
+    })
+    .catch(function (err) {
+      docxBtn.disabled  = false;
+      docxBtn.className = 'btn jdl-docx-btn error-state';
+      docxBtn.innerHTML = '⚠️ Build failed — <u>Retry</u>';
+      docxBtn.onclick   = function () { _buildDocx(); };
+    });
+}
+
+/* ── Copy text ──────────────────────────────────────────────────────────── */
+function copyDoc() {
+  if (!fullText) return;
+  navigator.clipboard.writeText(fullText).then(function () {
+    var btn = document.getElementById('copy-btn');
+    var orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(function () { btn.textContent = orig; }, 2000);
+  });
+}
+
+/* ── Plain-text fallback download ───────────────────────────────────────── */
+function downloadTxt() {
+  if (!fullText) return;
+  var label = '{{ doc.doc_label }}';
+  var name  = '{{ details.full_name or "document" }}';
+  var fname = (label + ' - ' + name).replace(/[^a-z0-9 \-]/gi, '_') + '.txt';
+  var a = document.createElement('a');
+  a.href     = 'data:text/plain;charset=utf-8,' + encodeURIComponent(fullText);
+  a.download = fname;
+  a.click();
+}
+</script>
+
+{% endblock %}

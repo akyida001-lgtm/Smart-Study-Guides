@@ -1,0 +1,566 @@
+{% extends "base.html" %}
+{% block title %}User Management — Admin{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom:24px;">
+  <div>
+    <h1>👥 User Management</h1>
+    <p style="margin:4px 0 0;color:var(--slate-500);font-size:14px;">Monitor accounts, flag suspicious users, and take action</p>
+  </div>
+  <a href="/admin/api-health" class="btn" style="padding:8px 16px;font-size:13px;display:flex;align-items:center;gap:6px;">
+    🔌 API Health
+  </a>
+</div>
+
+<!-- ── Summary cards ── -->
+<div class="um-stat-row">
+  <div class="um-stat">
+    <div class="um-stat-num">{{ stats.total }}</div>
+    <div class="um-stat-label">Total Users</div>
+  </div>
+  <div class="um-stat um-stat--active">
+    <div class="um-stat-num">{{ stats.active }}</div>
+    <div class="um-stat-label">Active</div>
+  </div>
+  <div class="um-stat um-stat--flagged">
+    <div class="um-stat-num">{{ stats.flagged }}</div>
+    <div class="um-stat-label">Flagged ⚑</div>
+  </div>
+  <div class="um-stat um-stat--suspended">
+    <div class="um-stat-num">{{ stats.suspended }}</div>
+    <div class="um-stat-label">Suspended ⏸</div>
+  </div>
+  <div class="um-stat um-stat--terminated">
+    <div class="um-stat-num">{{ stats.terminated }}</div>
+    <div class="um-stat-label">Terminated 🚫</div>
+  </div>
+</div>
+
+<!-- ── Search + filter bar ── -->
+<form method="get" class="um-filter-bar">
+  <input class="um-search" type="text" name="q" value="{{ q }}" placeholder="Search by name or email…" autocomplete="off">
+  <div class="um-status-tabs">
+    {% for val, label in [('all','All'),('active','Active'),('flagged','Flagged'),('suspended','Suspended'),('terminated','Terminated')] %}
+    <a class="um-tab {% if status_filter == val %}active{% endif %}"
+       href="?status={{ val }}{% if q %}&q={{ q }}{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <button class="btn accent" type="submit" style="padding:8px 18px;">Search</button>
+</form>
+
+<!-- ── Results count ── -->
+<div style="font-size:13px;color:var(--slate-500);margin-bottom:12px;">
+  Showing {{ users|length }} of {{ total }} user{{ 's' if total != 1 else '' }}
+  {% if q %} matching "<strong>{{ q }}</strong>"{% endif %}
+</div>
+
+<!-- ── Desktop table ── -->
+<div class="card um-table-wrap" style="padding:0;overflow:hidden;">
+  <div style="overflow-x:auto;">
+    <table class="um-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Status</th>
+          <th>Plan</th>
+          <th>Assignments</th>
+          <th>Career Docs</th>
+          <th>Total Spent</th>
+          <th>Auth</th>
+          <th>Joined</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr class="um-row {% if u.account_status != 'active' %}um-row--{{ u.account_status }}{% endif %}">
+          <td>
+            <div class="um-user-name">
+              {% if u.profile_image_url %}
+              <img src="{{ u.profile_image_url }}" class="um-avatar" alt="">
+              {% else %}
+              <div class="um-avatar um-avatar-placeholder">{{ (u.first_name or u.email or '?')[0].upper() }}</div>
+              {% endif %}
+              <div>
+                <div style="font-weight:700;font-size:13px;color:var(--navy-900);">
+                  {{ u.display_name }}
+                  {% if u.id == user.id %}<span class="um-tag um-tag--you">YOU</span>
+                  {% elif u.is_staff %}<span class="um-tag um-tag--admin">ADMIN</span>{% endif %}
+                  {% if u.is_writer %}<span class="um-tag um-tag--writer">WRITER</span>{% endif %}
+                </div>
+                <div style="font-size:12px;color:var(--slate-500);">{{ u.email or '—' }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="um-badge um-badge--{{ u.account_status }}">{{ u.account_status.title() }}</span>
+            {% if u.flag_reason %}
+            <div class="um-flag-reason" title="{{ u.flag_reason }}">{{ u.flag_reason[:40] }}{% if u.flag_reason|length > 40 %}…{% endif %}</div>
+            {% endif %}
+          </td>
+          <td style="font-weight:700;font-size:12px;">{{ u.active_plan_name or '—' }}</td>
+          <td>{{ assign_counts.get(u.id, 0) }}</td>
+          <td>{{ job_counts.get(u.id, 0) }}</td>
+          <td>${{ '%.2f'|format(tx_spent.get(u.id, 0) / 100) }}</td>
+          <td><span class="um-provider">{{ u.auth_provider or 'email' }}</span></td>
+          <td style="font-size:12px;color:var(--slate-500);">{{ u.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <div class="um-actions">
+              <a class="btn ghost" style="font-size:12px;padding:5px 10px;"
+                 href="{{ url_for('main.admin_user_detail', uid=u.id) }}">View</a>
+              {% if u.id != user.id %}
+                <button class="btn ghost um-msg-btn" style="font-size:12px;padding:5px 10px;color:#3b82f6;"
+                        data-uid="{{ u.id }}" data-name="{{ u.display_name }}">✉️ Message</button>
+                {% if not u.is_staff %}
+                  {% if u.is_writer %}
+                  <button class="btn ghost um-writer-btn" style="font-size:12px;padding:5px 10px;color:#059669;"
+                          data-uid="{{ u.id }}" data-writer="0">✍️ Remove Writer</button>
+                  {% else %}
+                  <button class="btn ghost um-writer-btn" style="font-size:12px;padding:5px 10px;color:#059669;"
+                          data-uid="{{ u.id }}" data-writer="1">✍️ Make Writer</button>
+                  {% endif %}
+                {% endif %}
+                {% if u.account_status == 'active' %}
+                <button class="btn ghost um-action-btn" style="font-size:12px;padding:5px 10px;color:#f59e0b;"
+                        data-uid="{{ u.id }}" data-action="flag">⚑ Flag</button>
+                <button class="btn ghost um-action-btn" style="font-size:12px;padding:5px 10px;color:#e74c3c;"
+                        data-uid="{{ u.id }}" data-action="suspend">⏸ Suspend</button>
+                {% elif u.account_status in ('flagged','suspended') %}
+                <button class="btn ghost um-action-btn" style="font-size:12px;padding:5px 10px;color:#27ae60;"
+                        data-uid="{{ u.id }}" data-action="restore">✓ Restore</button>
+                <button class="btn ghost um-action-btn" style="font-size:12px;padding:5px 10px;color:#e74c3c;"
+                        data-uid="{{ u.id }}" data-action="terminate">🚫 Terminate</button>
+                {% elif u.account_status == 'terminated' %}
+                <button class="btn ghost um-action-btn" style="font-size:12px;padding:5px 10px;color:#27ae60;"
+                        data-uid="{{ u.id }}" data-action="restore">↩ Restore</button>
+                {% endif %}
+                {% if not u.is_staff %}
+                <button class="btn ghost um-delete-btn" style="font-size:12px;padding:5px 10px;color:#ff4444;border-color:#ff4444;"
+                        data-uid="{{ u.id }}" data-email="{{ u.email }}">🗑 Delete</button>
+                {% endif %}
+              {% else %}
+                <span style="font-size:11px;color:var(--slate-500);font-style:italic;">Your account</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--slate-500);">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Mobile cards ── -->
+<div class="um-cards">
+  {% for u in users %}
+  <div class="um-card {% if u.account_status != 'active' %}um-card--{{ u.account_status }}{% endif %}">
+    <div class="um-card-top">
+      <div class="um-user-name">
+        {% if u.profile_image_url %}
+        <img src="{{ u.profile_image_url }}" class="um-avatar" alt="">
+        {% else %}
+        <div class="um-avatar um-avatar-placeholder">{{ (u.first_name or u.email or '?')[0].upper() }}</div>
+        {% endif %}
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--navy-900);line-height:1.3;">
+            {{ u.display_name }}
+            {% if u.id == user.id %}<span class="um-tag um-tag--you">YOU</span>
+            {% elif u.is_staff %}<span class="um-tag um-tag--admin">ADMIN</span>{% endif %}
+            {% if u.is_writer %}<span class="um-tag um-tag--writer">WRITER</span>{% endif %}
+          </div>
+          <div style="font-size:12px;color:var(--slate-500);word-break:break-all;">{{ u.email or '—' }}</div>
+        </div>
+      </div>
+      <span class="um-badge um-badge--{{ u.account_status }}">{{ u.account_status.title() }}</span>
+    </div>
+    <div class="um-card-meta">
+      <div class="um-card-row"><span>Plan</span><strong>{{ u.active_plan_name or '—' }}</strong></div>
+      <div class="um-card-row"><span>Assignments</span><strong>{{ assign_counts.get(u.id, 0) }}</strong></div>
+      <div class="um-card-row"><span>Career Docs</span><strong>{{ job_counts.get(u.id, 0) }}</strong></div>
+      <div class="um-card-row"><span>Spent</span><strong>${{ '%.2f'|format(tx_spent.get(u.id, 0) / 100) }}</strong></div>
+      <div class="um-card-row"><span>Auth</span><span class="um-provider">{{ u.auth_provider or 'email' }}</span></div>
+      <div class="um-card-row"><span>Joined</span><strong>{{ u.created_at.strftime('%d %b %Y') }}</strong></div>
+    </div>
+    <div class="um-card-actions">
+      <a class="btn ghost" style="font-size:12px;padding:6px 12px;"
+         href="{{ url_for('main.admin_user_detail', uid=u.id) }}">View</a>
+      {% if u.id != user.id %}
+        <button class="btn ghost um-msg-btn" style="font-size:12px;padding:6px 12px;color:#3b82f6;"
+                data-uid="{{ u.id }}" data-name="{{ u.display_name }}">✉️</button>
+        {% if not u.is_staff %}
+          {% if u.is_writer %}
+          <button class="btn ghost um-writer-btn" style="font-size:12px;padding:6px 12px;color:#059669;"
+                  data-uid="{{ u.id }}" data-writer="0">Remove Writer</button>
+          {% else %}
+          <button class="btn ghost um-writer-btn" style="font-size:12px;padding:6px 12px;color:#059669;"
+                  data-uid="{{ u.id }}" data-writer="1">Make Writer</button>
+          {% endif %}
+        {% endif %}
+        {% if u.account_status == 'active' %}
+        <button class="btn ghost um-action-btn" style="font-size:12px;padding:6px 12px;color:#f59e0b;"
+                data-uid="{{ u.id }}" data-action="flag">⚑ Flag</button>
+        <button class="btn ghost um-action-btn" style="font-size:12px;padding:6px 12px;color:#e74c3c;"
+                data-uid="{{ u.id }}" data-action="suspend">⏸ Suspend</button>
+        {% elif u.account_status in ('flagged','suspended') %}
+        <button class="btn ghost um-action-btn" style="font-size:12px;padding:6px 12px;color:#27ae60;"
+                data-uid="{{ u.id }}" data-action="restore">✓ Restore</button>
+        <button class="btn ghost um-action-btn" style="font-size:12px;padding:6px 12px;color:#e74c3c;"
+                data-uid="{{ u.id }}" data-action="terminate">🚫 Terminate</button>
+        {% elif u.account_status == 'terminated' %}
+        <button class="btn ghost um-action-btn" style="font-size:12px;padding:6px 12px;color:#27ae60;"
+                data-uid="{{ u.id }}" data-action="restore">↩ Restore</button>
+        {% endif %}
+        {% if not u.is_staff %}
+        <button class="btn ghost um-delete-btn" style="font-size:12px;padding:6px 12px;color:#ff4444;border-color:#ff4444;"
+                data-uid="{{ u.id }}" data-email="{{ u.email }}">🗑 Delete</button>
+        {% endif %}
+      {% else %}
+        <span style="font-size:11px;color:var(--slate-500);font-style:italic;">Your account</span>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <p style="text-align:center;padding:40px;color:var(--slate-500);">No users found.</p>
+  {% endfor %}
+</div>
+
+<!-- ── Pagination ── -->
+{% if pages > 1 %}
+<div class="um-pagination">
+  {% if page > 1 %}
+  <a class="btn ghost" href="?page={{ page-1 }}&status={{ status_filter }}{% if q %}&q={{ q }}{% endif %}">← Prev</a>
+  {% endif %}
+  <span style="font-size:13px;color:var(--slate-500);">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}
+  <a class="btn ghost" href="?page={{ page+1 }}&status={{ status_filter }}{% if q %}&q={{ q }}{% endif %}">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Notification modal ── -->
+<div class="um-modal-backdrop" id="um-msg-modal" style="display:none;">
+  <div class="um-modal-box">
+    <div class="um-modal-title">🔔 Send Notification to <span id="um-msg-name"></span></div>
+    <div class="um-modal-sub">Delivered to the user's notification bell, email, and SMS (if set). The user cannot reply — this is one-way.</div>
+
+    <!-- Quick templates -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+      <button class="um-tpl-btn" data-tpl="warning">⚠️ Suspicious Activity Warning</button>
+      <button class="um-tpl-btn" data-tpl="violation">🚫 Policy Violation Notice</button>
+      <button class="um-tpl-btn" data-tpl="review">📋 Account Under Review</button>
+      <button class="um-tpl-btn" data-tpl="custom">✏️ Custom Message</button>
+    </div>
+
+    <textarea class="um-modal-reason" id="um-msg-text" rows="5" placeholder="Type your message…"></textarea>
+    <div class="um-modal-btns">
+      <button class="btn ghost" onclick="closeMsgModal()">Cancel</button>
+      <button class="btn accent" id="um-msg-send">Send Notification</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Action modal ── -->
+<div class="um-modal-backdrop" id="um-modal" style="display:none;">
+  <div class="um-modal-box">
+    <div class="um-modal-title" id="um-modal-title">Confirm Action</div>
+    <div class="um-modal-sub" id="um-modal-sub">Please provide a reason (optional):</div>
+    <textarea class="um-modal-reason" id="um-modal-reason" rows="3" placeholder="Reason (optional)…"></textarea>
+    <div class="um-modal-btns">
+      <button class="btn ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn accent" id="um-modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.um-stat-row { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.um-stat {
+  flex:1; min-width:100px; background:var(--surface); border:1.5px solid var(--surface-2);
+  border-radius:12px; padding:16px 20px; text-align:center;
+}
+.um-stat-num   { font-size:26px; font-weight:800; color:var(--navy-900); }
+.um-stat-label { font-size:12px; color:var(--slate-500); margin-top:4px; font-weight:600; }
+.um-stat--active    .um-stat-num { color:#27ae60; }
+.um-stat--flagged   .um-stat-num { color:#f59e0b; }
+.um-stat--suspended .um-stat-num { color:#e67e22; }
+.um-stat--terminated .um-stat-num { color:#e74c3c; }
+
+.um-filter-bar {
+  display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap;
+}
+.um-search {
+  flex:1; min-width:200px; padding:9px 14px; border-radius:8px;
+  border:1.5px solid var(--surface-2); background:var(--surface);
+  color:var(--navy-900); font-size:14px;
+}
+.um-search:focus { outline:none; border-color:var(--accent); }
+.um-status-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+.um-tab {
+  padding:7px 14px; border-radius:8px; font-size:13px; font-weight:600;
+  color:var(--slate-500); text-decoration:none; border:1.5px solid transparent;
+  transition:all .15s;
+}
+.um-tab:hover { background:var(--surface-2); color:var(--navy-900); }
+.um-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+.um-table { width:100%; border-collapse:collapse; font-size:13px; }
+.um-table th {
+  padding:12px 16px; text-align:left; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.5px;
+  color:var(--slate-500); border-bottom:1.5px solid var(--surface-2);
+  background:var(--surface-2);
+}
+.um-table td { padding:12px 16px; border-bottom:1px solid var(--surface-2); vertical-align:middle; }
+.um-row:last-child td { border-bottom:none; }
+.um-row:hover { background:rgba(122,162,255,.04); }
+.um-row--flagged   { background:rgba(245,158,11,.04); }
+.um-row--suspended { background:rgba(230,126,34,.04); }
+.um-row--terminated { background:rgba(231,76,60,.04); }
+
+.um-user-name { display:flex; align-items:center; gap:10px; }
+.um-avatar {
+  width:34px; height:34px; border-radius:50%; object-fit:cover; flex-shrink:0;
+}
+.um-avatar-placeholder {
+  background:var(--accent); color:#fff; font-size:14px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.um-badge {
+  display:inline-block; padding:3px 10px; border-radius:999px;
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+}
+.um-badge--active     { background:rgba(39,174,96,.12);  color:#27ae60; }
+.um-badge--flagged    { background:rgba(245,158,11,.12); color:#d97706; }
+.um-badge--suspended  { background:rgba(230,126,34,.12); color:#e67e22; }
+.um-badge--terminated { background:rgba(231,76,60,.12);  color:#e74c3c; }
+
+.um-flag-reason {
+  font-size:11px; color:var(--slate-500); margin-top:3px;
+  max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.um-provider {
+  font-size:11px; font-weight:600; background:var(--surface-2);
+  border-radius:6px; padding:2px 8px; color:var(--slate-500);
+}
+.um-actions { display:flex; gap:4px; justify-content:flex-end; flex-wrap:wrap; }
+
+.um-pagination {
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  margin-top:20px;
+}
+
+/* Modal */
+.um-modal-backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+}
+.um-modal-box {
+  background:var(--surface); border:1.5px solid var(--surface-2);
+  border-radius:16px; padding:28px; width:420px; max-width:90vw;
+  box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+.um-modal-title { font-size:17px; font-weight:800; color:var(--navy-900); margin-bottom:8px; }
+.um-modal-sub   { font-size:13px; color:var(--slate-500); margin-bottom:12px; }
+.um-modal-reason {
+  width:100%; padding:10px 12px; border-radius:8px;
+  border:1.5px solid var(--surface-2); background:var(--surface-2);
+  color:var(--navy-900); font-size:13px; resize:vertical;
+  box-sizing:border-box; margin-bottom:16px;
+}
+.um-modal-reason:focus { outline:none; border-color:var(--accent); }
+.um-modal-btns { display:flex; gap:10px; justify-content:flex-end; }
+
+.um-tpl-btn {
+  font-size:11px; font-weight:700; padding:5px 10px; border-radius:6px;
+  border:1.5px solid var(--surface-2); background:var(--surface-2);
+  color:var(--navy-800); cursor:pointer; transition:all .15s;
+}
+.um-tpl-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(122,162,255,.07); }
+.um-tpl-btn.active { border-color:var(--accent); background:var(--accent); color:#fff; }
+
+/* Role tags */
+.um-tag {
+  display:inline-block; font-size:10px; font-weight:700; border-radius:4px;
+  padding:1px 6px; margin-left:4px; vertical-align:middle;
+}
+.um-tag--you    { background:var(--accent); color:#fff; }
+.um-tag--admin  { background:#7c3aed; color:#fff; }
+.um-tag--writer { background:#059669; color:#fff; }
+
+/* Mobile cards — hidden on desktop */
+.um-cards { display:none; }
+
+/* Desktop table — hidden on mobile */
+@media (max-width: 767px) {
+  .um-table-wrap { display:none; }
+  .um-cards { display:flex; flex-direction:column; gap:12px; }
+
+  .um-card {
+    background:var(--surface); border:1.5px solid var(--surface-2);
+    border-radius:14px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .um-card--flagged    { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.03); }
+  .um-card--suspended  { border-color:rgba(230,126,34,.4); background:rgba(230,126,34,.03); }
+  .um-card--terminated { border-color:rgba(231,76,60,.4);  background:rgba(231,76,60,.03); }
+
+  .um-card-top {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    margin-bottom:12px;
+  }
+  .um-card-meta {
+    display:grid; grid-template-columns:1fr 1fr; gap:6px 12px;
+    margin-bottom:12px; padding:10px 12px;
+    background:var(--surface-2); border-radius:10px;
+  }
+  .um-card-row {
+    display:flex; flex-direction:column; font-size:12px;
+  }
+  .um-card-row span:first-child { color:var(--slate-500); font-size:11px; margin-bottom:1px; }
+  .um-card-row strong { color:var(--navy-900); font-weight:700; }
+
+  .um-card-actions {
+    display:flex; flex-wrap:wrap; gap:6px;
+  }
+}
+</style>
+
+<script>
+/* ── Message modal ── */
+var _msgUid = null;
+var TEMPLATES = {
+  warning:   "⚠️ Important Notice — Suspicious Activity Detected\n\nHi there,\n\nWe have detected unusual activity on your Smart Study Guides account that may violate our Terms and Conditions. This is a formal warning.\n\nPlease review our Terms & Conditions at /terms. Continued suspicious behaviour may result in your account being temporarily suspended or permanently terminated.\n\nIf you believe this is a mistake, please reply to this message and our team will review your case.\n\nSmart Study Guides Team",
+  violation: "🚫 Policy Violation Notice\n\nHi there,\n\nWe have identified activity on your account that is in breach of our platform policies. This behaviour is not permitted under our Terms and Conditions.\n\nAs a result, your account is currently under review. Further violations may lead to account suspension or termination without notice.\n\nIf you have any questions, please reply to this message.\n\nSmart Study Guides Team",
+  review:    "📋 Account Review Notice\n\nHi there,\n\nYour Smart Study Guides account has been flagged for a routine security review. This is a precautionary measure and does not mean your account has been suspended.\n\nYour access remains active while the review is in progress. We will update you once the review is complete, typically within 24–48 hours.\n\nThank you for your patience.\n\nSmart Study Guides Team",
+  custom:    ""
+};
+
+document.querySelectorAll('.um-msg-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    _msgUid = this.dataset.uid;
+    document.getElementById('um-msg-name').textContent = this.dataset.name;
+    document.getElementById('um-msg-text').value = '';
+    document.querySelectorAll('.um-tpl-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('um-msg-modal').style.display = 'flex';
+  });
+});
+
+document.querySelectorAll('.um-tpl-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.um-tpl-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('um-msg-text').value = TEMPLATES[this.dataset.tpl] || '';
+    document.getElementById('um-msg-text').focus();
+  });
+});
+
+document.getElementById('um-msg-send').addEventListener('click', function() {
+  var msg = document.getElementById('um-msg-text').value.trim();
+  if (!msg) { alert('Please enter a message.'); return; }
+  this.disabled = true; this.textContent = 'Sending…';
+  fetch('/api/admin/users/' + _msgUid + '/message', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ message: msg })
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      closeMsgModal();
+      var parts = ['🔔 Notification delivered'];
+      if (d.email_sent) parts.push('📧 Email sent');
+      if (d.sms_sent) parts.push('📱 SMS sent');
+      showToast(parts.join(' · '));
+    } else { alert(d.error || 'Error sending message.'); }
+    document.getElementById('um-msg-send').disabled = false;
+    document.getElementById('um-msg-send').textContent = 'Send Notification';
+  });
+});
+
+document.getElementById('um-msg-modal').addEventListener('click', function(e){ if(e.target===this) closeMsgModal(); });
+function closeMsgModal() { document.getElementById('um-msg-modal').style.display='none'; }
+
+function showToast(msg) {
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1e2a3a;color:#e2e8f4;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.25);z-index:9999;';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3500);
+}
+
+/* ── Writer toggle ── */
+document.querySelectorAll('.um-writer-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var uid     = this.dataset.uid;
+    var makeWriter = this.dataset.writer === '1';
+    var label   = makeWriter ? 'Make Writer' : 'Remove Writer';
+    if (!confirm((makeWriter ? 'Grant writer role to this user?' : 'Remove writer role from this user?'))) return;
+    this.disabled = true;
+    fetch('/api/admin/users/' + uid + '/set-writer', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ is_writer: makeWriter })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.ok) { location.reload(); }
+      else { alert(d.error || 'Error'); }
+    });
+  });
+});
+
+/* ── Action modal ── */
+var _pendingUid = null, _pendingAction = null;
+
+document.querySelectorAll('.um-action-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    _pendingUid    = this.dataset.uid;
+    _pendingAction = this.dataset.action;
+    var labels = { flag:'⚑ Flag Account', suspend:'⏸ Suspend Account',
+                   terminate:'🚫 Terminate Account', restore:'✓ Restore Account' };
+    document.getElementById('um-modal-title').textContent = labels[_pendingAction] || 'Confirm';
+    document.getElementById('um-modal-reason').value = '';
+    document.getElementById('um-modal').style.display = 'flex';
+  });
+});
+
+document.getElementById('um-modal-confirm').addEventListener('click', function() {
+  var reason = document.getElementById('um-modal-reason').value;
+  fetch('/api/admin/users/' + _pendingUid + '/action', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action: _pendingAction, reason: reason })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) { location.reload(); } else { alert(d.error || 'Error'); }
+  });
+});
+
+document.getElementById('um-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+function closeModal() {
+  document.getElementById('um-modal').style.display = 'none';
+}
+
+document.querySelectorAll('.um-delete-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var uid   = this.dataset.uid;
+    var email = this.dataset.email;
+    if (!confirm('Permanently delete account "' + email + '"? This cannot be undone.')) return;
+    var row = this.closest('tr');
+    fetch('/api/admin/users/' + uid + '/action', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'delete' })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.ok && d.deleted) {
+        row.style.transition = 'opacity .3s';
+        row.style.opacity = '0';
+        setTimeout(function(){ row.remove(); }, 350);
+      } else {
+        alert(d.error || 'Could not delete account.');
+      }
+    });
+  });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Plans & Pricing — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header" style="margin-bottom:8px;">
+  <h1>💳 Plans &amp; Pricing</h1>
+</div>
+<p class="sub" style="margin-bottom:24px;">Subscribe monthly, every 6 months, or yearly — cancel anytime. All plans include the Humanizer and AI Checker tools.</p>
+
+{% if discount_pct %}
+<div class="flash info" style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+  🎉 <strong>{{ discount_reason }} — {{ discount_pct }}% off your first subscription!</strong>
+  Discount is automatically applied at checkout.
+</div>
+{% endif %}
+
+{% if active_sub %}
+<div class="flash success" style="margin-bottom:20px;">
+  ✅ You are on the <strong>{{ active_sub.plan | capitalize }}</strong> plan —
+  active until <strong>{{ active_sub.end_date.strftime('%d %b %Y') }}</strong>.
+  <a href="{{ url_for('main.subscription_manage') }}" style="margin-left:8px;">Manage subscription →</a>
+</div>
+{% endif %}
+
+<!-- Billing period toggle -->
+<div class="pricing-toggle-wrap">
+  <div class="pricing-toggle" id="period-toggle">
+    <button class="ptog-btn active" data-period="monthly" onclick="setPeriod('monthly',this)">Monthly</button>
+    <button class="ptog-btn" data-period="halfyear" onclick="setPeriod('halfyear',this)">
+      6 Months <span class="ptog-save">Save ~17%</span>
+    </button>
+    <button class="ptog-btn" data-period="yearly" onclick="setPeriod('yearly',this)">
+      Yearly <span class="ptog-save">Save ~26%</span>
+    </button>
+  </div>
+</div>
+
+<!-- Plan cards -->
+<div class="pricing-grid">
+
+  <!-- Basic -->
+  <div class="pricing-card" id="card-basic">
+    <div class="pricing-card-header">
+      <div class="pc-plan-name">Basic</div>
+      <div class="pc-desc">2 AI assignments per day</div>
+    </div>
+    <div class="pc-price-wrap">
+      <div class="pc-price" id="price-basic">
+        {% if discount_pct %}
+          <span class="pc-original" id="original-basic">${{ "%.2f"|format(plans.basic.monthly) }}</span>
+          <span id="display-basic">${{ "%.2f"|format(plans.basic.monthly * (1 - discount_pct/100)) }}</span>
+        {% else %}
+          <span id="display-basic">${{ "%.2f"|format(plans.basic.monthly) }}</span>
+        {% endif %}
+      </div>
+      <div class="pc-period" id="period-label-basic">/ month</div>
+    </div>
+    <ul class="pc-features">
+      <li>✅ 2 complete AI assignments per day</li>
+      <li>✅ All citation styles (APA, MLA, Chicago…)</li>
+      <li>✅ Real academic sources included</li>
+      <li>✅ Word document delivery</li>
+      <li>✅ Humanizer tool (unlimited)</li>
+      <li>✅ AI Checker tool (unlimited)</li>
+    </ul>
+    {% if current_user.is_authenticated %}
+      <button class="btn accent full pc-btn" onclick="subscribe('basic')" id="btn-basic">
+        {% if active_sub and active_sub.plan == 'basic' %}Current Plan{% else %}Subscribe — Basic{% endif %}
+      </button>
+    {% else %}
+      <a class="btn accent full" href="{{ url_for('auth.login') }}?next={{ url_for('main.pricing') }}">Sign in to subscribe</a>
+    {% endif %}
+  </div>
+
+  <!-- Standard — Most Popular -->
+  <div class="pricing-card popular" id="card-standard">
+    <div class="pc-popular-badge">Most Popular</div>
+    <div class="pricing-card-header">
+      <div class="pc-plan-name">Standard</div>
+      <div class="pc-desc">4 AI assignments per day</div>
+    </div>
+    <div class="pc-price-wrap">
+      <div class="pc-price" id="price-standard">
+        {% if discount_pct %}
+          <span class="pc-original" id="original-standard">${{ "%.2f"|format(plans.standard.monthly) }}</span>
+          <span id="display-standard">${{ "%.2f"|format(plans.standard.monthly * (1 - discount_pct/100)) }}</span>
+        {% else %}
+          <span id="display-standard">${{ "%.2f"|format(plans.standard.monthly) }}</span>
+        {% endif %}
+      </div>
+      <div class="pc-period" id="period-label-standard">/ month</div>
+    </div>
+    <ul class="pc-features">
+      <li>✅ 4 complete AI assignments per day</li>
+      <li>✅ All citation styles (APA, MLA, Chicago…)</li>
+      <li>✅ Real academic sources included</li>
+      <li>✅ Word document delivery</li>
+      <li>✅ Humanizer tool (unlimited)</li>
+      <li>✅ AI Checker tool (unlimited)</li>
+      <li>✅ Priority generation queue</li>
+    </ul>
+    {% if current_user.is_authenticated %}
+      <button class="btn accent full pc-btn" onclick="subscribe('standard')" id="btn-standard">
+        {% if active_sub and active_sub.plan == 'standard' %}Current Plan{% else %}Subscribe — Standard{% endif %}
+      </button>
+    {% else %}
+      <a class="btn accent full" href="{{ url_for('auth.login') }}?next={{ url_for('main.pricing') }}">Sign in to subscribe</a>
+    {% endif %}
+  </div>
+
+  <!-- Unlimited -->
+  <div class="pricing-card" id="card-unlimited">
+    <div class="pricing-card-header">
+      <div class="pc-plan-name unlimited-name">Unlimited</div>
+      <div class="pc-desc">Unlimited assignments per day</div>
+    </div>
+    <div class="pc-price-wrap">
+      <div class="pc-price" id="price-unlimited">
+        {% if discount_pct %}
+          <span class="pc-original" id="original-unlimited">${{ "%.2f"|format(plans.unlimited.monthly) }}</span>
+          <span id="display-unlimited">${{ "%.2f"|format(plans.unlimited.monthly * (1 - discount_pct/100)) }}</span>
+        {% else %}
+          <span id="display-unlimited">${{ "%.2f"|format(plans.unlimited.monthly) }}</span>
+        {% endif %}
+      </div>
+      <div class="pc-period" id="period-label-unlimited">/ month</div>
+    </div>
+    <ul class="pc-features">
+      <li>✅ <strong>Unlimited</strong> AI assignments per day</li>
+      <li>✅ All citation styles (APA, MLA, Chicago…)</li>
+      <li>✅ Real academic sources included</li>
+      <li>✅ Word document delivery</li>
+      <li>✅ Humanizer tool (unlimited)</li>
+      <li>✅ AI Checker tool (unlimited)</li>
+      <li>✅ Priority generation queue</li>
+      <li>✅ Human writer access included</li>
+    </ul>
+    {% if current_user.is_authenticated %}
+      <button class="btn accent full pc-btn" onclick="subscribe('unlimited')" id="btn-unlimited">
+        {% if active_sub and active_sub.plan == 'unlimited' %}Current Plan{% else %}Subscribe — Unlimited{% endif %}
+      </button>
+    {% else %}
+      <a class="btn accent full" href="{{ url_for('auth.login') }}?next={{ url_for('main.pricing') }}">Sign in to subscribe</a>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- FAQ / Guarantee strip -->
+<div class="card pricing-faq" style="margin-top:28px;">
+  <div class="pf-item">
+    <div class="pf-icon">🔒</div>
+    <div><strong>Secure checkout</strong><br/><span>Powered by Stripe — your card details are never stored by us.</span></div>
+  </div>
+  <div class="pf-item">
+    <div class="pf-icon">📅</div>
+    <div><strong>No auto-renewal</strong><br/><span>Each subscription is a one-time purchase for the chosen period.</span></div>
+  </div>
+  <div class="pf-item">
+    <div class="pf-icon">🎁</div>
+    <div><strong>Referral discount</strong><br/><span>Share your referral link — new users get 10% off their first plan.</span></div>
+  </div>
+</div>
+
+<style>
+.pricing-toggle-wrap { display:flex; justify-content:center; margin:0 16px 28px; }
+.pricing-toggle { display:flex; gap:4px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:4px; }
+.ptog-btn { background:transparent; border:none; padding:9px 20px; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; color:var(--slate-500); transition:.15s; white-space:nowrap; }
+.ptog-btn.active { background:var(--accent); color:#fff; }
+.ptog-save { font-size:11px; font-weight:700; color:#22c55e; margin-left:4px; }
+
+.pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px; margin-bottom:12px; }
+
+.pricing-card {
+  background: var(--card-bg); border:1px solid var(--border); border-radius:16px;
+  padding:28px 24px; display:flex; flex-direction:column; gap:0; position:relative;
+  transition: box-shadow .15s;
+}
+.pricing-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+.pricing-card.popular { border:2px solid var(--accent); }
+.pc-popular-badge {
+  position:absolute; top:-13px; left:50%; transform:translateX(-50%);
+  background:var(--accent); color:#fff; font-size:11px; font-weight:800;
+  padding:3px 14px; border-radius:20px; white-space:nowrap; text-transform:uppercase; letter-spacing:.5px;
+}
+
+.pricing-card-header { margin-bottom:16px; }
+.pc-plan-name { font-size:22px; font-weight:800; color:var(--navy-900); margin-bottom:4px; }
+.unlimited-name { color:#ffd166; }
+.pc-desc { font-size:13px; color:var(--slate-500); }
+
+.pc-price-wrap { margin-bottom:20px; }
+.pc-price { font-size:36px; font-weight:900; color:var(--accent); line-height:1; }
+.pc-original { text-decoration:line-through; opacity:.5; font-size:22px; margin-right:6px; }
+.pc-period { font-size:13px; color:var(--slate-500); margin-top:3px; }
+
+.pc-features { list-style:none; padding:0; margin:0 0 24px; display:flex; flex-direction:column; gap:8px; flex:1; }
+.pc-features li { font-size:14px; color:var(--slate-600); }
+
+.pc-btn { margin-top:auto; }
+
+.pricing-faq { display:flex; gap:24px; flex-wrap:wrap; padding:24px 28px; }
+.pf-item { display:flex; gap:14px; align-items:flex-start; flex:1; min-width:180px; }
+.pf-icon { font-size:26px; line-height:1; }
+.pf-item span { font-size:13px; color:var(--slate-500); line-height:1.5; }
+
+</style>
+
+<script>
+var PLANS = {{ plans | tojson }};
+var DISCOUNT_PCT = {{ discount_pct | int }};
+var currentPeriod = 'monthly';
+
+var PERIOD_LABELS = {
+  monthly:  '/ month',
+  halfyear: '/ 6 months',
+  yearly:   '/ year'
+};
+
+function setPeriod(period, btn) {
+  currentPeriod = period;
+  document.querySelectorAll('.ptog-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  updatePrices();
+}
+
+function updatePrices() {
+  ['basic','standard','unlimited'].forEach(function(plan) {
+    var base = PLANS[plan][currentPeriod];
+    var discounted = DISCOUNT_PCT ? Math.round(base * (1 - DISCOUNT_PCT/100) * 100) / 100 : base;
+    var displayEl = document.getElementById('display-' + plan);
+    var origEl    = document.getElementById('original-' + plan);
+    if (displayEl) displayEl.textContent = '$' + discounted.toFixed(2);
+    if (origEl) {
+      if (DISCOUNT_PCT) {
+        origEl.textContent = '$' + base.toFixed(2);
+        origEl.style.display = '';
+      } else {
+        origEl.style.display = 'none';
+      }
+    }
+    var periodLbl = document.getElementById('period-label-' + plan);
+    if (periodLbl) periodLbl.textContent = PERIOD_LABELS[currentPeriod];
+  });
+}
+
+function subscribe(plan) {
+  var btn = document.getElementById('btn-' + plan);
+  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
+
+  fetch('/subscribe/checkout', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ plan: plan, billing_period: currentPeriod })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert(data.error || 'Something went wrong. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Subscribe — ' + plan.charAt(0).toUpperCase() + plan.slice(1); }
+    }
+  })
+  .catch(function(e) {
+    alert('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
+  });
+}
+
+// Init prices on load
+updatePrices();
+</script>
+
+{% endblock %}

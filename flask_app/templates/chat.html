@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Support Chat — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>💬 Support Chat</h1>
+</div>
+
+<div class="chat-page-wrap">
+  <div class="chat-header">
+    <div class="chat-agent-avatar">👤</div>
+    <div>
+      <div class="chat-agent-name">Smart Study Guides Support</div>
+      <div class="chat-agent-status"><span class="chat-status-dot"></span> Available 24/7</div>
+    </div>
+    <div class="chat-header-right">
+      <button class="btn-sm ghost" onclick="newChat()" style="font-size:11px;">+ New chat</button>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-loading" id="chat-loading">
+      <div class="chat-typing-dot"></div>
+      <div class="chat-typing-dot"></div>
+      <div class="chat-typing-dot"></div>
+    </div>
+  </div>
+
+  <div class="chat-input-row">
+    <textarea id="chat-input" class="chat-textarea" rows="1"
+              placeholder="Type your message…"
+              onkeydown="handleKey(event)"
+              oninput="autoGrow(this)"></textarea>
+    <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+  <div class="chat-footer-note">Messages are reviewed by our customer care team.</div>
+</div>
+
+<script>
+var sessionId = {% if session %}{{ session.id }}{% else %}null{% endif %};
+var lastMsgId = 0;
+var pollTimer = null;
+var sending = false;
+
+async function startChat() {
+  try {
+    const r = await fetch('/api/chat/start', {method:'POST',
+      headers:{'Content-Type':'application/json'}});
+    const d = await r.json();
+    sessionId = d.session_id;
+    d.messages.forEach(m => appendMessage(m));
+    lastMsgId = d.messages.length ? d.messages[d.messages.length-1].id : 0;
+    startPolling();
+  } catch(e) {
+    appendSystemMsg('Could not connect. Please refresh the page.');
+  }
+}
+
+async function loadExisting() {
+  try {
+    const r = await fetch(`/api/chat/${sessionId}/messages?after=0`);
+    const msgs = await r.json();
+    msgs.forEach(m => appendMessage(m));
+    lastMsgId = msgs.length ? msgs[msgs.length-1].id : 0;
+    startPolling();
+  } catch(e) {
+    appendSystemMsg('Could not load messages.');
+  }
+}
+
+function startPolling() {
+  document.getElementById('chat-loading').style.display = 'none';
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(poll, 3000);
+}
+
+async function poll() {
+  if (!sessionId) return;
+  try {
+    const r = await fetch(`/api/chat/${sessionId}/messages?after=${lastMsgId}`);
+    const msgs = await r.json();
+    msgs.forEach(m => {
+      appendMessage(m);
+      lastMsgId = m.id;
+    });
+  } catch(e) {}
+}
+
+async function sendMessage() {
+  if (sending) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !sessionId) return;
+
+  sending = true;
+  input.value = '';
+  autoGrow(input);
+  document.getElementById('chat-send-btn').disabled = true;
+
+  // Optimistic display
+  const fakeId = Date.now();
+  appendMessage({id: fakeId, sender:'user', content: text, ts: now()});
+  lastMsgId = Math.max(lastMsgId, fakeId);
+
+  // Show typing indicator
+  showTyping();
+
+  try {
+    const r = await fetch(`/api/chat/${sessionId}/send`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: text}),
+    });
+    const d = await r.json();
+    hideTyping();
+    if (d.ai_reply) {
+      appendMessage(d.ai_reply);
+      lastMsgId = Math.max(lastMsgId, d.ai_reply.id);
+    }
+    if (d.error) appendSystemMsg(d.error);
+  } catch(e) {
+    hideTyping();
+    appendSystemMsg('Message failed. Please try again.');
+  }
+
+  sending = false;
+  document.getElementById('chat-send-btn').disabled = false;
+  input.focus();
+}
+
+function appendMessage(m) {
+  const wrap = document.getElementById('chat-messages');
+  // Avoid duplicates
+  if (document.getElementById('msg-' + m.id)) return;
+  const div = document.createElement('div');
+  div.id = 'msg-' + m.id;
+  div.className = 'chat-bubble-wrap ' + (m.sender === 'user' ? 'user-side' : 'agent-side');
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ' + (m.sender === 'user' ? 'bubble-user' :
+                      m.sender === 'staff' ? 'bubble-staff' : 'bubble-ai');
+  bubble.textContent = m.content;
+
+  const meta = document.createElement('div');
+  meta.className = 'chat-meta';
+  meta.textContent = (m.sender === 'staff' ? '👤 Agent · ' : m.sender === 'ai' ? '🤖 · ' : '') + m.ts;
+
+  div.appendChild(bubble);
+  div.appendChild(meta);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function appendSystemMsg(text) {
+  const wrap = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-system-msg';
+  div.textContent = text;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+var typingEl = null;
+function showTyping() {
+  if (typingEl) return;
+  const wrap = document.getElementById('chat-messages');
+  typingEl = document.createElement('div');
+  typingEl.className = 'chat-bubble-wrap agent-side';
+  typingEl.innerHTML = '<div class="chat-typing"><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div></div>';
+  wrap.appendChild(typingEl);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function hideTyping() {
+  if (typingEl) { typingEl.remove(); typingEl = null; }
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function now() {
+  var d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+async function newChat() {
+  if (pollTimer) clearInterval(pollTimer);
+  sessionId = null; lastMsgId = 0;
+  document.getElementById('chat-messages').innerHTML =
+    '<div class="chat-loading" id="chat-loading"><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div></div>';
+  await startChat();
+}
+
+// Initialise
+if (sessionId) { loadExisting(); } else { startChat(); }
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Available Orders — Writer Portal{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>📋 Available Orders</h1>
+    <p style="margin:4px 0 0;color:var(--slate-500);font-size:14px;">Unclaimed orders you can pick up</p>
+  </div>
+  <a class="btn ghost" href="{{ url_for('main.writer_my_orders') }}">My Orders →</a>
+</div>
+
+{% if orders %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <div class="asgn-table-wrap">
+    <table class="asgn-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Title</th>
+          <th>Subject</th>
+          <th>Level</th>
+          <th>Pages</th>
+          <th>Priority</th>
+          <th>Deadline</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td style="color:var(--slate-500);font-size:13px;">{{ o.id }}</td>
+          <td class="asgn-topic">{{ o.title[:55] }}{% if o.title|length > 55 %}…{% endif %}</td>
+          <td>{{ o.subject }}</td>
+          <td>{{ o.academic_level.replace('_',' ').title() }}</td>
+          <td>{{ o.num_pages }}pg</td>
+          <td>
+            {% if o.priority == 'urgent' %}
+              <span class="status-badge red">🚨 Urgent</span>
+            {% else %}
+              <span class="status-badge grey">Standard</span>
+            {% endif %}
+          </td>
+          <td class="asgn-date">
+            {{ o.deadline.strftime('%d %b %Y') }}
+            <div style="font-size:11px;color:var(--slate-500);">{{ o.deadline.strftime('%H:%M') }} UTC</div>
+          </td>
+          <td style="text-align:right;">
+            <a class="btn-sm ghost" href="{{ url_for('main.writer_order_view', oid=o.id) }}" style="margin-right:4px;">View</a>
+            <button class="btn-sm accent" onclick="claimOrder({{ o.id }}, this)">Claim</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="asgn-summary">{{ orders|length }} order{{ 's' if orders|length != 1 else '' }} available</div>
+{% else %}
+<div class="card empty-state">
+  <div class="empty-icon">📭</div>
+  <h3>No orders available right now</h3>
+  <p>Check back soon — student orders appear here once submitted.</p>
+</div>
+{% endif %}
+
+<script>
+async function claimOrder(oid, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Claiming…';
+  const res  = await fetch(`/api/human-orders/${oid}/claim`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) {
+    window.location.href = `/writer/${oid}`;
+  } else {
+    alert(data.error || 'Could not claim this order.');
+    btn.disabled = false;
+    btn.textContent = 'Claim';
+  }
+}
+</script>
+{% endblock %}

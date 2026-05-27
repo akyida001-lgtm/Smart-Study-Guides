@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Free AI Content Detector — Check If Text Is AI-Written | Smart Study Guides{% endblock %}
+{% block meta_description %}Check any text for AI authorship instantly. Our AI detector identifies ChatGPT, Gemini, and Claude-written content with sentence-level highlights. Free to try, no sign-up required.{% endblock %}
+{% block meta_keywords %}AI content detector, AI writing detector, ChatGPT detector, AI text checker, detect AI writing, GPT detector free, AI essay checker, is this AI written{% endblock %}
+{% block meta_robots %}index, follow{% endblock %}
+{% block canonical %}https://smart-study-guides.com/check-ai{% endblock %}
+{% block og_title %}Free AI Content Detector | Smart Study Guides{% endblock %}
+{% block og_description %}Instantly detect AI-generated content. Sentence-level highlights show exactly which parts were written by AI. Tested against ChatGPT, Gemini, Claude, and more.{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AI Content Detector",
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Web",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "description": "Instantly detect AI-generated text with sentence-level highlights. Identifies ChatGPT, Gemini, Claude, and other AI writing.",
+  "provider": {"@type": "Organization", "name": "Smart Study Guides", "url": "https://smart-study-guides.com"}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<style>
+.lp-hero{text-align:center;padding:72px 24px 48px;background:linear-gradient(135deg,#0a1628 0%,#0d2137 60%,#0a2a3a 100%);}
+.lp-hero h1{font-size:clamp(28px,5vw,52px);font-weight:900;color:#fff;margin:0 0 16px;line-height:1.15;}
+.lp-hero h1 span{color:#00bcd4;}
+.lp-hero p{font-size:clamp(15px,2.5vw,20px);color:#94a3b8;max-width:640px;margin:0 auto 36px;line-height:1.6;}
+.lp-hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.lp-btn-primary{padding:14px 32px;background:#00bcd4;color:#0a1628;font-size:16px;font-weight:800;border-radius:10px;text-decoration:none;border:none;cursor:pointer;transition:.15s;}
+.lp-btn-primary:hover{background:#00acc1;color:#0a1628;}
+.lp-btn-secondary{padding:14px 32px;background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:600;border-radius:10px;text-decoration:none;border:1.5px solid rgba(255,255,255,.15);transition:.15s;}
+.lp-btn-secondary:hover{background:rgba(255,255,255,.13);}
+.lp-badge{display:inline-block;background:rgba(0,188,212,.15);color:#00bcd4;font-size:12px;font-weight:700;letter-spacing:.5px;padding:6px 14px;border-radius:20px;border:1px solid rgba(0,188,212,.3);margin-bottom:20px;text-transform:uppercase;}
+.lp-social{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:44px;padding:0 24px 40px;}
+.lp-social-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;text-align:center;min-width:130px;}
+.lp-social-num{font-size:24px;font-weight:900;color:#7c3aed;}
+.lp-social-label{font-size:12px;color:#64748b;margin-top:2px;}
+.lp-score-demo{background:#f8fafc;padding:60px 24px;}
+.lp-score-inner{max-width:720px;margin:0 auto;text-align:center;}
+.lp-score-inner h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;margin:0 0 8px;}
+.lp-score-sub{color:#64748b;font-size:16px;margin:0 0 36px;}
+.lp-score-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px;text-align:left;box-shadow:0 4px 20px rgba(0,0,0,.06);}
+.lp-score-text{font-size:14px;line-height:1.8;color:#374151;margin-bottom:20px;}
+.lp-score-text .ai-hi{background:#fef08a;border-radius:3px;padding:1px 3px;}
+.lp-score-text .human-hi{background:#bbf7d0;border-radius:3px;padding:1px 3px;}
+.lp-score-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.lp-score-meter{flex:1;min-width:160px;}
+.lp-score-meter-label{font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px;}
+.lp-score-bar{height:10px;border-radius:5px;background:#e2e8f0;overflow:hidden;}
+.lp-score-fill{height:100%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:5px;width:73%;}
+.lp-score-pct{font-size:26px;font-weight:900;color:#ef4444;}
+.lp-score-pct-label{font-size:12px;color:#64748b;}
+.lp-how{padding:60px 24px;max-width:900px;margin:0 auto;}
+.lp-how h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;text-align:center;margin:0 0 8px;}
+.lp-how-sub{text-align:center;color:#64748b;font-size:16px;margin:0 0 44px;}
+.lp-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+@media(max-width:700px){.lp-steps{grid-template-columns:1fr;}}
+.lp-step{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px 22px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04);}
+.lp-step-num{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.lp-step h3{font-size:16px;font-weight:700;color:#0f172a;margin:0 0 8px;}
+.lp-step p{font-size:14px;color:#64748b;margin:0;line-height:1.6;}
+.lp-features{background:#0a1628;padding:60px 24px;}
+.lp-features-inner{max-width:900px;margin:0 auto;}
+.lp-features h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#fff;text-align:center;margin:0 0 8px;}
+.lp-features-sub{text-align:center;color:#94a3b8;font-size:16px;margin:0 0 44px;}
+.lp-feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:640px){.lp-feat-grid{grid-template-columns:1fr;}}
+.lp-feat-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;}
+.lp-feat-icon{font-size:28px;margin-bottom:12px;}
+.lp-feat-card h3{font-size:15px;font-weight:700;color:#fff;margin:0 0 8px;}
+.lp-feat-card p{font-size:13px;color:#94a3b8;margin:0;line-height:1.6;}
+.lp-cta{text-align:center;padding:72px 24px;background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);}
+.lp-cta h2{font-size:clamp(24px,4vw,40px);font-weight:900;color:#fff;margin:0 0 16px;}
+.lp-cta p{font-size:18px;color:rgba(255,255,255,.85);margin:0 0 32px;}
+.lp-cta-btn{padding:16px 40px;background:#fff;color:#4f46e5;font-size:17px;font-weight:800;border-radius:12px;text-decoration:none;display:inline-block;transition:.15s;}
+.lp-cta-btn:hover{background:#f5f3ff;color:#4f46e5;}
+</style>
+
+<!-- Hero -->
+<section class="lp-hero">
+  <div class="lp-badge">AI Detector — Accurate to 98%</div>
+  <h1>Detect <span>AI-Written</span> Content Instantly</h1>
+  <p>Find out in seconds whether any text was written by ChatGPT, Gemini, Claude, or another AI — with sentence-level highlighting showing exactly which parts are suspicious.</p>
+  <div class="lp-hero-ctas">
+    <a href="/auth/signup" class="lp-btn-primary">Try It Free — Sign Up</a>
+    <a href="/auth/login" class="lp-btn-secondary">Log in to your account</a>
+  </div>
+</section>
+
+<!-- Social proof -->
+<div class="lp-social">
+  <div class="lp-social-card"><div class="lp-social-num">98%</div><div class="lp-social-label">Detection accuracy</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">100K+</div><div class="lp-social-label">Texts checked</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">6</div><div class="lp-social-label">AI models detected</div></div>
+  <div class="lp-social-card"><div class="lp-social-num">&lt;5s</div><div class="lp-social-label">Analysis time</div></div>
+</div>
+
+<!-- Interactive score demo -->
+<section class="lp-score-demo">
+  <div class="lp-score-inner">
+    <h2>What a Report Looks Like</h2>
+    <p class="lp-score-sub">Sentence-level AI highlighting so you know exactly what to fix</p>
+    <div class="lp-score-card">
+      <p class="lp-score-text">
+        <span class="ai-hi">The utilization of advanced machine learning algorithms has been demonstrated to significantly enhance predictive analytical capabilities across a diverse range of operational domains.</span>
+        In practice, <span class="human-hi">this means companies can make better decisions faster by spotting patterns their analysts would never catch by hand.</span>
+        <span class="ai-hi">Furthermore, the implementation of such technologies necessitates a comprehensive understanding of the underlying computational frameworks.</span>
+      </p>
+      <div class="lp-score-row">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;">
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#fef08a;display:inline-block;border:1px solid #ca8a04;"></span>AI-flagged sentences</span>
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:2px;background:#bbf7d0;display:inline-block;border:1px solid #16a34a;"></span>Human-written sentences</span>
+        </div>
+        <div style="text-align:right;">
+          <div class="lp-score-pct">73%</div>
+          <div class="lp-score-pct-label">AI probability</div>
+        </div>
+      </div>
+      <div class="lp-score-meter" style="margin-top:14px;">
+        <div class="lp-score-meter-label">AI Probability Score</div>
+        <div class="lp-score-bar"><div class="lp-score-fill"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="lp-how">
+  <h2>How It Works</h2>
+  <p class="lp-how-sub">Simple, fast, and incredibly accurate</p>
+  <div class="lp-steps">
+    <div class="lp-step">
+      <div class="lp-step-num">1</div>
+      <h3>Paste Your Text</h3>
+      <p>Paste any piece of writing — an essay, report, email, or web article. Supports up to 2,000 words per check.</p>
+    </div>
+    <div class="lp-step">
+      <div class="lp-step-num">2</div>
+      <h3>Run the Analysis</h3>
+      <p>Our model analyzes sentence structure, vocabulary patterns, and statistical markers that distinguish AI from human writing.</p>
+    </div>
+    <div class="lp-step">
+      <div class="lp-step-num">3</div>
+      <h3>Get a Detailed Report</h3>
+      <p>See an overall AI probability score plus sentence-by-sentence highlights so you know exactly where the AI patterns are.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="lp-features">
+  <div class="lp-features-inner">
+    <h2>Why Our Detector Is Different</h2>
+    <p class="lp-features-sub">Built for accuracy, not false positives</p>
+    <div class="lp-feat-grid">
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🎯</div>
+        <h3>Sentence-Level Highlights</h3>
+        <p>Don't just get a single score. See exactly which sentences triggered the AI flag so you can rewrite only what matters.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🤖</div>
+        <h3>Detects All Major AI Models</h3>
+        <p>Trained to recognize output from ChatGPT (3.5 & 4o), Gemini, Claude, Mistral, Llama, and other popular models.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">📊</div>
+        <h3>Probability Score 0–100%</h3>
+        <p>A clear numerical score so you know how risky your submission is before you hand it in.</p>
+      </div>
+      <div class="lp-feat-card">
+        <div class="lp-feat-icon">🔗</div>
+        <h3>Pair With the Humanizer</h3>
+        <p>Found AI patterns? Run the text through our Humanizer to fix them instantly, then re-check to confirm a 0% score.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="lp-cta">
+  <h2>Check Your Text Right Now</h2>
+  <p>Free to start. No credit card. Results in under 5 seconds.</p>
+  <a href="/auth/signup" class="lp-cta-btn">Create Your Free Account →</a>
+</section>
+{% endblock %}

@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block title %}Writing Assignment… — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>✨ Writing your assignment</h1>
+</div>
+
+<div class="wizard-steps">
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Details</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Sources</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep done"><span class="wstep-num">✓</span><span class="wstep-label">Annotate</span></div>
+  <div class="wstep-line done"></div>
+  <div class="wstep active"><span class="wstep-num">4</span><span class="wstep-label">Generate</span></div>
+</div>
+
+<!-- ── Phase indicator ────────────────────────────────── -->
+<div class="lv-phase-strip" id="phase-strip">
+  <div class="lv-phase-step active" id="ph-sources">
+    <span class="lv-phase-dot"></span>
+    <span>Preparing sources</span>
+  </div>
+  <div class="lv-phase-arrow">→</div>
+  <div class="lv-phase-step" id="ph-writing">
+    <span class="lv-phase-dot"></span>
+    <span>Writing assignment</span>
+  </div>
+  <div class="lv-phase-arrow">→</div>
+  <div class="lv-phase-step" id="ph-done">
+    <span class="lv-phase-dot"></span>
+    <span>Done</span>
+  </div>
+  <div class="lv-wc-pill" id="wc-pill" style="display:none;">0 words</div>
+</div>
+
+<!-- ── PHASE 1 — Source cards ─────────────────────────── -->
+<div id="sources-phase" class="lv-sources-section">
+  <div class="lv-section-head">
+    <span class="lv-section-icon">📚</span>
+    <span class="lv-section-title">Loading sources</span>
+    <span class="lv-src-counter" id="src-counter"></span>
+  </div>
+  <div id="source-cards" class="lv-src-cards"></div>
+  <div id="src-spinner" class="lv-src-spinner">
+    <span class="lv-spin"></span> Fetching next source…
+  </div>
+</div>
+
+<!-- ── PHASE 2 — Document writing area ────────────────── -->
+<div id="writing-phase" style="display:none;">
+  <div class="lv-section-head" style="margin-top:8px;">
+    <span class="lv-section-icon">✍️</span>
+    <span class="lv-section-title" id="writing-label">Writing assignment…</span>
+  </div>
+  <div class="lv-doc-wrap no-copy" id="doc-wrap">
+    <div class="lv-doc" id="doc-area">
+      <span id="doc-text"></span><span class="lv-cursor" id="cursor">|</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Action bar (shown when done) ──────────────────── -->
+<div id="action-bar" style="display:none;" class="lv-action-bar">
+  <div class="lv-action-title">✅ Your draft is ready</div>
+  <div class="lv-action-sub">Review the assignment above, then choose what to do next:</div>
+  <div class="lv-two-btn-row">
+    <button type="button" id="get-docx-btn" class="btn ghost lv-btn-big lv-btn-half" onclick="startDocxConversion()">
+      📄 Download Word Doc
+      <span class="lv-btn-note">AI-format &amp; download as .docx</span>
+    </button>
+    <a href="{{ url_for('main.assignment_humanize_live', aid=a.id) }}" class="btn accent lv-btn-big lv-btn-half">
+      ✨ Humanize
+      <span class="lv-btn-note">AI-proof &amp; check detection clearance</span>
+    </a>
+  </div>
+  <!-- Customer support forward card -->
+  <div style="margin-top:16px;background:linear-gradient(135deg,#0d3d2e,#052e16);border:1px solid #166534;border-radius:12px;padding:18px 20px;">
+    <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:10px;">Want extra peace of mind? Forward to our support team</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:11px 13px;">
+        <div style="font-size:17px;margin-bottom:3px;">🛡️</div>
+        <div style="font-size:13px;font-weight:600;color:#bbf7d0;margin-bottom:2px;">Human Expert Review</div>
+        <div style="font-size:12px;color:#86efac;">A real editor personally checks your final paper before you submit.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:11px 13px;">
+        <div style="font-size:17px;margin-bottom:3px;">✅</div>
+        <div style="font-size:13px;font-weight:600;color:#bbf7d0;margin-bottom:2px;">Guaranteed 0% AI</div>
+        <div style="font-size:12px;color:#86efac;">We re-check on all major detectors and fix anything above 1%.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:11px 13px;">
+        <div style="font-size:17px;margin-bottom:3px;">💬</div>
+        <div style="font-size:13px;font-weight:600;color:#bbf7d0;margin-bottom:2px;">Live Chat Tracking</div>
+        <div style="font-size:12px;color:#86efac;">Track progress and request changes directly in your support chat.</div>
+      </div>
+    </div>
+    <span style="display:inline-block;color:#4ade80;font-size:12px;font-weight:700;font-style:italic;margin-bottom:5px;">⭐ Recommended</span><br>
+    <a href="{{ url_for('main.chat_page') }}" style="display:inline-block;color:#4ade80;font-size:14px;font-weight:700;font-style:italic;text-decoration:underline;text-underline-offset:3px;">
+      💬 Forward to Customer Support →
+    </a>
+  </div>
+
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;">
+    <a class="btn ghost lv-bar-link" style="font-size:13px;" href="{{ url_for('main.my_assignments') }}">📂 My Assignments</a>
+  </div>
+</div>
+
+<!-- ── Live DOCX Conversion Panel ─────────────────────── -->
+<div class="dlv-panel card" id="dlv-panel" style="display:none;margin-top:18px;">
+  <div class="dlv-panel-header">
+    <span class="dlv-header-icon">📄</span>
+    <span class="dlv-header-title">Formatting your document…</span>
+  </div>
+  <div class="dlv-steps">
+    <div class="dlv-step dlv-step-pending" id="dlv-step-formatting">
+      <span class="dlv-step-icon" id="dlv-icon-formatting">○</span>
+      <span class="dlv-step-label">AI formatting to academic standards (Times New Roman · Double-spaced · 1″ margins)</span>
+    </div>
+    <div class="dlv-step dlv-step-pending" id="dlv-step-building">
+      <span class="dlv-step-icon" id="dlv-icon-building">○</span>
+      <span class="dlv-step-label">Building Word document with title page &amp; references</span>
+    </div>
+    <div class="dlv-step dlv-step-pending" id="dlv-step-uploading">
+      <span class="dlv-step-icon" id="dlv-icon-uploading">○</span>
+      <span class="dlv-step-label">Uploading &amp; preparing secure download link</span>
+    </div>
+  </div>
+  <div id="dlv-ready" style="display:none;" class="dlv-ready-section">
+    <div class="dlv-ready-badge">✅ Your Word document is ready!</div>
+    <a id="dlv-download-btn" href="#" class="btn accent dlv-download-btn" download>
+      ⬇ File Ready — Click to Download
+    </a>
+  </div>
+  <div id="dlv-error" class="flash error" style="display:none;margin:12px 0 0;"></div>
+</div>
+
+<!-- ── Error bar ──────────────────────────────────────── -->
+<div id="err-bar" style="display:none;margin-top:16px;" class="flash error"></div>
+
+<script>
+const aid   = {{ a.id }};
+const topic = {{ a.topic | tojson }};
+let fullText     = '';
+let streamStarted = false;
+let sourcesStyle  = '';
+
+/* ── DOM refs ── */
+const phSources  = document.getElementById('ph-sources');
+const phWriting  = document.getElementById('ph-writing');
+const phDone     = document.getElementById('ph-done');
+const wcPill     = document.getElementById('wc-pill');
+const srcCounter = document.getElementById('src-counter');
+const srcCards   = document.getElementById('source-cards');
+const srcSpinner = document.getElementById('src-spinner');
+const writingPhase = document.getElementById('writing-phase');
+const writingLabel = document.getElementById('writing-label');
+const docTextEl  = document.getElementById('doc-text');
+const cursorEl   = document.getElementById('cursor');
+const actionBar  = document.getElementById('action-bar');
+const errBar     = document.getElementById('err-bar');
+
+/* ── Source card builder ── */
+function addSourceCard(d) {
+  const card = document.createElement('div');
+  card.className = 'lv-src-card lv-src-entering';
+  card.innerHTML = `
+    <div class="lv-src-num">${d.i}</div>
+    <div class="lv-src-body">
+      <div class="lv-src-title">${esc(d.title)}</div>
+      <div class="lv-src-meta">${esc([d.authors, d.year].filter(Boolean).join(' · '))}</div>
+      ${d.intext ? `<div class="lv-src-cite">${esc(d.intext)}</div>` : ''}
+      ${d.para   ? `<div class="lv-src-para">${esc(d.para)}${d.para.length >= 248 ? '…' : ''}</div>` : ''}
+      ${d.url    ? `<a class="lv-src-url" href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.url)}</a>` : ''}
+    </div>
+    <div class="lv-src-check">✓</div>
+  `;
+  srcCards.appendChild(card);
+  // Trigger animation on next frame
+  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.remove('lv-src-entering')));
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ── Phase transitions ── */
+function setPhaseActive(el) {
+  [phSources, phWriting, phDone].forEach(p => p.classList.remove('active','done'));
+  el.classList.add('active');
+}
+function setPhasesDone(...els) {
+  els.forEach(e => { e.classList.remove('active'); e.classList.add('done'); });
+}
+
+function onSourcesDone(count) {
+  srcSpinner.style.display = 'none';
+  srcCounter.textContent = `${count} / ${count} ready`;
+  setPhasesDone(phSources);
+  setPhaseActive(phWriting);
+}
+
+function onWritingStart() {
+  writingPhase.style.display = 'block';
+  writingLabel.textContent = 'Writing assignment…';
+  writingPhase.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateWC(text) {
+  const wc = text.trim().split(/\s+/).filter(Boolean).length;
+  wcPill.textContent = wc.toLocaleString() + ' words';
+  wcPill.style.display = '';
+}
+
+function renderToken(token) {
+  fullText += token;
+  docTextEl.textContent = fullText;
+  const wrap = document.getElementById('doc-wrap');
+  wrap.scrollTop = wrap.scrollHeight;
+  updateWC(fullText);
+}
+
+function showDone(wc) {
+  cursorEl.style.display = 'none';
+  setPhasesDone(phWriting);
+  setPhasesDone(phDone);
+  phDone.classList.add('done');
+  writingLabel.textContent = 'Assignment written';
+  const words = wc || fullText.trim().split(/\s+/).filter(Boolean).length;
+  wcPill.textContent = words.toLocaleString() + ' words written';
+  wcPill.style.display = '';
+  actionBar.style.display = 'block';
+  actionBar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function showError(msg) {
+  cursorEl.style.display = 'none';
+  srcSpinner.style.display = 'none';
+  errBar.innerHTML = `<strong>Generation failed</strong><br>${esc(msg)}<br><br>
+    <a class="btn ghost" style="font-size:13px;padding:6px 14px;"
+       href="{{ url_for('main.assignment_preview', aid=a.id) }}">← Try again</a>`;
+  errBar.style.display = 'block';
+}
+
+/* ── SSE stream ── */
+function startStream() {
+  if (streamStarted) return;
+  streamStarted = true;
+
+  const evtSource = new EventSource(`/api/assignments/${aid}/stream-draft`);
+
+  evtSource.onmessage = function(e) {
+    try {
+      const d = JSON.parse(e.data);
+
+      if (d.error)          { evtSource.close(); showError(d.error); return; }
+      if (d.done)           { evtSource.close(); showDone(d.wc);  return; }
+
+      switch (d.phase) {
+        case 'sources_start':
+          sourcesStyle = d.style || 'APA';
+          srcCounter.textContent = `0 / ${d.total} ready`;
+          srcSpinner.style.display = 'flex';
+          break;
+
+        case 'source':
+          addSourceCard(d);
+          srcCounter.textContent = `${d.i} / ${srcCounter.textContent.split('/')[1]?.trim() || '?'} ready`;
+          break;
+
+        case 'sources_done':
+          onSourcesDone(d.count);
+          break;
+
+        case 'writing_start':
+          onWritingStart();
+          break;
+
+        default:
+          // Writing tokens
+          if (d.t) renderToken(d.t);
+      }
+    } catch(_) {}
+  };
+
+  evtSource.onerror = function() {
+    evtSource.close();
+    if (fullText.length > 200) {
+      setTimeout(pollForCompletion, 1500);
+    } else {
+      showError('Connection lost. Please go back and try again.');
+    }
+  };
+}
+
+async function pollForCompletion() {
+  try {
+    const r = await fetch(`/api/assignments/${aid}/status`);
+    const d = await r.json();
+    if (d.status === 'draft_ready') {
+      showDone();
+    } else if (d.status === 'failed') {
+      showError(d.error || 'Generation failed.');
+    } else {
+      setTimeout(pollForCompletion, 2500);
+    }
+  } catch(_) { setTimeout(pollForCompletion, 3000); }
+}
+
+/* ── DOCX Conversion (polling) ── */
+async function startDocxConversion() {
+  const btn = document.getElementById('get-docx-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="lv-spin" style="margin-right:6px;"></span> Starting…';
+
+  const dlvPanel = document.getElementById('dlv-panel');
+  dlvPanel.style.display = 'block';
+  dlvPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const r = await fetch(`/api/assignments/${aid}/queue-docx`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: fullText }),
+    });
+    if (!r.ok) throw new Error('Failed to start conversion.');
+  } catch(err) {
+    document.getElementById('dlv-error').textContent = err.message;
+    document.getElementById('dlv-error').style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '📄 Download Word Doc<span class="lv-btn-note">Try again</span>';
+    return;
+  }
+
+  function dlvStepDone(name) {
+    const icon = document.getElementById(`dlv-icon-${name}`);
+    const step = document.getElementById(`dlv-step-${name}`);
+    icon.innerHTML = '✓';
+    icon.className = 'dlv-step-icon dlv-step-check';
+    step.classList.remove('dlv-step-pending', 'dlv-step-active');
+    step.classList.add('dlv-step-done');
+  }
+  function dlvStepActive(name) {
+    const icon = document.getElementById(`dlv-icon-${name}`);
+    const step = document.getElementById(`dlv-step-${name}`);
+    icon.innerHTML = '<span class="lv-spin"></span>';
+    icon.className = 'dlv-step-icon dlv-spin-icon';
+    step.classList.remove('dlv-step-pending');
+    step.classList.add('dlv-step-active');
+  }
+
+  dlvStepActive('formatting');
+
+  const docxTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`/api/assignments/${aid}/poll-docx`);
+      if (!r.ok) return;
+      const d = await r.json();
+
+      if (d.status === 'formatting') { dlvStepActive('formatting'); return; }
+      if (d.status === 'building')   { dlvStepDone('formatting'); dlvStepActive('building'); return; }
+      if (d.status === 'uploading')  { dlvStepDone('formatting'); dlvStepDone('building'); dlvStepActive('uploading'); return; }
+
+      clearInterval(docxTimer);
+
+      if (d.status === 'error') {
+        document.getElementById('dlv-error').textContent = d.error || 'Conversion failed.';
+        document.getElementById('dlv-error').style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '📄 Download Word Doc<span class="lv-btn-note">Try again</span>';
+        return;
+      }
+
+      if (d.status === 'done') {
+        dlvStepDone('formatting'); dlvStepDone('building'); dlvStepDone('uploading');
+        const dlvReady = document.getElementById('dlv-ready');
+        const dlBtn    = document.getElementById('dlv-download-btn');
+        dlBtn.href = d.url;
+        dlBtn.setAttribute('download', d.filename || 'assignment.docx');
+        dlvReady.style.display = 'block';
+        dlvReady.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        btn.innerHTML = '✅ Doc ready — scroll down';
+      }
+    } catch(_) { /* transient — retry next tick */ }
+  }, 3000);
+}
+
+window.addEventListener('DOMContentLoaded', startStream);
+</script>
+{% endblock %}

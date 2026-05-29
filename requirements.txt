@@ -12,3 +12,9 @@ flask-mail
 pillow
 python-docx
 reportlab
+bcrypt
+authlib
+joserfc
+twilio
+resend
+flask-dance

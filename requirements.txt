@@ -18,3 +18,4 @@ joserfc
 twilio
 resend
 flask-dance
+pypdf

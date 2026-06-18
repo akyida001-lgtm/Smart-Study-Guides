@@ -117,9 +117,12 @@ def build_docx(text: str, topic: str, *,
                       school_name=school_name,
                       due_date=due_date)
 
-    in_title_section = False
+in_title_section = False
     in_references    = False
     ref_page_added   = False
+
+    # Add topic title at the top of the body (before Introduction)
+    _add_centered(doc, topic.strip(), bold=True, size=12)
 
 # Strip markdown code fences if AI wrapped the output
     text = text.strip()

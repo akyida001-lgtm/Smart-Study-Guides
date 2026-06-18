@@ -19,3 +19,4 @@ twilio
 resend
 flask-dance
 pypdf
+boto3 

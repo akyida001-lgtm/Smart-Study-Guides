@@ -25,7 +25,6 @@ def _set_font(run, bold=False, size=12):
     run.bold = bold
     run.font.name = "Times New Roman"
     run.font.size = Pt(size)
-    # Force the theme font as well
     run._element.rPr.rFonts.set(qn("w:ascii"), "Times New Roman")
     run._element.rPr.rFonts.set(qn("w:hAnsi"), "Times New Roman")
 
@@ -117,14 +116,7 @@ def build_docx(text: str, topic: str, *,
                       school_name=school_name,
                       due_date=due_date)
 
-in_title_section = False
-    in_references    = False
-    ref_page_added   = False
-
-    # Add topic title at the top of the body (before Introduction)
-    _add_centered(doc, topic.strip(), bold=True, size=12)
-
-# Strip markdown code fences if AI wrapped the output
+    # Strip markdown code fences if AI wrapped the output
     text = text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[-1]
@@ -132,12 +124,19 @@ in_title_section = False
         text = text.rsplit("\n", 1)[0]
     text = text.strip()
 
+    in_title_section = False
+    in_references    = False
+    ref_page_added   = False
+
+    # Add topic title at the top of the body (before Introduction)
+    _add_centered(doc, topic.strip(), bold=True, size=12)
+
     for raw in text.split("\n"):
         line     = raw.rstrip()
         stripped = line.strip()
         upper    = stripped.upper()
 
-        # ── Skip AI-generated title page block ────────────────────────────
+        # Skip AI-generated title page block
         if upper == "TITLE PAGE":
             in_title_section = True
             continue
@@ -151,16 +150,14 @@ in_title_section = False
             doc.add_paragraph("")
             continue
 
-        # ── Detect references section ──────────────────────────────────────
+        # Detect references section
         bare = stripped.lstrip("# ").strip().upper()
         if bare in _REF_HEADINGS:
-            # Page break before references (only once)
             if not ref_page_added:
                 doc.add_page_break()
                 ref_page_added = True
             h = doc.add_heading(stripped.lstrip("# ").strip(), level=1)
             h.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            # Override heading font to Times New Roman 12
             for run in h.runs:
                 run.font.name = "Times New Roman"
                 run.font.size = Pt(12)
@@ -168,12 +165,12 @@ in_title_section = False
             in_references = True
             continue
 
-        # ── Reference entries (hanging indent) ────────────────────────────
+        # Reference entries (hanging indent)
         if in_references:
             _hanging_para(doc, stripped)
             continue
 
-        # ── Subheadings  (## …) ───────────────────────────────────────────
+        # Subheadings (## …)
         if stripped.startswith("##"):
             subheading_text = stripped.lstrip("# ").strip()
             p = doc.add_paragraph()
@@ -187,7 +184,7 @@ in_title_section = False
             run.font.size = Pt(12)
             continue
 
-        # ── Main section headings  (# … or keyword) ───────────────────────
+        # Main section headings (# … or keyword)
         if stripped.startswith("#") or upper in _SECTION_HEADINGS:
             heading_text = stripped.lstrip("# ").strip()
             h = doc.add_heading(heading_text, level=1)
@@ -198,7 +195,7 @@ in_title_section = False
                 run.font.bold = True
             continue
 
-        # ── Regular body paragraph ─────────────────────────────────────────
+        # Regular body paragraph
         _normal_para(doc, stripped, first_line_indent=True)
 
     buf = io.BytesIO()

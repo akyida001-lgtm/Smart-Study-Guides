@@ -1191,41 +1191,36 @@ def register_routes(app):
         # Start background job for polling
         _docx_results[aid] = {'status': 'formatting'}
 
-        app_obj = current_app._get_current_object()
+app_obj = current_app._get_current_object()
 
         def _run_docx():
             with app_obj.app_context():
-              try:
-                from .services.openai_service import chat as _ai_chat
-                _docx_results[aid]['status'] = 'formatting'
-                fmt_prompt = DOCX_FORMATTING_PROMPT.replace("[PAPER]", job_text)
-                formatted  = _ai_chat(fmt_prompt, max_tokens=8000)
-
-                _docx_results[aid]['status'] = 'building'
-                docx_bytes = _build_docx(
-                    formatted, job_topic,
-                    course_name=job_course_name, student_name=job_student_name,
-                    instructor_name=job_instructor_name,
-                    school_name=job_school_name, due_date=job_due_date,
-                )
-
-                _docx_results[aid]['status'] = 'uploading'
-                import time as _t
-                filename = f"docx_{assignment_id}_{int(_t.time())}.docx"
-                url      = supabase_storage.upload_docx(filename, docx_bytes)
-
-                # Persist URL on assignment
-                from .models import Assignment as _A
-                asgn = _A.query.get(assignment_id)
-                if asgn and not asgn.docx_url:
-                    asgn.docx_url      = url
-                    asgn.docx_filename = filename
-                    db.session.commit()
-
-                _docx_queue.pop(assignment_id, None)
-                _docx_results[aid] = {'status': 'done', 'url': url, 'filename': filename}
-            except Exception as exc:
-                _docx_results[aid] = {'status': 'error', 'error': str(exc)[:300]}
+                try:
+                    from .services.openai_service import chat as _ai_chat
+                    _docx_results[aid]['status'] = 'formatting'
+                    fmt_prompt = DOCX_FORMATTING_PROMPT.replace("[PAPER]", job_text)
+                    formatted  = _ai_chat(fmt_prompt, max_tokens=8000)
+                    _docx_results[aid]['status'] = 'building'
+                    docx_bytes = _build_docx(
+                        formatted, job_topic,
+                        course_name=job_course_name, student_name=job_student_name,
+                        instructor_name=job_instructor_name,
+                        school_name=job_school_name, due_date=job_due_date,
+                    )
+                    _docx_results[aid]['status'] = 'uploading'
+                    import time as _t
+                    filename = f"docx_{assignment_id}_{int(_t.time())}.docx"
+                    url      = supabase_storage.upload_docx(filename, docx_bytes)
+                    from .models import Assignment as _A
+                    asgn = _A.query.get(assignment_id)
+                    if asgn and not asgn.docx_url:
+                        asgn.docx_url      = url
+                        asgn.docx_filename = filename
+                        db.session.commit()
+                    _docx_queue.pop(assignment_id, None)
+                    _docx_results[aid] = {'status': 'done', 'url': url, 'filename': filename}
+                except Exception as exc:
+                    _docx_results[aid] = {'status': 'error', 'error': str(exc)[:300]}
 
         threading.Thread(target=_run_docx, daemon=True).start()
         return jsonify({"ok": True})

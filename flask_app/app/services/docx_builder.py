@@ -121,6 +121,14 @@ def build_docx(text: str, topic: str, *,
     in_references    = False
     ref_page_added   = False
 
+# Strip markdown code fences if AI wrapped the output
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[-1]
+    if text.endswith("```"):
+        text = text.rsplit("\n", 1)[0]
+    text = text.strip()
+
     for raw in text.split("\n"):
         line     = raw.rstrip()
         stripped = line.strip()

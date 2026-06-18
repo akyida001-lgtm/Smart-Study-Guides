@@ -1191,8 +1191,11 @@ def register_routes(app):
         # Start background job for polling
         _docx_results[aid] = {'status': 'formatting'}
 
+        app_obj = current_app._get_current_object()
+
         def _run_docx():
-            try:
+            with app_obj.app_context():
+              try:
                 from .services.openai_service import chat as _ai_chat
                 _docx_results[aid]['status'] = 'formatting'
                 fmt_prompt = DOCX_FORMATTING_PROMPT.replace("[PAPER]", job_text)

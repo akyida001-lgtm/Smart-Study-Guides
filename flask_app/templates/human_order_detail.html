@@ -29,7 +29,7 @@
 {% if order.status == 'delivered' and order.final_file_url %}
 <div class="hu-delivery-banner">
   <span>🎉 Your assignment is ready!</span>
-  <a class="btn accent" href="{{ order.final_file_url }}" download="{{ order.final_file_name or 'assignment' }}">
+  <a class="btn accent" href="#" onclick="forceDownload('{{ order.final_file_url }}', '{{ order.final_file_name or 'assignment.docx' }}')">
     ⬇ Download Assignment
   </a>
 </div>
@@ -173,5 +173,21 @@ setInterval(async () => {
   }
 }, 15000);
 {% endif %}
+
+async function forceDownload(url, filename) {
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  } catch(err) {
+    window.open(url, '_blank');
+  }
+}
 </script>
 {% endblock %}

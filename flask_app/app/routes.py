@@ -1188,10 +1188,10 @@ def register_routes(app):
             "school_name": job_school_name, "due_date": job_due_date,
         }
 
-        # Start background job for polling
+# Start background job for polling
         _docx_results[aid] = {'status': 'formatting'}
 
-app_obj = current_app._get_current_object()
+        app_obj = current_app._get_current_object()
 
         def _run_docx():
             with app_obj.app_context():

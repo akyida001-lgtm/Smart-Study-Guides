@@ -378,8 +378,24 @@ async function startDocxConversion() {
         dlvStepDone('formatting'); dlvStepDone('building'); dlvStepDone('uploading');
         const dlvReady = document.getElementById('dlv-ready');
         const dlBtn    = document.getElementById('dlv-download-btn');
-        dlBtn.href = d.url;
-        dlBtn.setAttribute('download', d.filename || 'assignment.docx');
+        const filename = d.filename || 'assignment.docx';
+        dlBtn.href = '#';
+        dlBtn.onclick = async function(e) {
+          e.preventDefault();
+          try {
+            const resp = await fetch(d.url);
+            const blob = await resp.blob();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+          } catch(err) {
+            window.open(d.url, '_blank');
+          }
+        };
         dlvReady.style.display = 'block';
         dlvReady.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         btn.innerHTML = '✅ Doc ready — scroll down';

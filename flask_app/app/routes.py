@@ -3842,22 +3842,5 @@ Now write the complete {doc_label} below:
         return f"Fixed {fixed} URLs successfully."
 
     app.register_blueprint(main)
-        if not _is_owner(current_user):
-            return "Forbidden", 403
-        PUBLIC = "https://pub-a9c04dd8be3e4fefb29e0bdaf9055896.r2.dev"
-        OLD    = "https://a92b01098fb0a065bff9a443c0f08dd8.r2.cloudflarestorage.com/smart-study-guides"
-        fixed  = 0
-        for f in HumanOrderFile.query.all():
-            if f.file_url and OLD in f.file_url:
-                path = f.file_url.split("smart-study-guides/")[1].split("?")[0]
-                f.file_url = f"{PUBLIC}/{path}"
-                fixed += 1
-        for o in HumanOrder.query.all():
-            if o.final_file_url and OLD in o.final_file_url:
-                path = o.final_file_url.split("smart-study-guides/")[1].split("?")[0]
-                o.final_file_url = f"{PUBLIC}/{path}"
-                fixed += 1
-        db.session.commit()
-        return f"Fixed {fixed} URLs successfully."
 
-    app.register_blueprint(main)
+    

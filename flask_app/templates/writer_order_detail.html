@@ -79,10 +79,10 @@
     </div>
     {% endif %}
 
-    {% if order.writer_confirmed_human and order.final_file_url %}
+{% if order.writer_confirmed_human and order.final_file_url %}
     <div class="card" style="margin-bottom:16px;border:1px solid #22c55e33;background:#f0fdf4;">
       <p style="margin:0;color:#16a34a;font-weight:600;">✅ Delivered — Human-written confirmed</p>
-      <a href="{{ order.final_file_url }}" target="_blank" class="hu-file-link" style="margin-top:8px;display:inline-block;">
+      <a href="#" onclick="forceDownload('{{ order.final_file_url }}', '{{ order.final_file_name or 'assignment.docx' }}')" class="hu-file-link" style="margin-top:8px;display:inline-block;">
         📄 {{ order.final_file_name }}
       </a>
     </div>
@@ -209,6 +209,21 @@ async function setStatus(s) {
   const data = await res.json();
   if (data.ok) location.reload();
   else alert(data.error || 'Failed to update status.');
+}
+  async function forceDownload(url, filename) {
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  } catch(err) {
+    window.open(url, '_blank');
+  }
 }
 </script>
 {% endblock %}

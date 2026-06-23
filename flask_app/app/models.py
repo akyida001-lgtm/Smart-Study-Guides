@@ -250,6 +250,11 @@ class HumanOrder(db.Model):
     final_file_url  = db.Column(db.String(1000), nullable=True)
     final_file_name = db.Column(db.String(255),  nullable=True)
 
+    # Revision workflow
+    admin_approved    = db.Column(db.Boolean, default=False, nullable=False)
+    revision_notes    = db.Column(db.Text, nullable=True)
+    revision_count    = db.Column(db.Integer, default=0, nullable=False)
+
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at   = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)
@@ -261,13 +266,16 @@ class HumanOrder(db.Model):
     files    = db.relationship("HumanOrderFile", backref="order", cascade="all, delete-orphan")
 
     STATUS_LABELS = {
-        "pending":     "Pending",
-        "assigned":    "Assigned",
-        "in_progress": "In Progress",
-        "completed":   "Completed",
-        "delivered":   "Delivered",
+        "pending":            "Pending",
+        "assigned":           "Assigned",
+        "in_progress":        "In Progress",
+        "completed":          "Completed",
+        "delivered":          "Delivered",
+        "under_review":       "Under Review",
+        "revision_requested": "Revision Requested",
+        "resubmitted":        "Resubmitted",
+        "approved":           "Approved",
     }
-
     @property
     def status_label(self):
         return self.STATUS_LABELS.get(self.status, self.status.title())

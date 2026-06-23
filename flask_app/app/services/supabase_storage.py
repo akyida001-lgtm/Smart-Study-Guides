@@ -44,10 +44,10 @@ def upload_rubric(assignment_id: int, file_bytes: bytes, content_type: str) -> s
     ext      = "pdf" if content_type == "application/pdf" else "jpg"
     filename = f"rubrics/{assignment_id}/{uuid.uuid4().hex}.{ext}"
     _upload(filename, file_bytes, content_type)
-    return _get_signed_url(filename, 365)
+    return _get_signed_url(filename, 7)
 
 
-def upload_file(path: str, data: bytes, content_type: str, signed_days: int = 365) -> str:
+def upload_file(path: str, data: bytes, content_type: str, signed_days: int = 7) -> str:
     _upload(path, data, content_type)
     return _get_signed_url(path, signed_days)
 
@@ -56,4 +56,4 @@ def upload_id_scan(user_id: str, file_bytes: bytes, content_type: str) -> str:
     ext      = "pdf" if content_type == "application/pdf" else "jpg"
     filename = f"id_scans/{user_id}/{uuid.uuid4().hex}.{ext}"
     _upload(filename, file_bytes, content_type)
-    return _get_signed_url(filename, 365)
+    return _get_signed_url(filename, 7)

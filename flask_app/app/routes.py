@@ -3820,6 +3820,79 @@ Now write the complete {doc_label} below:
             })
         except Exception as e:
             return jsonify({"error": str(e)})
+    @main.route("/api/human-orders/<int:oid>/request-revision", methods=["POST"])
+    @require_login
+    def api_human_order_request_revision(oid):
+        if not current_user.is_staff:
+            return jsonify({"error": "Forbidden"}), 403
+        order = HumanOrder.query.get_or_404(oid)
+        data  = request.get_json(force=True) or {}
+        notes = (data.get("notes") or "").strip()
+        if not notes:
+            return jsonify({"error": "Please provide revision notes."}), 400
+        order.status         = "revision_requested"
+        order.revision_notes = notes
+        order.revision_count = (order.revision_count or 0) + 1
+        order.admin_approved = False
+        db.session.commit()
+        if order.writer_id:
+            _notify(order.writer_id, "revision",
+                    f"Revision requested — Order #{order.id}",
+                    f"Admin has requested a revision: {notes}")
+        return jsonify({"ok": True})
+
+    @main.route("/api/human-orders/<int:oid>/approve", methods=["POST"])
+    @require_login
+    def api_human_order_approve(oid):
+        if not current_user.is_staff:
+            return jsonify({"error": "Forbidden"}), 403
+        order = HumanOrder.query.get_or_404(oid)
+        if not order.final_file_url:
+            return jsonify({"error": "No file to approve."}), 400
+        order.status         = "approved"
+        order.admin_approved = True
+        db.session.commit()
+        student = User.query.get(order.user_id)
+        if student:
+            _notify(student.id, "order_approved",
+                    f"Your assignment is ready — Order #{order.id}",
+                    f"Your order '{order.title}' has been reviewed and approved. You can now download it.")
+            if student.email:
+                try:
+                    from .services.email_service import send_order_approved_email
+                    send_order_approved_email(student.email, student.display_name, order.title, order.id)
+                except Exception:
+                    pass
+        return jsonify({"ok": True})
+
+    @main.route("/api/human-orders/<int:oid>/resubmit", methods=["POST"])
+    @require_login
+    def api_human_order_resubmit(oid):
+        if not current_user.is_staff and not current_user.is_writer:
+            return jsonify({"error": "Forbidden"}), 403
+        order = HumanOrder.query.get_or_404(oid)
+        f = request.files.get("delivery_file")
+        if not f or not f.filename:
+            return jsonify({"error": "Please upload the revised file."}), 400
+        file_bytes = f.read()
+        ct   = f.content_type or "application/octet-stream"
+        ext  = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else "bin"
+        path = f"human_orders/{oid}/revision_{uuid.uuid4().hex}.{ext}"
+        url  = supabase_storage.upload_file(path, file_bytes, ct, signed_days=7)
+        db.session.add(HumanOrderFile(
+            order_id=oid,
+            uploader_id=current_user.id,
+            file_url=url,
+            file_name=f.filename,
+            file_type="revision",
+        ))
+        order.final_file_url  = url
+        order.final_file_name = f.filename
+        order.status          = "resubmitted"
+        order.revision_notes  = None
+        db.session.commit()
+        return jsonify({"ok": True, "url": url})
+
     @main.route("/admin/fix-file-urls")
     @require_login
     def admin_fix_file_urls():

@@ -96,6 +96,26 @@
     </div>
     {% endif %}
 
+    <!-- Admin: Upload replacement file at any time -->
+    {% if user.is_staff %}
+    <div class="card" style="margin-bottom:16px;border:1px solid #fbbf2433;background:#fffbeb;">
+      <h4 style="margin:0 0 12px;color:#92400e;">📤 Upload Replacement File</h4>
+      <form method="POST" action="{{ url_for('main.api_human_order_admin_upload', oid=order.id) }}" enctype="multipart/form-data">
+        <div class="form-group">
+          <div class="hu-file-drop" onclick="document.getElementById('replaceFile').click()">
+            <input type="file" name="delivery_file" id="replaceFile" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden;"
+                   accept=".pdf,.doc,.docx,.txt,.pptx,.ppt" required
+                   onchange="document.getElementById('replaceLabel').textContent=this.files[0].name">
+            <span class="hu-file-icon">📄</span>
+            <span id="replaceLabel">Click to select file</span>
+          </div>
+        </div>
+        <button type="submit" class="btn" style="background:#f59e0b;color:#fff;width:100%;margin-top:10px;">
+          📤 Upload & Replace File
+        </button>
+      </form>
+    </div>
+    {% endif %}
     <!-- Order details -->
     <div class="card" style="margin-bottom:16px;">
       <h3 style="margin:0 0 14px;">📄 Assignment Details</h3>

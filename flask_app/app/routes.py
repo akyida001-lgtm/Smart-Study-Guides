@@ -3893,6 +3893,20 @@ Now write the complete {doc_label} below:
         db.session.commit()
         return jsonify({"ok": True, "url": url})
 
+    @main.route("/admin/run-migration")
+    @require_login
+    def admin_run_migration():
+        if not _is_owner(current_user):
+            return "Forbidden", 403
+        try:
+            db.session.execute(db.text("ALTER TABLE human_orders ADD COLUMN IF NOT EXISTS admin_approved BOOLEAN DEFAULT FALSE NOT NULL"))
+            db.session.execute(db.text("ALTER TABLE human_orders ADD COLUMN IF NOT EXISTS revision_notes TEXT"))
+            db.session.execute(db.text("ALTER TABLE human_orders ADD COLUMN IF NOT EXISTS revision_count INTEGER DEFAULT 0 NOT NULL"))
+            db.session.commit()
+            return "Migration completed successfully. All 3 columns added."
+        except Exception as e:
+            db.session.rollback()
+            return f"Migration failed: {e}", 500
     @main.route("/admin/fix-file-urls")
     @require_login
     def admin_fix_file_urls():

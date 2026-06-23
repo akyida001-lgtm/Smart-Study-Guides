@@ -3907,6 +3907,36 @@ Now write the complete {doc_label} below:
         except Exception as e:
             db.session.rollback()
             return f"Migration failed: {e}", 500
+    @main.route("/api/human-orders/<int:oid>/admin-upload", methods=["POST"])
+    @require_login
+    def api_human_order_admin_upload(oid):
+        if not current_user.is_staff:
+            return "Forbidden", 403
+        order = HumanOrder.query.get_or_404(oid)
+        f = request.files.get("delivery_file")
+        if not f or not f.filename:
+            flash("Please select a file to upload.", "error")
+            return redirect(url_for("main.writer_order_detail", oid=oid))
+        file_bytes = f.read()
+        ct   = f.content_type or "application/octet-stream"
+        ext  = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else "bin"
+        path = f"human_orders/{oid}/replacement_{uuid.uuid4().hex}.{ext}"
+        url  = supabase_storage.upload_file(path, file_bytes, ct, signed_days=7)
+        db.session.add(HumanOrderFile(
+            order_id=oid,
+            uploader_id=current_user.id,
+            file_url=url,
+            file_name=f.filename,
+            file_type="delivery",
+        ))
+        order.final_file_url         = url
+        order.final_file_name        = f.filename
+        order.status                 = "delivered"
+        order.writer_confirmed_human = True
+        order.completed_at           = datetime.utcnow()
+        db.session.commit()
+        flash("✅ File uploaded successfully! Student can now download the new file.", "success")
+        return redirect(url_for("main.writer_order_detail", oid=oid))
     @main.route("/admin/fix-file-urls")
     @require_login
     def admin_fix_file_urls():

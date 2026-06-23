@@ -573,7 +573,7 @@ def register_routes(app):
             ct_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg",
                       "png": "image/png", "webp": "image/webp", "gif": "image/gif"}
             ct = ct_map.get(ext, "image/jpeg")
-            url = supabase_storage.upload_file(filename, data, ct, signed_days=365)
+            url = supabase_storage.upload_file(filename, data, ct, signed_days=7)
             return jsonify({"url": url})
         except Exception as e:
             return jsonify({"error": f"Upload failed: {e}"}), 500
@@ -2931,7 +2931,7 @@ def register_routes(app):
                 ct  = f.content_type or "application/octet-stream"
                 ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else "bin"
                 path = f"human_orders/{order.id}/brief_{uuid.uuid4().hex}.{ext}"
-                url  = supabase_storage.upload_file(path, file_bytes, ct, signed_days=365)
+                url  = supabase_storage.upload_file(path, file_bytes, ct, signed_days=7)
                 db.session.add(HumanOrderFile(
                     order_id=order.id,
                     uploader_id=current_user.id,
@@ -3262,7 +3262,7 @@ def register_routes(app):
         ct   = f.content_type or "application/octet-stream"
         ext  = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else "bin"
         path = f"human_orders/{oid}/delivery_{uuid.uuid4().hex}.{ext}"
-        url  = supabase_storage.upload_file(path, file_bytes, ct, signed_days=365)
+        url  = supabase_storage.upload_file(path, file_bytes, ct, signed_days=7)
         db.session.add(HumanOrderFile(
             order_id=oid,
             uploader_id=current_user.id,
@@ -3511,7 +3511,7 @@ Now write the complete {doc_label} below:
                 f"career_docs/{current_user.id}/{doc.id}/{docx_name}",
                 docx_bytes,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                signed_days=365,
+                signed_days=7,
             )
             doc.docx_url      = docx_url
             doc.docx_filename = docx_name
@@ -3528,7 +3528,7 @@ Now write the complete {doc_label} below:
                 f"career_docs/{current_user.id}/{doc.id}/{pdf_name}",
                 pdf_bytes,
                 "application/pdf",
-                signed_days=365,
+                signed_days=7,
             )
             doc.pdf_url      = pdf_url
             doc.pdf_filename = pdf_name

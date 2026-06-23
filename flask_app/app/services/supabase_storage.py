@@ -30,14 +30,8 @@ def _upload(path: str, data: bytes, content_type: str) -> None:
 
 
 def _get_signed_url(path: str, days: int) -> str:
-    # Cloudflare R2 maximum is 7 days (604800 seconds)
-    expires = min(60 * 60 * 24 * days, 604800)
-    url = _client().generate_presigned_url(
-        "get_object",
-        Params={"Bucket": _bucket(), "Key": path},
-        ExpiresIn=expires,
-    )
-    return url
+    public_base = os.environ.get("R2_PUBLIC_URL", "").rstrip("/")
+    return f"{public_base}/{path}"
 
 
 def upload_docx(filename: str, data: bytes) -> str:

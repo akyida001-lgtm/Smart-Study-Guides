@@ -85,6 +85,14 @@
       <a href="#" onclick="forceDownload('{{ order.final_file_url }}', '{{ order.final_file_name or 'assignment.docx' }}')" class="hu-file-link" style="margin-top:8px;display:inline-block;">
         📄 {{ order.final_file_name }}
       </a>
+      {% if user.is_staff %}
+      <div style="margin-top:14px;border-top:1px solid #bbf7d0;padding-top:12px;">
+        <p style="margin:0 0 8px;font-size:13px;color:#374151;font-weight:600;">Admin: Reopen this order for resubmission</p>
+        <textarea id="reopenNotes" rows="2" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;margin-bottom:8px;" placeholder="Reason for reopening (optional)…"></textarea>
+        <button class="btn" style="background:#f59e0b;color:#fff;width:100%;" onclick="reopenOrder()">🔄 Reopen Order</button>
+        <div id="reopenMsg" style="margin-top:6px;font-size:13px;"></div>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -223,6 +231,24 @@ async function setStatus(s) {
     URL.revokeObjectURL(a.href);
   } catch(err) {
     window.open(url, '_blank');
+  }
+}
+
+async function reopenOrder() {
+  const notes = document.getElementById('reopenNotes').value.trim();
+  const res = await fetch(`/api/human-orders/${ORDER_ID}/reopen`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({notes: notes || 'Admin reopened order for resubmission.'})
+  });
+  const data = await res.json();
+  if (data.ok) {
+    document.getElementById('reopenMsg').style.color = 'green';
+    document.getElementById('reopenMsg').textContent = '✅ Order reopened. Writer has been notified.';
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    document.getElementById('reopenMsg').style.color = 'red';
+    document.getElementById('reopenMsg').textContent = data.error || 'Failed to reopen.';
   }
 }
 </script>

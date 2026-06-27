@@ -41,6 +41,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=41" />
+  <style>
+  body { opacity: 0; transition: opacity 0.18s ease-in; }
+  body.fade-in { opacity: 1; }
+</style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/human_writer.css') }}?v=2" />
 </head>
 <body{% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'akyida001@gmail.com', 'simonedwardj@yahoo.com']) %} class="is-admin"{% endif %}>
@@ -1160,5 +1164,21 @@ body.is-admin .no-copy *::selection { background: highlight; }
 })();
 </script>
 {% endif %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.body.classList.add('fade-in');
+  });
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('a');
+    if (link && link.href && link.target !== '_blank' && link.href.indexOf('mailto:') !== 0 && link.href.indexOf('#') !== 0) {
+      var sameSite = link.href.indexOf(window.location.origin) === 0;
+      if (sameSite) {
+        e.preventDefault();
+        document.body.style.opacity = '0';
+        setTimeout(function () { window.location.href = link.href; }, 150);
+      }
+    }
+  });
+</script>
 </body>
 </html>

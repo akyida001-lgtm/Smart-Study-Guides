@@ -47,7 +47,7 @@
 </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/human_writer.css') }}?v=2" />
 </head>
-<body{% if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'akyida001@gmail.com', 'simonedwardj@yahoo.com']) %} class="is-admin"{% endif %}>
+<body{% if current_user.is_authenticated and current_user.is_staff %} class="is-admin"{% endif %}>
 {% block layout %}
 
 {% if current_user.is_authenticated %}
@@ -941,7 +941,7 @@
 <!-- ── Copy / selection protection on generated content ── -->
 <!-- Global admin flag + copy helper (available to all pages) -->
 <script>
-window.IS_ADMIN = {{ 'true' if current_user.is_authenticated and (current_user.is_staff or (current_user.email or '')|lower in ['aservices767@gmail.com', 'akyida001@gmail.com', 'simonedwardj@yahoo.com']) else 'false' }};
+window.IS_ADMIN = {{ 'true' if current_user.is_authenticated and current_user.is_staff else 'false' }};
 window.adminCopy = function(text, btn) {
   if (!window.IS_ADMIN) return;
   navigator.clipboard.writeText(text).then(function() {

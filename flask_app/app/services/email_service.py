@@ -193,3 +193,21 @@ def send_assignment_ready_email(email: str, name: str, topic: str, download_url:
     </div>
     """
     return _send(email, f"Your assignment is ready — {BRAND_NAME}", html)
+
+
+def send_admin_activity_email(admin_email: str, event_title: str, details: dict):
+    """Generic admin activity alert — used for signups, payments, assignments, chats, logins."""
+    rows = "".join(
+        f'<tr><td style="color:#94a3b8;padding:6px 12px 6px 0;font-size:13px;white-space:nowrap;">{k}</td>'
+        f'<td style="color:#ffffff;font-size:13px;">{v}</td></tr>'
+        for k, v in details.items()
+    )
+    html = f"""
+    <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0b1733;color:#ffffff;border-radius:12px;">
+      <p style="color:#94a3b8;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;">{BRAND_NAME} — Activity Alert</p>
+      <h2 style="color:#00bcd4;margin:0 0 20px;">{event_title}</h2>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:10px;">{rows}</table>
+      {_footer()}
+    </div>
+    """
+    return _send(admin_email, f"[{BRAND_NAME}] {event_title}", html)

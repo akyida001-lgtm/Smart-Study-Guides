@@ -46,6 +46,46 @@
   body.fade-in { opacity: 1; }
 </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/human_writer.css') }}?v=2" />
+
+  <!-- ── Instant navigation: preload pages in background ── -->
+  <script type="speculationrules">
+  {
+    "prerender": [{
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "selector_matches": "[data-no-prefetch]" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }],
+    "prefetch": [{
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "selector_matches": "[data-no-prefetch]" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }]
+  }
+  </script>
+  <script>
+  // Fallback for browsers without Speculation Rules (Firefox, Safari)
+  if (!HTMLScriptElement.supports || !HTMLScriptElement.supports('speculationrules')) {
+    var ssgPrefetch = function (e) {
+      var link = e.target.closest('a');
+      if (link && link.href && link.origin === location.origin && !link.hasAttribute('data-no-prefetch')) {
+        var l = document.createElement('link');
+        l.rel = 'prefetch';
+        l.href = link.href;
+        document.head.appendChild(l);
+      }
+    };
+    document.addEventListener('mouseover', ssgPrefetch);
+    document.addEventListener('touchstart', ssgPrefetch, { passive: true });
+  }
+  </script>
 </head>
 <body{% if current_user.is_authenticated and current_user.is_staff %} class="is-admin"{% endif %}>
 {% block layout %}
@@ -80,7 +120,7 @@
     <!-- ── Writer portal navigation ── -->
     <nav class="sidebar-nav">
       {% if current_user.is_staff and session.get('admin_writer_preview') %}
-      <a class="snav-item" href="{{ url_for('main.admin_writer_mode_off') }}"
+      <a class="snav-item" href="{{ url_for('main.admin_writer_mode_off') }}" data-no-prefetch
          style="color:#f59e0b;font-weight:700;border:1.5px solid rgba(245,158,11,.25);border-radius:8px;margin-bottom:4px;">
         <span class="snav-icon">👑</span> Exit Writer Mode
       </a>
@@ -101,7 +141,7 @@
       <a class="snav-item snav-terms {% if request.endpoint == 'main.terms_page' %}active{% endif %}" href="{{ url_for('main.terms_page') }}" style="font-size:12px;opacity:.7;">
         <span class="snav-icon">📜</span> Terms &amp; Conditions
       </a>
-      <a class="snav-item snav-logout" href="{{ url_for('auth.logout') }}">
+      <a class="snav-item snav-logout" href="{{ url_for('auth.logout') }}" data-no-prefetch>
         <span class="snav-icon">🚪</span> Log out
       </a>
     </nav>
@@ -182,7 +222,7 @@
         <span class="snav-icon">👥</span> User Management
       </a>
       <div class="snav-divider"></div>
-      <a class="snav-item snav-writer-mode-btn" href="{{ url_for('main.admin_writer_mode_on') }}"
+      <a class="snav-item snav-writer-mode-btn" href="{{ url_for('main.admin_writer_mode_on') }}" data-no-prefetch
          title="Preview the writer portal as if you were a writer">
         <span class="snav-icon">✍️</span> Writer Account Mode
       </a>
@@ -201,7 +241,7 @@
         <span class="snav-icon">📜</span> Terms &amp; Conditions
       </a>
 
-      <a class="snav-item snav-logout" href="{{ url_for('auth.logout') }}">
+      <a class="snav-item snav-logout" href="{{ url_for('auth.logout') }}" data-no-prefetch>
         <span class="snav-icon">🚪</span> Log out
       </a>
     </nav>

@@ -40,7 +40,7 @@ document.querySelectorAll(".toggle-publish-btn").forEach(btn => {
     const id = btn.dataset.postId;
     const res = await fetch(`/admin/content/${id}/toggle`, {
       method: "POST",
-      headers: { "X-CSRFToken": "{{ csrf_token() }}" }
+      headers: {}
     });
     if (res.ok) {
       const data = await res.json();

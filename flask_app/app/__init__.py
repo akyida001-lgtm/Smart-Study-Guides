@@ -4,6 +4,7 @@ from flask import Flask
 from .models import db
 from .native_auth import init_auth
 from .routes import register_routes
+from .content_routes import content_bp
 
 
 def create_app():
@@ -242,6 +243,7 @@ def create_app():
 
     init_auth(app)
     register_routes(app)
+    app.register_blueprint(content_bp)
 
     @app.after_request
     def _set_response_headers(response):

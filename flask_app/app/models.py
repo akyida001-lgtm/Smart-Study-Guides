@@ -395,3 +395,40 @@ class Review(db.Model):
 
     assignment = db.relationship("Assignment", backref=db.backref("review", uselist=False))
     student    = db.relationship("User", backref="reviews")
+import enum
+
+class PostType(enum.Enum):
+    result   = "result"
+    discount = "discount"
+    video    = "video"
+    picture  = "picture"
+
+
+class Post(db.Model):
+    __tablename__ = "posts"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    type        = db.Column(db.Enum(PostType), nullable=False)
+    title       = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    published   = db.Column(db.Boolean, default=False, nullable=False)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at  = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    media = db.relationship("PostMedia", backref="post", lazy=True, cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Post {self.id} {self.type.value}>"
+
+
+class PostMedia(db.Model):
+    __tablename__ = "post_media"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    post_id    = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False)
+    url        = db.Column(db.Text, nullable=False)
+    media_type = db.Column(db.String(10), nullable=False)
+    order      = db.Column(db.Integer, default=0)
+
+    def __repr__(self):
+        return f"<PostMedia {self.id} post={self.post_id}>"

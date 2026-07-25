@@ -221,6 +221,9 @@
       <a class="snav-item {% if 'admin_users' in request.endpoint %}active{% endif %}" href="{{ url_for('main.admin_users') }}">
         <span class="snav-icon">👥</span> User Management
       </a>
+      <a class="snav-item {% if request.path.startswith('/admin/content') %}active{% endif %}" href="/admin/content">
+        <span class="snav-icon">📢</span> Site Content
+      </a>
       <div class="snav-divider"></div>
       <a class="snav-item snav-writer-mode-btn" href="{{ url_for('main.admin_writer_mode_on') }}" data-no-prefetch
          title="Preview the writer portal as if you were a writer">
@@ -307,6 +310,7 @@
   </button>
   <div class="nav-right" id="nav-right">
     <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
+    <a class="nav-link" href="/updates">📣 Updates &amp; Offers</a>
     <a class="nav-link" href="{{ url_for('auth.login') }}">Sign in</a>
     <a class="nav-cta" href="{{ url_for('auth.signup') }}">Sign up free</a>
   </div>

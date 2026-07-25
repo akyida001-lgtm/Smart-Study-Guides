@@ -44,7 +44,6 @@
             <a href="/admin/content/{{ post.id }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
             <form method="POST" action="/admin/content/{{ post.id }}/delete" class="d-inline"
                   onsubmit="return confirm('Delete this post? This cannot be undone.');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
             </form>
           </td>

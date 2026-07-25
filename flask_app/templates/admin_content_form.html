@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}{% if post %}Edit Post{% else %}New Post{% endif %} — Admin{% endblock %}
+
+{% block head %}
+<style>
+  .dropzone-area {
+    border: 2px dashed #6c757d;
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #f8f9fa;
+  }
+  .dropzone-area.dragover { border-color: #0d6efd; background: #e9f0ff; }
+  .preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .preview-item { position: relative; width: 110px; }
+  .preview-item img, .preview-item video {
+    width: 110px; height: 90px; object-fit: cover;
+    border-radius: 8px; border: 1px solid #dee2e6;
+  }
+  .preview-item .remove-btn {
+    position: absolute; top: -6px; right: -6px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #dc3545; color: white; border: none;
+    font-size: 12px; line-height: 22px; text-align: center;
+    cursor: pointer; padding: 0;
+  }
+  .preview-item .label {
+    font-size: 11px; text-align: center; margin-top: 4px;
+    color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:760px;">
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="/admin/content" class="btn btn-outline-secondary btn-sm">← Back</a>
+    <h2 class="fw-bold mb-0">{% if post %}✏️ Edit Post{% else %}➕ New Post{% endif %}</h2>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST"
+        action="{% if post %}/admin/content/{{ post.id }}/edit{% else %}/admin/content/new{% endif %}"
+        enctype="multipart/form-data" id="contentForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Post Type</label>
+      <select name="type" class="form-select" required>
+        <option value="result"   {% if post and post.type.value == 'result'   %}selected{% endif %}>🏆 Result</option>
+        <option value="discount" {% if post and post.type.value == 'discount' %}selected{% endif %}>🎁 Discount</option>
+        <option value="video"    {% if post and post.type.value == 'video'    %}selected{% endif %}>🎬 Video</option>
+        <option value="picture"  {% if post and post.type.value == 'picture'  %}selected{% endif %}>🖼 Picture</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+      <input type="text" name="title" class="form-control"
+             value="{{ post.title if post else '' }}"
+             placeholder="e.g. 30% Off All Orders This Week!" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Description / Caption</label>
+      <textarea name="description" class="form-control" rows="4"
+                placeholder="Optional — extra detail shown below the title">{{ post.description if post else '' }}</textarea>
+    </div>
+
+    <div class="mb-4 form-check form-switch">
+      <input class="form-check-input" type="checkbox" name="published" id="publishedToggle"
+             {% if post and post.published %}checked{% endif %}>
+      <label class="form-check-label fw-semibold" for="publishedToggle">
+        Publish immediately (visible on the public Updates page)
+      </label>
+    </div>
+
+    {% if post and post.media %}
+    <div class="mb-4">
+      <label class="form-label fw-semibold">Existing Media</label>
+      <p class="text-muted small mb-2">Tick the checkbox on items you want to <strong>remove</strong>, then save.</p>
+      <div class="preview-grid">
+        {% for m in post.media %}
+        <div class="preview-item">
+          {% if m.media_type == 'image' %}
+            <img src="{{ m.url }}" alt="media {{ m.id }}">
+          {% else %}
+            <video src="{{ m.url }}" muted></video>
+          {% endif %}
+          <div class="label">{{ m.media_type }}</div>
+          <div class="form-check mt-1 d-flex justify-content-center">
+            <input class="form-check-input" type="checkbox" name="delete_media" value="{{ m.id }}" id="del_{{ m.id }}">
+            <label class="form-check-label small text-danger ms-1" for="del_{{ m.id }}">Remove</label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-4">
+      <label class="form-label fw-semibold">
+        {% if post and post.media %}Add More Media{% else %}Upload Images / Videos{% endif %}
+      </label>
+      <div class="dropzone-area" id="dropzone">
+        <p class="mb-1 fs-5">📂 Drag files here or
+          <span class="text-primary text-decoration-underline" style="cursor:pointer;" id="browseBtn">click to browse</span>
+        </p>
+        <p class="text-muted small mb-0">Images (JPG, PNG, GIF, WEBP) and videos (MP4, MOV, WEBM). Multiple files allowed.</p>
+      </div>
+      <input type="file" name="media_files" id="fileInput" multiple accept="image/*,video/*" style="display:none;">
+      <div class="preview-grid" id="newPreviewGrid"></div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary px-4">
+        {% if post %}💾 Save Changes{% else %}✅ Create Post{% endif %}
+      </button>
+      <a href="/admin/content" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  const dropzone    = document.getElementById("dropzone");
+  const browseBtn   = document.getElementById("browseBtn");
+  const previewGrid = document.getElementById("newPreviewGrid");
+  let selectedFiles = [];
+
+  function getFileInput() { return document.getElementById("fileInput"); }
+
+  browseBtn.addEventListener("click", () => getFileInput().click());
+  dropzone.addEventListener("click", (e) => { if (e.target !== browseBtn) getFileInput().click(); });
+  dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault(); dropzone.classList.remove("dragover");
+    addFiles(Array.from(e.dataTransfer.files));
+  });
+
+  document.getElementById("fileInput").addEventListener("change", function () {
+    addFiles(Array.from(this.files)); this.value = "";
+  });
+
+  function addFiles(files) {
+    files.forEach(file => {
+      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) return;
+      selectedFiles.push(file);
+      renderPreview(file, selectedFiles.length - 1);
+    });
+    syncFiles();
+  }
+
+  function renderPreview(file, index) {
+    const url = URL.createObjectURL(file);
+    const wrap = document.createElement("div");
+    wrap.className = "preview-item";
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "remove-btn"; removeBtn.textContent = "×"; removeBtn.type = "button";
+    removeBtn.addEventListener("click", () => { selectedFiles[index] = null; wrap.remove(); URL.revokeObjectURL(url); syncFiles(); });
+    let media;
+    if (file.type.startsWith("image/")) { media = document.createElement("img"); media.src = url; }
+    else { media = document.createElement("video"); media.src = url; media.muted = true; }
+    const label = document.createElement("div"); label.className = "label"; label.textContent = file.name;
+    wrap.append(removeBtn, media, label);
+    previewGrid.append(wrap);
+  }
+
+  function syncFiles() {
+    const active = selectedFiles.filter(Boolean);
+    const dt = new DataTransfer();
+    active.forEach(f => dt.items.add(f));
+    const old = getFileInput();
+    const newInput = old.cloneNode();
+    newInput.files = dt.files;
+    old.replaceWith(newInput);
+    newInput.addEventListener("change", function () { addFiles(Array.from(this.files)); this.value = ""; });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Site Content — Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">📢 Site Content</h2>
+    <a href="/admin/content/new" class="btn btn-primary">+ New Post</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <ul class="nav nav-tabs mb-3" id="contentTabs">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-all">All ({{ posts|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-result">🏆 Results ({{ posts|selectattr('type.value','eq','result')|list|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-discount">🎁 Discounts ({{ posts|selectattr('type.value','eq','discount')|list|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-video">🎬 Videos ({{ posts|selectattr('type.value','eq','video')|list|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-picture">🖼 Pictures ({{ posts|selectattr('type.value','eq','picture')|list|length }})</a></li>
+  </ul>
+
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-all">      {% set items = posts %}                                                          {% include "admin_content_table.html" %}</div>
+    <div class="tab-pane fade" id="tab-result">   {% set items = posts|selectattr('type.value','eq','result')|list %}   {% include "admin_content_table.html" %}</div>
+    <div class="tab-pane fade" id="tab-discount"> {% set items = posts|selectattr('type.value','eq','discount')|list %} {% include "admin_content_table.html" %}</div>
+    <div class="tab-pane fade" id="tab-video">    {% set items = posts|selectattr('type.value','eq','video')|list %}    {% include "admin_content_table.html" %}</div>
+    <div class="tab-pane fade" id="tab-picture">  {% set items = posts|selectattr('type.value','eq','picture')|list %}  {% include "admin_content_table.html" %}</div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll(".toggle-publish-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const id = btn.dataset.postId;
+    const res = await fetch(`/admin/content/${id}/toggle`, {
+      method: "POST",
+      headers: { "X-CSRFToken": "{{ csrf_token() }}" }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.published) {
+        btn.className = "btn btn-sm btn-success toggle-publish-btn";
+        btn.textContent = "✅ Live";
+      } else {
+        btn.className = "btn btn-sm btn-outline-secondary toggle-publish-btn";
+        btn.textContent = "⬜ Draft";
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

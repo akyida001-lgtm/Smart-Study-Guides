@@ -1,0 +1,56 @@
+{% if items|length == 0 %}
+  <div class="text-center text-muted py-5">
+    <p class="fs-5 mb-0">No posts here yet.</p>
+  </div>
+{% else %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Title</th>
+          <th>Media</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for post in items %}
+        <tr>
+          <td>
+            {% if post.type.value == 'result' %}🏆 Result
+            {% elif post.type.value == 'discount' %}🎁 Discount
+            {% elif post.type.value == 'video' %}🎬 Video
+            {% elif post.type.value == 'picture' %}🖼 Picture
+            {% endif %}
+          </td>
+          <td>
+            <div class="fw-semibold">{{ post.title }}</div>
+            {% if post.description %}
+              <div class="text-muted small">{{ post.description[:80] }}{% if post.description|length > 80 %}…{% endif %}</div>
+            {% endif %}
+          </td>
+          <td>{{ post.media|length }}</td>
+          <td>
+            {% if post.published %}
+              <button class="btn btn-sm btn-success toggle-publish-btn" data-post-id="{{ post.id }}">✅ Live</button>
+            {% else %}
+              <button class="btn btn-sm btn-outline-secondary toggle-publish-btn" data-post-id="{{ post.id }}">⬜ Draft</button>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{ post.created_at.strftime('%b %d, %Y') if post.created_at else '' }}</td>
+          <td class="text-end">
+            <a href="/admin/content/{{ post.id }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+            <form method="POST" action="/admin/content/{{ post.id }}/delete" class="d-inline"
+                  onsubmit="return confirm('Delete this post? This cannot be undone.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}

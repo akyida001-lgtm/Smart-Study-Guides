@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Updates & Offers — Smart Study Guides{% endblock %}
+
+{% block head %}
+<style>
+  .updates-hero {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #0d47a1 100%);
+    color: white; padding: 64px 20px 48px; text-align: center;
+  }
+  .updates-hero h1 { font-size: 2.4rem; font-weight: 800; }
+  .updates-hero p  { font-size: 1.1rem; opacity: .85; }
+  .tab-section .nav-tabs { border-bottom: 2px solid #e9ecef; }
+  .tab-section .nav-link {
+    font-weight: 600; color: #495057; border: none;
+    padding: .75rem 1.4rem; border-bottom: 3px solid transparent; border-radius: 0;
+  }
+  .tab-section .nav-link.active { color: #1a237e; border-bottom-color: #1a237e; background: transparent; }
+  .content-card {
+    border: none; border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    transition: transform .18s, box-shadow .18s;
+    overflow: hidden; height: 100%;
+  }
+  .content-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.13); }
+  .content-card .card-img-top { height: 200px; object-fit: cover; }
+  .content-card .card-body { padding: 1.25rem; }
+  .content-card .card-title { font-weight: 700; font-size: 1.05rem; }
+  .content-card .card-text  { font-size: .92rem; color: #555; }
+  .content-card .card-footer { background: transparent; border-top: 1px solid #f0f0f0; font-size: .82rem; color: #888; }
+  .badge-result   { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 20px; font-size:.8rem; }
+  .badge-discount { background: #fff8e1; color: #f57f17; padding: 4px 10px; border-radius: 20px; font-size:.8rem; }
+  .badge-video    { background: #e3f2fd; color: #0d47a1; padding: 4px 10px; border-radius: 20px; font-size:.8rem; }
+  .badge-picture  { background: #f3e5f5; color: #6a1b9a; padding: 4px 10px; border-radius: 20px; font-size:.8rem; }
+  .video-card video { width: 100%; max-height: 240px; object-fit: cover; border-bottom: 1px solid #eee; }
+  .discount-strip {
+    background: linear-gradient(90deg, #ff6f00, #ffa000);
+    color: white; padding: 8px 14px; font-weight: 800; font-size: 1.1rem; text-align: center;
+  }
+  #lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.85); z-index: 9999;
+    align-items: center; justify-content: center;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img  { max-width: 90vw; max-height: 90vh; border-radius: 10px; }
+  #lightbox .close-lb {
+    position: absolute; top: 20px; right: 28px;
+    color: #fff; font-size: 2rem; cursor: pointer; line-height: 1;
+  }
+  .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+  .empty-state p { font-size: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="updates-hero">
+  <h1>📣 Updates &amp; Offers</h1>
+  <p class="mb-0">Latest results, exclusive discounts, videos, and photos from our team.</p>
+</div>
+
+<div class="container-fluid tab-section px-0 bg-white border-bottom">
+  <div class="container">
+    <ul class="nav nav-tabs" id="updatesTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-results" type="button">
+          🏆 Results <span class="badge bg-success ms-1">{{ results|length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-discounts" type="button">
+          🎁 Discounts <span class="badge bg-warning text-dark ms-1">{{ discounts|length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-videos" type="button">
+          🎬 Videos <span class="badge bg-info ms-1">{{ videos|length }}</span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pictures" type="button">
+          🖼 Pictures <span class="badge bg-primary ms-1">{{ pictures|length }}</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="tab-content">
+
+    <!-- RESULTS -->
+    <div class="tab-pane fade show active" id="tab-results">
+      {% if results %}
+        <div class="row g-4">
+          {% for post in results %}
+          <div class="col-sm-6 col-lg-4">
+            <div class="content-card card">
+              {% if post.media %}
+                {% set first_img = post.media | selectattr('media_type','eq','image') | first %}
+                {% if first_img %}
+                  <img src="{{ first_img.url }}" class="card-img-top" alt="{{ post.title }}"
+                       style="cursor:zoom-in;" onclick="openLightbox('{{ first_img.url }}')">
+                {% endif %}
+              {% endif %}
+              <div class="card-body">
+                <span class="badge-result mb-2 d-inline-block">🏆 Result</span>
+                <h5 class="card-title mt-2">{{ post.title }}</h5>
+                {% if post.description %}<p class="card-text">{{ post.description }}</p>{% endif %}
+              </div>
+              <div class="card-footer">{{ post.created_at.strftime('%d %B %Y') }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state"><p>No results posted yet. Check back soon! 🏆</p></div>
+      {% endif %}
+    </div>
+
+    <!-- DISCOUNTS -->
+    <div class="tab-pane fade" id="tab-discounts">
+      {% if discounts %}
+        <div class="row g-4">
+          {% for post in discounts %}
+          <div class="col-sm-6 col-lg-4">
+            <div class="content-card card">
+              <div class="discount-strip">🎁 {{ post.title }}</div>
+              {% if post.media %}
+                {% set first_img = post.media | selectattr('media_type','eq','image') | first %}
+                {% if first_img %}
+                  <img src="{{ first_img.url }}" class="card-img-top" alt="{{ post.title }}"
+                       style="cursor:zoom-in;" onclick="openLightbox('{{ first_img.url }}')">
+                {% endif %}
+              {% endif %}
+              <div class="card-body">
+                <span class="badge-discount mb-2 d-inline-block">🎁 Discount</span>
+                {% if post.description %}<p class="card-text mt-2">{{ post.description }}</p>{% endif %}
+              </div>
+              <div class="card-footer">{{ post.created_at.strftime('%d %B %Y') }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state"><p>No discount posts yet. Stay tuned! 🎁</p></div>
+      {% endif %}
+    </div>
+
+    <!-- VIDEOS -->
+    <div class="tab-pane fade" id="tab-videos">
+      {% if videos %}
+        <div class="row g-4">
+          {% for post in videos %}
+          <div class="col-sm-6 col-lg-4">
+            <div class="content-card video-card card">
+              {% if post.media %}
+                {% set first_vid = post.media | selectattr('media_type','eq','video') | first %}
+                {% if first_vid %}
+                  <video controls preload="none">
+                    <source src="{{ first_vid.url }}">
+                    Your browser does not support HTML5 video.
+                  </video>
+                {% endif %}
+              {% endif %}
+              <div class="card-body">
+                <span class="badge-video mb-2 d-inline-block">🎬 Video</span>
+                <h5 class="card-title mt-2">{{ post.title }}</h5>
+                {% if post.description %}<p class="card-text">{{ post.description }}</p>{% endif %}
+              </div>
+              <div class="card-footer">{{ post.created_at.strftime('%d %B %Y') }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state"><p>No videos posted yet. 🎬</p></div>
+      {% endif %}
+    </div>
+
+    <!-- PICTURES -->
+    <div class="tab-pane fade" id="tab-pictures">
+      {% if pictures %}
+        <div class="row g-4">
+          {% for post in pictures %}
+            {% for m in post.media %}
+              {% if m.media_type == 'image' %}
+              <div class="col-6 col-md-4 col-lg-3">
+                <div class="content-card card" style="cursor:zoom-in;" onclick="openLightbox('{{ m.url }}')">
+                  <img src="{{ m.url }}" class="card-img-top" alt="{{ post.title }}" style="height:180px;object-fit:cover;">
+                  <div class="card-body py-2">
+                    <p class="mb-0 small fw-semibold">{{ post.title }}</p>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state"><p>No pictures posted yet. 🖼</p></div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <span class="close-lb" onclick="closeLightbox()">×</span>
+  <img id="lightbox-img" src="" alt="Full size">
+</div>
+
+<script>
+function openLightbox(url) {
+  document.getElementById("lightbox-img").src = url;
+  document.getElementById("lightbox").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("open");
+  document.body.style.overflow = "";
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+</script>
+{% endblock %}

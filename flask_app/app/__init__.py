@@ -17,7 +17,7 @@ def create_app():
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
-    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+    app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
     # Auto-logout after 6 hours of inactivity
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=6)
     app.config["REMEMBER_COOKIE_DURATION"]   = timedelta(hours=6)
@@ -39,7 +39,8 @@ def create_app():
                              ChatSession, ChatMessage,
                              HumanOrder, HumanOrderMessage, HumanOrderFile,
                              JobDocument, OAuth,
-                             Subscription, DailyUsage)
+                             Subscription, DailyUsage,
+                             Post, PostMedia)
         db.create_all()
         # Add identity columns if upgrading from an older schema
         from sqlalchemy import inspect as sa_inspect, text

@@ -51,7 +51,7 @@ def create_subscription_checkout(
                     "name": desc,
                     "description": (
                         f"Access to {plan_label} plan features for {period_label}. "
-                        f"Includes humanizer & AI checker tools."
+                        f"Includes the AI checker tool."
                     ),
                 },
             },

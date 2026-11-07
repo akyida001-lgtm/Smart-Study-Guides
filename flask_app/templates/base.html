@@ -6,7 +6,7 @@
   <title>{% block title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}</title>
 
   <!-- ── SEO Meta ── -->
-  <meta name="description" content="{% block meta_description %}Smart Study Guides generates polished, properly-cited academic assignments in minutes. Real research, humanized text, undetectable AI score — delivered as a Word document.{% endblock %}" />
+  <meta name="description" content="{% block meta_description %}Smart Study Guides generates polished, properly-cited academic assignments in minutes. Real research and proper citations — delivered as a Word document.{% endblock %}" />
   <meta name="keywords" content="{% block meta_keywords %}AI assignment writer, academic writing AI, essay generator, homework help, plagiarism-free assignments, AI essay writer, college assignment help, academic paper generator{% endblock %}" />
   <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}" />
   <link rel="canonical" href="{% block canonical %}https://smart-study-guides.com{{ request.path }}{% endblock %}" />
@@ -21,7 +21,7 @@
   <meta property="og:type"        content="website" />
   <meta property="og:site_name"   content="Smart Study Guides" />
   <meta property="og:title"       content="{% block og_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}" />
-  <meta property="og:description" content="{% block og_description %}Generate polished, properly-cited academic assignments in minutes. Real research, humanized text, 0% AI detection score — delivered as a Word document.{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}Generate polished, properly-cited academic assignments in minutes. Real research and proper citations — delivered as a Word document.{% endblock %}" />
   <meta property="og:url"         content="https://smart-study-guides.com{{ request.path }}" />
   <meta property="og:image"       content="{% block og_image %}https://smart-study-guides.com/static/img/og-cover.jpg{% endblock %}" />
   <meta property="og:image:width"  content="630" />
@@ -31,7 +31,7 @@
   <!-- ── Twitter / X Card ── -->
   <meta name="twitter:card"        content="summary_large_image" />
   <meta name="twitter:title"       content="{% block twitter_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}" />
-  <meta name="twitter:description" content="{% block twitter_description %}Generate polished academic assignments in minutes. Real research, humanized, plagiarism-clean — delivered as .docx.{% endblock %}" />
+  <meta name="twitter:description" content="{% block twitter_description %}Generate polished academic assignments in minutes. Real research, plagiarism-clean — delivered as .docx.{% endblock %}" />
   <meta name="twitter:image"       content="{% block twitter_image %}https://smart-study-guides.com/static/img/og-cover.jpg{% endblock %}" />
 
   <!-- ── Extra head (JSON-LD etc) ── -->
@@ -158,9 +158,6 @@
 
       <div class="snav-divider"></div>
 
-      <a class="snav-item {% if request.endpoint == 'main.humanize_tool' %}active{% endif %}" href="{{ url_for('main.humanize_tool') }}">
-        <span class="snav-icon">✍️</span> Humanize Text
-      </a>
       <a class="snav-item {% if request.endpoint == 'main.ai_checker' %}active{% endif %}" href="{{ url_for('main.ai_checker') }}">
         <span class="snav-icon">🤖</span> AI Checker
       </a>
@@ -332,7 +329,7 @@
       <a class="sf-logo" href="{{ url_for('main.index') }}">
         Smart Study<span class="sf-logo-dot">.</span>Guides
       </a>
-      <p class="sf-tagline">AI-powered academic assignments.<br>Real research. Humanized. Undetectable.</p>
+      <p class="sf-tagline">AI-powered academic assignments.<br>Real research. Properly cited.</p>
       <div class="sf-socials">
         <a class="sf-social-link" href="mailto:pro@smart-study-guides.com" aria-label="Email us">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
@@ -354,7 +351,6 @@
       </div>
       <div class="sf-links-col">
         <div class="sf-links-heading">Tools</div>
-        <a href="{{ url_for('main.humanize_tool') }}">Humanize Text</a>
         <a href="{{ url_for('main.ai_checker') }}">AI Checker</a>
         <a href="{{ url_for('main.plagiarism_checker') }}">Plagiarism Check</a>
         <a href="{{ url_for('main.post_human_assignment') }}">Human Writer</a>

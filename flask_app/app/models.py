@@ -77,6 +77,8 @@ class Assignment(db.Model):
 
     assignment_type = db.Column(db.String(20), default="standard", nullable=False)
     instruction_image_url = db.Column(db.String(1000), nullable=True)
+    # Legacy columns from the removed Humanizer feature. Unused, but kept so existing
+    # databases (where these are NOT NULL) keep working. Safe to drop with a real migration.
     humanize_style = db.Column(db.String(30), default="academic", nullable=False)
     humanize_model = db.Column(db.String(20), default="advanced", nullable=False)
     paper_text = db.Column(db.Text, nullable=True)

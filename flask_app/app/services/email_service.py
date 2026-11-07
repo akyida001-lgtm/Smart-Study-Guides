@@ -65,7 +65,7 @@ def send_welcome_email(email: str, name: str):
         Your account is ready. Subscribe to a plan to start generating polished, properly-cited academic assignments in minutes — delivered as a Word document.
       </p>
       <p style="color:#cbd5e1;line-height:1.6;margin:0 0 24px;">
-        Plans start at <strong style="color:#ffffff;">$27.99/month</strong> and include unlimited humanization, AI detection, and plagiarism checking.
+        The <strong style="color:#ffffff;">Weekly Pass</strong> is <strong style="color:#ffffff;">$25 for 7 days</strong> and includes AI detection and plagiarism checking.
       </p>
       <p style="margin:0 0 24px;">
         <a href="{SITE_URL}/pricing" style="display:inline-block;background:#00bcd4;color:#0b1733;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">View Plans &amp; Pricing →</a>
@@ -184,7 +184,7 @@ def send_assignment_ready_email(email: str, name: str, topic: str, download_url:
       <p style="color:#94a3b8;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;">{BRAND_NAME}</p>
       <h1 style="color:#ffffff;margin:0 0 16px;">Your assignment is ready.</h1>
       <p style="color:#cbd5e1;line-height:1.6;margin:0 0 24px;">
-        Hi {name}, your paper on <strong>"{topic}"</strong> has finished generating and passed all humanization checks.
+        Hi {name}, your paper on <strong>"{topic}"</strong> has finished generating.
       </p>
       <p style="margin:0 0 24px;">
         <a href="{download_url}" style="display:inline-block;background:#00bcd4;color:#0b1733;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Download .docx →</a>

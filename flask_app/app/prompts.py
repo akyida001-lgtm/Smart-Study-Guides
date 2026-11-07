@@ -168,7 +168,7 @@ MARKING_PROMPT = """You are an academic assessor. Your task is to mark the stude
 
 CRITICAL RULES:
 - Mark ONLY based on criteria in the rubric — nothing else
-- Do NOT penalise for grammar, spelling, or sentence flow — the paper was machine-humanized so grammar may be imperfect; this is expected and must be ignored entirely
+- Do NOT penalise for grammar, spelling, or sentence flow — assess only against the rubric criteria
 - Be fair, specific, and constructive in feedback
 - If the rubric provides a points/marks allocation, use it exactly
 - If a criterion is not addressed in the paper, note it clearly

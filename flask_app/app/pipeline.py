@@ -6,16 +6,13 @@ from flask import current_app
 
 from .models import db, Assignment, User, PipelineLog
 from .prompts import GENERATION_PROMPT, FORMATTING_PROMPT, _STYLE_RULES, _DEFAULT_STYLE_RULE
-from .services import openai_service, ryter_service, supabase_storage, email_service
+from .services import openai_service, supabase_storage, email_service
 from .services.openai_service import format_source_with_ai
 from .services.docx_builder import build_docx
 
 
 PIPELINE_STEPS = [
     ("Generating draft", 10),
-    ("Humanizing", 25),
-    ("Checking AI score", 40),
-    ("Re-humanizing", 55),
     ("Formatting", 75),
     ("Building document", 85),
     ("Uploading", 92),
@@ -99,30 +96,12 @@ def _run_open_pipeline(app, a, user):
             paper = openai_service.chat(prompt, max_tokens=8000)
         _log(a.id, "Generating (open)", "done", f"{len(paper)} chars")
 
-        # Step 2: Humanize loop with Ryter Pro
-        humanized = paper
-        ai_score  = 100.0
-        for attempt in range(1, 6):
-            _set_progress(a, f"Humanizing (attempt {attempt})", 20 + attempt * 8)
-            _log(a.id, "Humanizing", "start", f"attempt {attempt}")
-            humanized = ryter_service.humanize(
-                humanized,
-                style=getattr(a, "humanize_style", None) or "academic",
-                model=getattr(a, "humanize_model", None) or "premium",
-            )
-            _log(a.id, "Humanizing", "done", f"{len(humanized)} chars")
-            _set_progress(a, f"Checking AI score (attempt {attempt})", 30 + attempt * 8)
-            ai_score = ryter_service.detect_ai_score(humanized)
-            _log(a.id, "AI detection", "done", f"score={ai_score}")
-            if ai_score <= 0:
-                break
-
         # Step 3: Light formatting (no citations)
         _set_progress(a, "Formatting", 75)
         simple_fmt = (
             "You are an academic editor. Lightly format the text below into clean, well-structured paragraphs. "
             "Do NOT add citations or a reference list. Preserve all content. Output only the formatted text.\n\n"
-            + humanized
+            + paper
         )
         final_text = openai_service.chat(simple_fmt, max_tokens=8000)
         a.paper_text = final_text
@@ -241,33 +220,10 @@ def run_pipeline(app, assignment_id: int):
             paper = openai_service.chat(gen_prompt, max_tokens=8000)
             _log(a.id, "Generating draft", "done", f"{len(paper)} chars")
 
-            # Steps 2 + 3: Humanize and check AI score, repeat up to 5 times
-            humanized = paper
-            ai_score = 100.0
-            attempts = 0
-            max_attempts = 5
-            while attempts < max_attempts:
-                attempts += 1
-                _set_progress(a, f"Humanizing (attempt {attempts})", 25 + attempts * 4)
-                _log(a.id, "Humanizing", "start", f"attempt {attempts}")
-                humanized = ryter_service.humanize(
-                    humanized,
-                    style=getattr(a, "humanize_style", None) or "academic",
-                    model=getattr(a, "humanize_model", None) or "premium",
-                )
-                _log(a.id, "Humanizing", "done", f"{len(humanized)} chars")
-
-                _set_progress(a, f"Checking AI score (attempt {attempts})", 40 + attempts * 4)
-                _log(a.id, "AI detection", "start", f"attempt {attempts}")
-                ai_score = ryter_service.detect_ai_score(humanized)
-                _log(a.id, "AI detection", "done", f"score={ai_score}")
-                if ai_score <= 0:
-                    break
-
             # Step 5: Formatting
             _set_progress(a, "Formatting", 75)
             _log(a.id, "Formatting", "start")
-            fmt_prompt = FORMATTING_PROMPT.replace("[PAPER]", humanized)
+            fmt_prompt = FORMATTING_PROMPT.replace("[PAPER]", paper)
             final_text = openai_service.chat(fmt_prompt, max_tokens=8000)
             _log(a.id, "Formatting", "done", f"{len(final_text)} chars")
 
@@ -338,7 +294,7 @@ def start_pipeline(app, assignment_id: int):
 # ─────────────────────────────────────────────────────────────────────────────
 # Finalization pipeline — runs AFTER the draft has already been written live.
 # Input: assignment.paper_text is set, status is "draft_ready".
-# Steps: Humanize → Format → DOCX → Upload → Email → Credits → Done
+# Steps: Format → DOCX → Upload → Email → Credits → Done
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_finalize_pipeline(app, assignment_id: int):
@@ -355,30 +311,10 @@ def run_finalize_pipeline(app, assignment_id: int):
             if not paper:
                 raise RuntimeError("No draft text to finalize.")
 
-            # Step 1: Humanize loop
-            humanized = paper
-            ai_score = 100.0
-            for attempt in range(1, 6):
-                _set_progress(a, f"Humanizing (attempt {attempt})", 10 + attempt * 10)
-                _log(a.id, "Humanizing", "start", f"attempt {attempt}")
-                humanized = ryter_service.humanize(
-                    humanized,
-                    style=getattr(a, "humanize_style", None) or "academic",
-                    model=getattr(a, "humanize_model", None) or "premium",
-                )
-                _log(a.id, "Humanizing", "done", f"{len(humanized)} chars")
-
-                _set_progress(a, f"Checking AI score (attempt {attempt})", 20 + attempt * 10)
-                _log(a.id, "AI detection", "start", f"attempt {attempt}")
-                ai_score = ryter_service.detect_ai_score(humanized)
-                _log(a.id, "AI detection", "done", f"score={ai_score}")
-                if ai_score <= 0:
-                    break
-
             # Step 2: Format
             _set_progress(a, "Formatting", 75)
             _log(a.id, "Formatting", "start")
-            fmt_prompt = FORMATTING_PROMPT.replace("[PAPER]", humanized)
+            fmt_prompt = FORMATTING_PROMPT.replace("[PAPER]", paper)
             final_text = openai_service.chat(fmt_prompt, max_tokens=8000)
             _log(a.id, "Formatting", "done", f"{len(final_text)} chars")
 

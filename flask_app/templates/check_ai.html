@@ -53,12 +53,6 @@
         </div>
       </div>
 
-      <!-- Humanize CTA -->
-      <div id="humanize-cta" class="checker-cta" style="display:none;">
-        <p>⚠️ High AI score detected. Want to fix it?</p>
-        <button class="btn accent" onclick="sendToHumanizer()">✍️ Humanize this text</button>
-      </div>
-
       <!-- Download report -->
       <div id="download-row" class="report-download-row" style="display:none;">
         <button class="btn report-dl-btn" id="dl-ai-btn" onclick="downloadAiPdf()">
@@ -127,7 +121,7 @@ function runCheck(){
 
 function verdictInfo(ai){
   if (ai >= 70) return { icon:'🚨', text:'High — likely to be flagged',   cls:'vd-danger' };
-  if (ai >= 40) return { icon:'⚠️',  text:'Moderate — consider humanizing', cls:'vd-warn'   };
+  if (ai >= 40) return { icon:'⚠️',  text:'Moderate — review before submitting', cls:'vd-warn'   };
   return          { icon:'✅', text:'Low — looks human-written',         cls:'vd-safe'   };
 }
 
@@ -153,16 +147,9 @@ function showResults(data){
 
   document.getElementById('aichk-words').textContent = words + ' words analyzed';
 
-  // Humanize CTA
-  document.getElementById('humanize-cta').style.display = ai >= 40 ? 'block' : 'none';
   document.getElementById('results-section').style.display = 'block';
   document.getElementById('download-row').style.display = 'block';
   lastAiResult = data;
-}
-
-function sendToHumanizer(){
-  localStorage.setItem('ssg_ai_check_text', lastText);
-  window.location.href = '/humanize';
 }
 
 function downloadAiPdf(){

@@ -156,7 +156,7 @@ def build_ai_report(
     if ai_score >= 70:
         vtext, vcolor = "🚨  HIGH — Likely to be flagged as AI-generated", RED
     elif ai_score >= 40:
-        vtext, vcolor = "⚠️  MODERATE — Consider humanizing before submission", YELLOW
+        vtext, vcolor = "⚠️  MODERATE — Consider revising before submission", YELLOW
     else:
         vtext, vcolor = "✅  LOW — Text appears to be human-written", GREEN
 

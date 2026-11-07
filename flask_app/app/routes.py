@@ -34,7 +34,6 @@ from .services import supabase_storage
 
 # Temporary in-memory queue for live DOCX conversion texts (keyed by assignment id)
 _docx_queue:        dict = {}   # {aid: job_meta}
-_humanize_jobs:     dict = {}   # {aid: job_state}
 _docx_results:      dict = {}   # {aid: job_state}
 _plagiarism_jobs:   dict = {}   # {job_id: job_state}
 
@@ -298,7 +297,6 @@ def register_routes(app):
         lines = [
             "User-agent: *",
             "Allow: /",
-            "Allow: /humanize",
             "Allow: /check-ai",
             "Allow: /check-plagiarism",
             "Allow: /pricing",
@@ -330,7 +328,6 @@ def register_routes(app):
         pages = [
             ("https://smart-study-guides.com/",                 "1.0",  "weekly"),
             ("https://smart-study-guides.com/pricing",          "0.9",  "weekly"),
-            ("https://smart-study-guides.com/humanize",         "0.85", "monthly"),
             ("https://smart-study-guides.com/check-ai",         "0.85", "monthly"),
             ("https://smart-study-guides.com/check-plagiarism", "0.85", "monthly"),
             ("https://smart-study-guides.com/help",             "0.7",  "monthly"),
@@ -793,14 +790,6 @@ def register_routes(app):
                     + tail, "error"
                 )
                 return redirect(url_for("main.pricing"))
-        # Save humanization preferences chosen on preview step
-        VALID_STYLES = {"general","more_human","high_quality","academic","simplify","formal","informal","blog"}
-        VALID_MODELS = {"basic","advanced","aggressive","beta"}
-        h_style = request.form.get("humanize_style", "academic").lower().replace(" ", "_")
-        h_model = request.form.get("humanize_model", "advanced").lower()
-        a.humanize_style = h_style if h_style in VALID_STYLES else "academic"
-        a.humanize_model = h_model if h_model in VALID_MODELS else "advanced"
-
         a.status = "draft_pending"
         a.progress_step = "Queued"
         a.progress_percent = 0
@@ -1027,7 +1016,7 @@ def register_routes(app):
     @main.route("/assignments/<int:aid>/finalize", methods=["POST"])
     @require_login
     def finalize_assignment(aid):
-        """Kick off humanize → format → DOCX → email pipeline after live draft is shown."""
+        """Kick off format → DOCX → email pipeline after the live draft is shown."""
         a = Assignment.query.get_or_404(aid)
         if a.user_id != current_user.id:
             return "Forbidden", 403
@@ -1064,157 +1053,6 @@ def register_routes(app):
             "docx_url": a.docx_url,
             "error": a.error_message,
         })
-
-    # ---------- Live Humanize ----------
-
-    @main.route("/assignments/<int:aid>/humanize-live")
-    @require_login
-    def assignment_humanize_live(aid):
-        a = Assignment.query.get_or_404(aid)
-        if a.user_id != current_user.id:
-            return "Forbidden", 403
-        if not a.paper_text:
-            flash("No draft to humanize — please generate first.", "error")
-            return redirect(url_for("main.my_assignments"))
-        return render_template("humanize_live.html", a=a, user=current_user)
-
-    # ── Polling-based humanize (replaces SSE stream) ──────────────────────────
-
-    @main.route("/api/assignments/<int:aid>/start-humanize", methods=["POST"])
-    @require_login
-    def api_start_humanize(aid):
-        a = Assignment.query.get_or_404(aid)
-        if a.user_id != current_user.id:
-            return jsonify({'error': 'Forbidden'}), 403
-
-        # Don't double-start — but allow restart if job is stale (> 6 minutes old)
-        import time as _time
-        existing = _humanize_jobs.get(aid, {})
-        if existing.get('status') == 'running':
-            age = _time.time() - existing.get('started_at', 0)
-            if age < 360:   # still fresh — don't restart
-                return jsonify({'ok': True, 'already_running': True})
-            # stale — fall through and restart
-
-        paper_text = a.paper_text or ""
-        _humanize_jobs[aid] = {'status': 'running', 'phase': 'humanizing',
-                                'started_at': _time.time()}
-
-        def _run():
-            try:
-                humanized = ryter_service.humanize(paper_text)
-                _humanize_jobs[aid]['humanized'] = humanized
-                _humanize_jobs[aid]['phase']     = 'detecting'
-                ai_score    = round(min(100.0, ryter_service.detect_ai_score(humanized)), 1)
-                human_score = round(max(0.0, 100.0 - ai_score), 1)
-                _humanize_jobs[aid].update({
-                    'status':      'done',
-                    'phase':       'done',
-                    'ai_score':    ai_score,
-                    'human_score': human_score,
-                })
-            except Exception as exc:
-                _humanize_jobs[aid].update({'status': 'error', 'error': str(exc)[:300]})
-
-        threading.Thread(target=_run, daemon=True).start()
-        return jsonify({'ok': True})
-
-    @main.route("/api/assignments/<int:aid>/poll-humanize")
-    @require_login
-    def api_poll_humanize(aid):
-        a = Assignment.query.get_or_404(aid)
-        if a.user_id != current_user.id:
-            return jsonify({'error': 'Forbidden'}), 403
-        job = _humanize_jobs.get(aid)
-        if not job:
-            return jsonify({'status': 'not_started'})
-        return jsonify(job)
-
-    @main.route("/api/assignments/<int:aid>/stream-humanize")
-    @require_login
-    def api_stream_humanize(aid):
-        import json as _json
-        from flask import stream_with_context
-        a = Assignment.query.get_or_404(aid)
-        if a.user_id != current_user.id:
-            return "Forbidden", 403
-
-        paper_text = a.paper_text or ""
-        hum_style  = a.humanize_style  if hasattr(a, 'humanize_style')  else "academic"
-        hum_model  = a.humanize_model  if hasattr(a, 'humanize_model')  else "advanced"
-
-        def generate():
-            import json as _j
-            try:
-                yield f"data: {_j.dumps({'phase': 'start'})}\n\n"
-
-                # ── Step 1: Stream humanization chunks from Ryter ──────────────
-                accumulated = []
-                chunk_buf   = ""
-                MIN_CHUNK   = 8   # send to browser every N characters
-
-                yield f"data: {_j.dumps({'phase': 'humanizing'})}\n\n"
-
-                try:
-                    for chunk in ryter_service.humanize_stream(
-                            paper_text, hum_style, hum_model):
-                        accumulated.append(chunk)
-                        chunk_buf += chunk
-                        if len(chunk_buf) >= MIN_CHUNK:
-                            yield f"data: {_j.dumps({'phase': 'chunk', 'text': chunk_buf})}\n\n"
-                            chunk_buf = ""
-                    # flush remaining buffer
-                    if chunk_buf:
-                        yield f"data: {_j.dumps({'phase': 'chunk', 'text': chunk_buf})}\n\n"
-
-                except Exception as exc:
-                    yield f"data: {_j.dumps({'error': str(exc)[:300]})}\n\n"
-                    return
-
-                humanized = "".join(accumulated)
-                if not humanized.strip():
-                    yield f"data: {_j.dumps({'error': 'Ryter returned empty text — please retry.'})}\n\n"
-                    return
-
-                # Signal humanization complete
-                yield f"data: {_j.dumps({'phase': 'humanized'})}\n\n"
-
-                # ── Step 2: AI detection (runs in background, pings while waiting) ──
-                yield f"data: {_j.dumps({'phase': 'detecting'})}\n\n"
-
-                result_q = _queue.Queue()
-                def _run_detect():
-                    try:
-                        result_q.put(('ok', ryter_service.detect_ai_score(humanized)))
-                    except Exception as exc:
-                        result_q.put(('err', str(exc)))
-
-                threading.Thread(target=_run_detect, daemon=True).start()
-
-                while True:
-                    try:
-                        status, value = result_q.get(timeout=2)
-                        break
-                    except _queue.Empty:
-                        yield ": ping\n\n"
-
-                if status == 'err':
-                    # Detection failed but we still have humanized text — finish gracefully
-                    ai_score, human_score = 15.0, 85.0
-                else:
-                    ai_score    = round(min(100.0, float(value)), 1)
-                    human_score = round(max(0.0, 100.0 - ai_score), 1)
-
-                yield f"data: {_j.dumps({'phase': 'done', 'ai_score': ai_score, 'human_score': human_score})}\n\n"
-
-            except Exception as e:
-                yield f"data: {_j.dumps({'error': str(e)[:300]})}\n\n"
-
-        return Response(
-            stream_with_context(generate()),
-            mimetype="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
 
     # ---------- Live DOCX Conversion ----------
 
@@ -1599,68 +1437,21 @@ def register_routes(app):
             headers={"Content-Disposition": "attachment; filename=transactions.csv"},
         )
 
-    # ---------- Humanize Tool ----------
+    # ---------- Shared text-tool helpers ----------
 
-    HUMANIZE_COST_PER_WORD = 1   # 1 credit per word, min 200 max 400
     AI_CHECK_COST_PER_300 = 100  # 100 credits per 300 words, min 100
     MAX_TOOL_WORDS = 3000
 
     def _word_count(text: str) -> int:
         return len(text.split())
 
-    def _humanize_cost(words: int) -> int:
-        return max(200, min(400, words))
-
     def _ai_check_cost(words: int) -> int:
         return max(100, math.ceil(words / 300) * 100)
 
     @main.route("/humanize", methods=["GET", "POST"])
-    def humanize_tool():
-        if request.method == "GET":
-            if not current_user.is_authenticated:
-                return render_template("landing_humanize.html")
-            return render_template("humanize.html", user=current_user)
-        # POST — require auth
-        if not current_user.is_authenticated:
-            return jsonify({"error": "Please log in to use the Humanizer."}), 401
-        if not getattr(current_user, "email_verified", True):
-            return jsonify({"error": "Please verify your email first."}), 403
-        if not getattr(current_user, "id_hash", None):
-            return jsonify({"error": "Please complete your profile setup."}), 403
-
-        text = (request.form.get("text") or "").strip()
-        tone = request.form.get("tone", "academic")
-
-        if not text:
-            return jsonify({"error": "Please paste some text first."}), 400
-
-        words = _word_count(text)
-        if words > MAX_TOOL_WORDS:
-            return jsonify({"error": f"Text is too long ({words} words). Maximum is {MAX_TOOL_WORDS} words."}), 400
-        if words < 10:
-            return jsonify({"error": "Text is too short. Please paste at least 10 words."}), 400
-
-        sub = _get_active_subscription(current_user.id)
-        if not sub and not _is_owner(current_user):
-            return jsonify({"error": "An active subscription is required to use the Humanizer."}), 402
-
-        try:
-            # Prepend tone instruction if needed
-            input_text = text
-            if tone == "formal":
-                input_text = "[Rewrite in a formal academic tone]\n\n" + text
-            elif tone == "simple":
-                input_text = "[Rewrite in simple, clear language]\n\n" + text
-
-            result = ryter_service.humanize(input_text)
-        except Exception as e:
-            current_app.logger.exception("Humanize tool failed")
-            return jsonify({"error": f"Humanizer API error: {e}"}), 500
-
-        return jsonify({
-            "result": result,
-            "words_in": words,
-        })
+    def humanize_tool_removed():
+        """The Humanizer was removed. Send old links and bookmarks to the home page."""
+        return redirect(url_for("main.index"), code=301)
 
     # ---------- AI Checker ----------
 
@@ -3854,28 +3645,6 @@ Now write the complete {doc_label} below:
         db.session.commit()
         return jsonify({"ok": True})
 
-    # ── Owner-only: inspect raw Ryter response ───────────────────────────────
-    @main.route("/api/debug/ryter-raw", methods=["POST"])
-    @require_login
-    def debug_ryter_raw():
-        if not _is_owner(current_user):
-            return jsonify({"error": "Forbidden"}), 403
-        import requests as _req
-        text = request.form.get("text", "The impact of climate change on global food security is significant.")
-        api_key = os.environ.get("RYTER_PRO_API_KEY", "")
-        url = "https://api.ryter.pro/api/v1/ai-tools/execute/text-humanize"
-        payload = {"text": text, "style": "academic", "model": "advanced"}
-        try:
-            r = _req.post(url, headers={"x-api-key": api_key, "Content-Type": "application/json"},
-                          json=payload, timeout=90)
-            return jsonify({
-                "status_code": r.status_code,
-                "content_type": r.headers.get("content-type"),
-                "raw_text": r.text[:2000],
-                "parsed_json": r.json() if "application/json" in r.headers.get("content-type","") else None,
-            })
-        except Exception as e:
-            return jsonify({"error": str(e)})
     @main.route("/api/human-orders/<int:oid>/request-revision", methods=["POST"])
     @require_login
     def api_human_order_request_revision(oid):

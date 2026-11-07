@@ -14,7 +14,7 @@
   <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;">
     <div style="flex:1;min-width:200px;">
       <div style="font-size:28px;font-weight:900;color:var(--accent);margin-bottom:4px;">
-        {{ active_sub.plan | capitalize }}
+        {{ active_sub.plan_label }}
       </div>
       <div style="color:var(--slate-500);font-size:14px;margin-bottom:12px;">{{ active_sub.period_label }} subscription</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
@@ -73,19 +73,19 @@
 
 <!-- Plan comparison -->
 <div class="card" style="margin-bottom:18px;">
-  <div class="db-section-label" style="margin-bottom:14px;">Compare Plans</div>
+  <div class="db-section-label" style="margin-bottom:14px;">Weekly Pass</div>
   <div class="pricing-grid-mini">
-    {% for pkey, pval in plans.items() %}
+    {% for pkey, pval in plans.items() if not pval.get('legacy') %}
     <div class="pm-card {% if active_sub and active_sub.plan == pkey %}pm-active{% endif %}">
       <div class="pm-name">{{ pval.name }}</div>
       <div class="pm-limit">
         {% if pval.daily_limit %}{{ pval.daily_limit }} assignments/day{% else %}Unlimited/day{% endif %}
       </div>
-      <div class="pm-price">${{ "%.2f"|format(pval.monthly) }}/mo</div>
+      <div class="pm-price">${{ "%.2f"|format(pval.weekly) }} / 7 days</div>
       {% if active_sub and active_sub.plan == pkey %}
         <div class="pm-current-badge">Current</div>
       {% else %}
-        <a class="btn ghost" style="font-size:12px;padding:6px 12px;" href="{{ url_for('main.pricing') }}">Upgrade</a>
+        <a class="btn ghost" style="font-size:12px;padding:6px 12px;" href="{{ url_for('main.pricing') }}">Buy a pass</a>
       {% endif %}
     </div>
     {% endfor %}

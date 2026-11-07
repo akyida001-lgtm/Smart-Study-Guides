@@ -22,11 +22,13 @@ def create_subscription_checkout(
     s = _s()
 
     period_labels = {
+        "weekly":   "7 Days",
         "monthly":  "1 Month",
         "halfyear": "6 Months",
         "yearly":   "12 Months",
     }
     plan_labels = {
+        "pass":      "Weekly Pass",
         "basic":     "Basic",
         "standard":  "Standard",
         "unlimited": "Unlimited",

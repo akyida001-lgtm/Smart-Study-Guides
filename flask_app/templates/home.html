@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}
-{% block meta_description %}Smart Study Guides writes polished, properly-cited academic assignments in minutes. Real research sources, humanized text, 0% AI detection score — delivered as a Word document. Plans from $27.99/mo.{% endblock %}
+{% block meta_description %}Smart Study Guides writes polished, properly-cited academic assignments in minutes. Real research sources, humanized text, 0% AI detection score — delivered as a Word document. Weekly Pass: $25 for 7 days.{% endblock %}
 {% block og_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}
 {% block og_description %}Get polished, plagiarism-clean academic assignments written by AI — with real citations, humanized text and 0% AI detection. Delivered as a .docx file.{% endblock %}
 {% block extra_head %}
@@ -115,7 +115,7 @@
       "name": "How much does Smart Study Guides cost?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Plans start at $27.99/month for the Basic plan (2 assignments/day), $37.99/month for Standard (4/day), and $57.99/month for Unlimited. 6-month and yearly plans are also available at a discount."
+        "text": "The Weekly Pass costs $25 for 7 days of access to short assignments such as essays, discussion posts and presentations. There is no auto-renewal, and theses, dissertations and other long projects are not supported."
       }
     },
     {
@@ -162,7 +162,7 @@
       {% endif %}
     </div>
     {% if not (user and user.is_authenticated) %}
-      <p class="landing-note">Plans from $27.99/mo — Basic, Standard, or Unlimited. Cancel anytime.</p>
+      <p class="landing-note">Weekly Pass — $25 for 7 days. No auto-renewal.</p>
     {% endif %}
   </div>
 </section>
@@ -234,8 +234,8 @@
 </section>
 
 <section class="landing-pricing">
-  <h2>Simple subscription pricing</h2>
-  <p class="landing-pricing-sub">Basic $27.99/mo · Standard $37.99/mo · Unlimited $57.99/mo — half-year and yearly plans also available.</p>
+  <h2>Simple weekly pricing</h2>
+  <p class="landing-pricing-sub">$25 for a 7-day pass — essays, discussion posts, presentations and other short assignments.</p>
   {% if not (user and user.is_authenticated) %}
     <a class="btn accent" href="{{ url_for('auth.signup') }}">Get started</a>
   {% else %}
@@ -248,7 +248,7 @@
   <button class="welcome-popup-close" aria-label="Close" onclick="closeWelcomePopup()">×</button>
   <div class="welcome-popup-emoji">🎁</div>
   <h4>Get started today</h4>
-  <p>Plans from $27.99/mo. 10% off your first subscription. No hidden fees.</p>
+  <p>$25 for a 7-day pass. 10% off your first pass. No hidden fees.</p>
   <a class="btn accent full" href="{{ url_for('auth.signup') }}">Create free account</a>
 </div>
 <script>

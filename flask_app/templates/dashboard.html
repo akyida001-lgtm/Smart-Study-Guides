@@ -13,7 +13,7 @@
     {% if active_sub %}
       <div class="db-section-label">Your Plan</div>
       <div class="db-balance-amount plan-name-{{ active_sub.plan }}">
-        {{ active_sub.plan | capitalize }}
+        {{ active_sub.plan_label }}
         <span>{{ plan_info.get('desc', '') }}</span>
       </div>
       <div class="db-balance-sub">

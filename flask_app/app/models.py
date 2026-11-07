@@ -128,8 +128,8 @@ class Subscription(db.Model):
     __tablename__ = "subscriptions"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String, db.ForeignKey("users.id"), nullable=False, index=True)
-    plan = db.Column(db.String(20), nullable=False)           # basic / standard / unlimited
-    billing_period = db.Column(db.String(20), nullable=False) # monthly / halfyear / yearly
+    plan = db.Column(db.String(20), nullable=False)           # pass / basic / standard / unlimited
+    billing_period = db.Column(db.String(20), nullable=False) # weekly / monthly / halfyear / yearly
     status = db.Column(db.String(20), default="pending", nullable=False)  # pending / active / expired / cancelled
     start_date = db.Column(db.DateTime, nullable=True)
     end_date = db.Column(db.DateTime, nullable=True)
@@ -141,11 +141,13 @@ class Subscription(db.Model):
     user = db.relationship("User", backref="subscriptions")
 
     PLAN_LABELS = {
+        "pass": "Weekly Pass",
         "basic": "Basic",
         "standard": "Standard",
         "unlimited": "Unlimited",
     }
     PERIOD_LABELS = {
+        "weekly": "7 Days",
         "monthly": "Monthly",
         "halfyear": "6 Months",
         "yearly": "Yearly",

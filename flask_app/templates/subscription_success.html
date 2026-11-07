@@ -9,7 +9,7 @@
       <h1 style="margin:0 0 8px;font-size:26px;color:var(--navy-900);">Subscription Activated!</h1>
       {% if sub %}
         <p style="color:var(--slate-500);font-size:15px;margin:0 0 24px;line-height:1.6;">
-          Your <strong>{{ sub.plan | capitalize }}</strong> plan is now active.
+          Your <strong>{{ sub.plan_label }}</strong> is now active.
           {% if sub.end_date %}
             It runs until <strong>{{ sub.end_date.strftime('%d %b %Y') }}</strong>.
           {% endif %}
@@ -27,6 +27,7 @@
             </li>
             <li>Humanizer tool — unlimited use</li>
             <li>AI Checker tool — unlimited use</li>
+            <li>Short assignments up to 5 pages — essays, discussions, presentations</li>
             <li>All citation styles supported</li>
             <li>Real academic sources included</li>
           </ul>

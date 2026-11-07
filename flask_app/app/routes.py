@@ -1,5 +1,6 @@
 """All HTTP routes."""
 import os
+import re
 import uuid
 import threading
 import queue as _queue
@@ -119,25 +120,55 @@ def _notify(user_id: str, ntype: str, title: str, body: str):
 WORDS_PER_PAGE = 265
 
 # ── Subscription plans ─────────────────────────────────────────────────────────
+# Current offer: one 7-day Weekly Pass. The monthly / 6-month / yearly plans are
+# kept as "legacy" so existing subscribers keep working, but can no longer be bought.
+WEEKLY_PASS_PRICE_USD   = 25.00
+WEEKLY_PASS_DAILY_LIMIT = 3     # short assignments per day while the pass is active
+
 PLANS = {
+    "pass": {
+        "name": "Weekly Pass", "daily_limit": WEEKLY_PASS_DAILY_LIMIT,
+        "weekly": WEEKLY_PASS_PRICE_USD,
+        "desc": f"{WEEKLY_PASS_DAILY_LIMIT} short assignments per day for 7 days",
+    },
     "basic": {
-        "name": "Basic", "daily_limit": 2,
+        "name": "Basic", "daily_limit": 2, "legacy": True,
         "monthly": 27.99, "halfyear": 139.99, "yearly": 249.99,
         "desc": "2 AI assignments per day",
     },
     "standard": {
-        "name": "Standard", "daily_limit": 4,
+        "name": "Standard", "daily_limit": 4, "legacy": True,
         "monthly": 37.99, "halfyear": 189.99, "yearly": 329.99,
         "desc": "4 AI assignments per day",
     },
     "unlimited": {
-        "name": "Unlimited", "daily_limit": None,
+        "name": "Unlimited", "daily_limit": None, "legacy": True,
         "monthly": 57.99, "halfyear": 289.99, "yearly": 499.99,
         "desc": "Unlimited AI assignments",
     },
 }
 
-PERIOD_MONTHS = {"monthly": 1, "halfyear": 6, "yearly": 12}
+# Length of each billing period in days (legacy periods keep their old lengths).
+PERIOD_DAYS = {"weekly": 7, "monthly": 30, "halfyear": 180, "yearly": 360}
+
+# The pass is for short work: essays, discussion posts, presentations, ordinary
+# assignments. Long projects are not supported. (Paid assignments are also capped
+# at 5 pages in new_assignment.)
+_LONG_PROJECT_RE = re.compile(
+    r"\b("
+    r"dissertations?|capstone"
+    r"|(?:master'?s?|masters|phd|ph\.d\.?|doctoral|doctorate|bachelor'?s?|honou?rs|"
+    r"undergraduate|graduate|final[- ]year|senior)\s+(?:thesis|theses|project)"
+    r"|thesis\s+(?:proposal|chapter|paper|project|defen[cs]e)"
+    r"|(?:my|full|whole|entire)\s+thesis\b(?!\s+statement)"
+    r"|final[- ]year\s+project"
+    r")\b",
+    re.IGNORECASE,
+)
+
+def _looks_like_long_project(text):
+    """True if the topic/instructions describe a thesis, dissertation or similar."""
+    return bool(text and _LONG_PROJECT_RE.search(text))
 
 NEW_VISITOR_DISCOUNT = 10   # % off first subscription
 REFERRAL_DISCOUNT    = 10   # % off if user was referred
@@ -171,6 +202,26 @@ def _get_active_subscription(user_id):
         .order_by(Subscription.end_date.desc())
         .first()
     )
+
+
+def _activate_subscription(sub):
+    """Mark a paid subscription active and set its start/end dates.
+
+    If the user still has time left on another active subscription, the new one
+    starts when that one ends, so buying early never wastes paid days.
+    """
+    now = datetime.utcnow()
+    latest_end = (
+        db.session.query(db.func.max(Subscription.end_date))
+        .filter(Subscription.user_id == sub.user_id,
+                Subscription.status == "active",
+                Subscription.id != sub.id)
+        .scalar()
+    )
+    start = latest_end if latest_end and latest_end > now else now
+    sub.status     = "active"
+    sub.start_date = start
+    sub.end_date   = start + timedelta(days=PERIOD_DAYS.get(sub.billing_period, 30))
 
 
 def _get_today_usage(user_id):
@@ -383,6 +434,14 @@ def register_routes(app):
 
             if not topic:
                 flash("Please enter a topic.", "error")
+                return redirect(url_for("main.new_assignment"))
+
+            if not _is_owner(current_user) and _looks_like_long_project(topic):
+                flash(
+                    "Smart Study Guides is built for short work: essays, discussion posts, "
+                    "presentations and similar assignments. Theses, dissertations and other "
+                    "long projects aren't supported.", "error"
+                )
                 return redirect(url_for("main.new_assignment"))
 
             word_count = pages * WORDS_PER_PAGE
@@ -727,9 +786,11 @@ def register_routes(app):
                 return redirect(url_for("main.pricing"))
             else:
                 plan_name = PLANS.get(sub.plan, {}).get("name", "your")
+                tail = ("Come back tomorrow." if sub.plan == "pass"
+                        else "Come back tomorrow or upgrade your plan.")
                 flash(
                     f"You've reached your {daily_limit} assignment/day limit on the {plan_name} plan. "
-                    "Come back tomorrow or upgrade your plan.", "error"
+                    + tail, "error"
                 )
                 return redirect(url_for("main.pricing"))
         # Save humanization preferences chosen on preview step
@@ -1938,14 +1999,15 @@ def register_routes(app):
         try:
             data           = request.get_json(force=True)
             plan           = data.get("plan", "")
-            billing_period = data.get("billing_period", "monthly")
+            billing_period = data.get("billing_period", "weekly")
 
-            if plan not in PLANS:
+            # Only the current offer can be bought; legacy plans are hidden.
+            if plan not in PLANS or PLANS[plan].get("legacy"):
                 return jsonify({"error": "Invalid plan."}), 400
-            if billing_period not in PERIOD_MONTHS:
+            if billing_period != "weekly":
                 return jsonify({"error": "Invalid billing period."}), 400
 
-            base_price = PLANS[plan][billing_period]
+            base_price = PLANS[plan]["weekly"]
 
             # Compute discount
             has_subscribed_before = Subscription.query.filter_by(user_id=current_user.id).count() > 0
@@ -2016,10 +2078,7 @@ def register_routes(app):
             try:
                 sess = stripe_service.retrieve_session(session_id or sub.stripe_session_id or "")
                 if sess and sess.payment_status == "paid":
-                    months = PERIOD_MONTHS.get(sub.billing_period, 1)
-                    sub.status     = "active"
-                    sub.start_date = datetime.utcnow()
-                    sub.end_date   = datetime.utcnow() + timedelta(days=30 * months)
+                    _activate_subscription(sub)
                     db.session.commit()
                     activated = True
                     plan_label = PLANS.get(sub.plan, {}).get("name", sub.plan)
@@ -2091,10 +2150,7 @@ def register_routes(app):
                 if metadata.get("type") == "subscription":
                     sub = Subscription.query.filter_by(stripe_session_id=session_id).first()
                     if sub and sub.status == "pending":
-                        months = PERIOD_MONTHS.get(sub.billing_period, 1)
-                        sub.status     = "active"
-                        sub.start_date = datetime.utcnow()
-                        sub.end_date   = datetime.utcnow() + timedelta(days=30 * months)
+                        _activate_subscription(sub)
                         db.session.commit()
                         plan_label = PLANS.get(sub.plan, {}).get("name", sub.plan)
                         _notify(sub.user_id, "payment_success",

@@ -1,5 +1,6 @@
 """Native email/password + Google OAuth authentication for Flask."""
 import os
+import time
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
@@ -127,8 +128,10 @@ def init_auth(app):
     bp = Blueprint("auth", __name__)
 
     # ----------------- helpers -----------------
-    def _login(user_rec: User, remember: bool = True):
-        session.permanent = True   # honour PERMANENT_SESSION_LIFETIME (6 h)
+    def _login(user_rec: User, remember: bool = False):
+        # No "remember me": sessions end after 4 hours of inactivity (see app/__init__.py).
+        session.permanent = True   # honour PERMANENT_SESSION_LIFETIME (4 h)
+        session["last_active"] = int(time.time())
         login_user(AuthUser(user_rec), remember=remember)
 
     # ----------------- views -----------------
@@ -152,8 +155,15 @@ def init_auth(app):
                 flash("Enter your email and password.", "error")
                 return redirect(url_for("auth.login", next=next_url) if next_url else url_for("auth.login"), 303)
             user_rec = User.query.filter_by(email=email).first()
-            if not user_rec or not user_rec.password_hash or not bcrypt.verify(password, user_rec.password_hash):
-                flash("Wrong email or password.", "error")
+            if not user_rec:
+                # Only people who already signed up can sign in.
+                flash("No account found with that email. Please sign up first, then sign in.", "error")
+                return redirect(url_for("auth.signup"), 303)
+            if not user_rec.password_hash:
+                flash("This account uses Google sign-in. Please continue with Google.", "error")
+                return redirect(url_for("auth.login", next=next_url) if next_url else url_for("auth.login"), 303)
+            if not bcrypt.verify(password, user_rec.password_hash):
+                flash("Incorrect password. Try again or use \u201cForgot password\u201d.", "error")
                 return redirect(url_for("auth.login", next=next_url) if next_url else url_for("auth.login"), 303)
             # If email not verified, send them to check-email page (don't log in)
             if not user_rec.email_verified:
@@ -316,6 +326,13 @@ def init_auth(app):
         # up in a separate small cookie so the callback survives if the session
         # cookie drops on the Google redirect round-trip (common on custom domains).
         resp = oauth.google.authorize_redirect(redirect_uri, state=state)
+        # Remember whether this started from the sign-up or the sign-in page, so that
+        # Google sign-in can never silently create an account.
+        resp.set_cookie(
+            "_gointent",
+            "signup" if request.args.get("intent") == "signup" else "signin",
+            secure=True, httponly=True, samesite="None", max_age=600,
+        )
         _s = _USTS(current_app.secret_key)
         resp.set_cookie(
             "_gostate",
@@ -360,6 +377,9 @@ def init_auth(app):
 
         user_rec = User.query.filter_by(email=email).first()
         is_new = False
+        if not user_rec and request.cookies.get("_gointent", "signin") != "signup":
+            flash("No account found for that Google email. Please sign up first, then sign in.", "error")
+            return redirect(url_for("auth.signup"), 303)
         if not user_rec:
             user_rec = User(
                 id=_new_id(),
@@ -436,15 +456,17 @@ def init_auth(app):
     # ----------------- logout -----------------
     @bp.route("/auth/logout", methods=["GET", "POST"])
     def logout():
+        idle = request.args.get("reason") == "idle"
         logout_user()
         session.clear()
-        resp = redirect(url_for("main.index"))
+        resp = redirect(url_for("auth.login") if idle else url_for("main.index"))
         # Aggressively clear any auth cookies on every known path
         for cookie in ("session", "remember_token"):
             resp.delete_cookie(cookie, path="/")
         resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         resp.headers["Clear-Site-Data"] = '"cache", "cookies", "storage"'
-        flash("You've been logged out.", "info")
+        flash("You were signed out after 4 hours of inactivity. Please sign in again." if idle
+              else "You've been logged out.", "info")
         return resp
 
     app.register_blueprint(bp)

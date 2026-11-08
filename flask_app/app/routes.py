@@ -2,6 +2,7 @@
 import os
 import re
 import uuid
+from functools import wraps
 import threading
 import queue as _queue
 from datetime import datetime, timedelta
@@ -344,6 +345,82 @@ def register_routes(app):
         xml.append("</urlset>")
         return Response("\n".join(xml), mimetype="application/xml")
 
+    # ---------- Guest browsing ----------
+    # Visitors can look around every service without an account. Actions still need one.
+
+    GUEST_SERVICES = {
+        "assignments": {
+            "icon": "📝", "title": "Create Assignment", "endpoint": "main.new_assignment",
+            "tagline": "AI-written essays, discussion posts and presentations with real, properly cited sources, up to 5 pages.",
+            "steps": ["Enter your topic, page count and citation style.",
+                      "Review the real academic sources we found and approve them.",
+                      "We write it and deliver a formatted Word (.docx) document."],
+            "points": ["APA, MLA, Harvard and Chicago styles",
+                       "Sources are verified before writing starts",
+                       "New accounts get a free trial assignment of up to 2 pages",
+                       "Built for short work. Theses and dissertations are not supported"],
+            "cta": "Sign up to create an assignment",
+        },
+        "remove-ai": {
+            "icon": "✍️", "title": "Remove AI", "endpoint": "main.remove_ai",
+            "tagline": "Upload your content and one of our writers rewrites it in their own words and understanding.",
+            "steps": ["Upload a Word, PDF or text file, or paste your text.",
+                      "A writer rewrites it, keeping your meaning, structure and citations.",
+                      "You get an email when it is ready and can copy or download it."],
+            "points": ["50 to 3,000 words per request",
+                       "Turnaround of 30 to 120 minutes depending on length",
+                       "Included with the Weekly Pass"],
+            "cta": "Sign up to use Remove AI",
+        },
+        "human-writer": {
+            "icon": "🧑‍🏫", "title": "Human Writer", "endpoint": "main.post_human_assignment",
+            "tagline": "Post an assignment and have it completed entirely by a qualified human writer, with no AI involved.",
+            "steps": ["Post your assignment details and deadline.",
+                      "A qualified writer takes it on.",
+                      "Receive the finished work and request revisions if needed."],
+            "points": ["Written entirely by people", "Revisions available on delivered work"],
+            "cta": "Sign up to post an assignment",
+        },
+        "career": {
+            "icon": "📄", "title": "Career Section", "endpoint": "main.job_docs",
+            "tagline": "Free career documents to help with your job search, written for you instantly.",
+            "steps": ["Choose the document you need.", "Add a few details about yourself.", "Get a draft you can edit and download."],
+            "points": ["Free for members"],
+            "cta": "Sign up to use the Career Section",
+        },
+    }
+    GUEST_TILES = [
+        ("📝", "Create Assignment", "Essays, discussion posts and presentations with real citations.", "main.new_assignment"),
+        ("✍️", "Remove AI", "Our writers rewrite your content in their own words.", "main.remove_ai"),
+        ("🤖", "AI Checker", "See how likely your text is to read as AI-written.", "main.ai_checker"),
+        ("📋", "Plagiarism Check", "Check your text for matches with existing sources.", "main.plagiarism_checker"),
+        ("🧑‍🏫", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
+        ("📄", "Career Section", "Free career documents for your job search.", "main.job_docs"),
+        ("💳", "Plans & Pricing", "The 7-day Weekly Pass for $25.", "main.pricing"),
+    ]
+
+    def public_or_login(guest_handler):
+        """Show guest_handler() to signed-out visitors on GET; require sign-in for everything else."""
+        def deco(fn):
+            gated = require_login(fn)
+            @wraps(fn)
+            def wrapper(*args, **kwargs):
+                if not current_user.is_authenticated and request.method == "GET":
+                    return guest_handler()
+                return gated(*args, **kwargs)
+            return wrapper
+        return deco
+
+    def guest_preview(key):
+        return public_or_login(lambda: render_template(
+            "service_preview.html", svc=GUEST_SERVICES[key], user=current_user))
+
+    @main.route("/api/keepalive", methods=["POST"])
+    @require_login
+    def keepalive():
+        """Called by the browser when the person is actively using an open page."""
+        return jsonify({"ok": True})
+
     @main.route("/")
     def index():
         # Capture referral code from ?ref=CODE for later use after signup
@@ -353,7 +430,7 @@ def register_routes(app):
         return render_template("home.html", user=current_user)
 
     @main.route("/dashboard")
-    @require_login
+    @public_or_login(lambda: render_template("dashboard_guest.html", user=current_user, tiles=GUEST_TILES))
     def dashboard():
         if current_user.is_writer or session.get("admin_writer_preview"):
             return redirect(url_for("main.writer_available"))
@@ -400,7 +477,7 @@ def register_routes(app):
     # ---------- Assignment creation flow ----------
 
     @main.route("/assignments/new", methods=["GET", "POST"])
-    @require_login
+    @guest_preview("assignments")
     def new_assignment():
         # Check free trial status for the form
         active_sub = _get_active_subscription(current_user.id)
@@ -1497,7 +1574,7 @@ def register_routes(app):
         return text, None
 
     @main.route("/remove-ai", methods=["GET", "POST"])
-    @require_login
+    @guest_preview("remove-ai")
     def remove_ai():
         from .services.email_service import send_ai_removal_admin_alert
         from werkzeug.utils import secure_filename as _sf
@@ -1806,7 +1883,6 @@ def register_routes(app):
     # ---------- Help & Tutorials ----------
 
     @main.route("/help")
-    @require_login
     def help_page():
         return render_template("help.html", user=current_user)
 
@@ -2840,7 +2916,7 @@ def register_routes(app):
     _HW_URGENT_MULTIPLIER = 1.5   # urgent = 1800 credits/page
 
     @main.route("/post-assignment", methods=["GET", "POST"])
-    @require_login
+    @guest_preview("human-writer")
     def post_human_assignment():
         if request.method == "POST":
             title          = request.form.get("title", "").strip()
@@ -3397,7 +3473,7 @@ Now write the complete {doc_label} below:
 """
 
     @main.route("/job-docs")
-    @require_login
+    @guest_preview("career")
     def job_docs():
         can_access     = _can_use_job_docs(current_user)
         # Subscribed users (or referral-unlocked users) have no monthly limit

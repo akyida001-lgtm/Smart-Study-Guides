@@ -149,7 +149,8 @@
         <a class="btn accent" href="{{ url_for('main.dashboard') }}">Open my dashboard</a>
         <a class="btn ghost-light" href="{{ url_for('main.new_assignment') }}">Create new assignment</a>
       {% else %}
-        <a class="btn accent" href="{{ url_for('auth.signup') }}">Sign up free</a>
+        <a class="btn accent" href="{{ url_for('main.dashboard') }}">Browse our services</a>
+        <a class="btn ghost-light" href="{{ url_for('auth.signup') }}">Sign up free</a>
         <a class="btn ghost-light" href="{{ url_for('auth.login') }}">Sign in</a>
       {% endif %}
     </div>

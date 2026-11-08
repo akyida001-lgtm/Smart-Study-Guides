@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ svc.title }} — Smart Study Guides{% endblock %}
+{% block content %}
+<div class="sp-wrap">
+  <a class="sp-back" href="{{ url_for('main.dashboard') }}">← All services</a>
+
+  <div class="sp-head">
+    <span class="sp-icon">{{ svc.icon }}</span>
+    <h1>{{ svc.title }}</h1>
+    <p>{{ svc.tagline }}</p>
+  </div>
+
+  <div class="card sp-card">
+    <div class="sp-label">How it works</div>
+    <ol class="sp-steps">
+      {% for step in svc.steps %}<li>{{ step }}</li>{% endfor %}
+    </ol>
+  </div>
+
+  <div class="card sp-card">
+    <div class="sp-label">Good to know</div>
+    <ul class="sp-points">
+      {% for pt in svc.points %}<li>✅ {{ pt }}</li>{% endfor %}
+    </ul>
+  </div>
+
+  <div class="sp-cta">
+    <a class="btn accent" href="{{ url_for('auth.signup') }}">{{ svc.cta }}</a>
+    <a class="btn ghost" href="{{ url_for('auth.login', next=request.path) }}">I already have an account</a>
+  </div>
+  <p class="sp-note">Create an account first, then sign in. You can keep browsing without one.</p>
+</div>
+
+<style>
+.sp-wrap { max-width: 720px; margin: 0 auto; padding: 8px 0 32px; }
+.sp-back { display: inline-block; margin-bottom: 14px; font-size: 14px; color: var(--slate-500); text-decoration: none; }
+.sp-head { text-align: center; margin-bottom: 22px; }
+.sp-icon { font-size: 40px; }
+.sp-head h1 { margin: 6px 0 8px; font-size: 28px; }
+.sp-head p { margin: 0; color: var(--slate-500); font-size: 16px; line-height: 1.55; }
+.sp-card { margin-bottom: 16px; }
+.sp-label { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.sp-steps, .sp-points { margin: 0; padding-left: 20px; color: var(--slate-500); font-size: 14px; line-height: 1.8; }
+.sp-points { list-style: none; padding-left: 0; }
+.sp-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+.sp-note { text-align: center; color: var(--slate-400); font-size: 13px; margin-top: 12px; }
+</style>
+{% endblock %}

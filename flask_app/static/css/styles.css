@@ -4745,3 +4745,11 @@ html[data-theme="dark"] .sf-links-col a:hover { color: #63cab7; }
 html[data-theme="dark"] .sf-social-link { border-color: rgba(255,255,255,.1); color: #4a6080; }
 html[data-theme="dark"] .sf-bottom-links a { color: #4a6080; }
 html[data-theme="dark"] .sf-bottom-links a:hover { color: #63cab7; }
+
+/* ── Guest services bar (signed-out visitors can browse every service) ── */
+.guest-services-bar { display:flex; gap:6px; overflow-x:auto; padding:8px 16px; border-bottom:1px solid var(--border);
+  background:var(--card-bg); -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+.guest-services-bar a { flex:0 0 auto; padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600;
+  color:var(--text); text-decoration:none; white-space:nowrap; }
+.guest-services-bar a:hover { background:var(--surface-2); }
+.guest-services-bar a.active { background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--border); }

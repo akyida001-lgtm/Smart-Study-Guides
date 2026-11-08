@@ -19,10 +19,13 @@ def create_app():
         "pool_recycle": 300,
     }
     app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
-    # Auto-logout after 6 hours of inactivity
-    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=6)
-    app.config["REMEMBER_COOKIE_DURATION"]   = timedelta(hours=6)
+    # Auto-logout after 4 hours of inactivity (enforced in _enforce_idle_timeout below).
+    # The cookie is only re-issued when we record real activity, so background polling
+    # (chat/notification checks) can't keep a forgotten tab signed in.
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=4)
+    app.config["REMEMBER_COOKIE_DURATION"]   = timedelta(hours=4)
     app.config["SESSION_PERMANENT"]          = True
+    app.config["SESSION_REFRESH_EACH_REQUEST"] = False
     # Allow the session cookie to be sent on cross-site redirects (e.g. OAuth
     # callback from Google). Without SameSite=None the browser strips the cookie
     # on the return trip, causing the "mismatching_state" CSRF error.
@@ -258,6 +261,40 @@ def create_app():
     init_auth(app)
     register_routes(app)
     app.register_blueprint(content_bp)
+
+    # ── Sign out after 4 hours of inactivity ───────────────────────────────────
+    IDLE_TIMEOUT_SECONDS = 4 * 60 * 60
+
+    def _is_background_request():
+        """Automatic polling from an open tab. It is not the person using the site."""
+        from flask import request as _r
+        if _r.method != "GET":
+            return False
+        p = _r.path
+        return (p in ("/api/chat/unread-count", "/api/notifications")
+                or (p.startswith("/api/chat/") and p.endswith("/messages")))
+
+    @app.before_request
+    def _enforce_idle_timeout():
+        import time as _time
+        from flask import request as _r, session as _s, jsonify as _j, flash as _f, redirect as _redir, url_for as _u
+        from flask_login import current_user as _cu, logout_user as _logout
+        if _r.path.startswith("/static"):
+            return None
+        if not _cu.is_authenticated:
+            return None
+        now  = int(_time.time())
+        last = _s.get("last_active")
+        if last is not None and now - int(last) > IDLE_TIMEOUT_SECONDS:
+            _logout()
+            _s.clear()
+            if _r.path.startswith("/api/"):
+                return _j({"error": "You were signed out after 4 hours of inactivity."}), 401
+            _f("You were signed out after 4 hours of inactivity. Please sign in again.", "info")
+            return _redir(_u("auth.login", next=_r.path) if _r.method == "GET" else _u("auth.login"), 303)
+        if not _is_background_request() and (last is None or now - int(last) >= 60):
+            _s["last_active"] = now
+        return None
 
     @app.after_request
     def _set_response_headers(response):

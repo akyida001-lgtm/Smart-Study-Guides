@@ -315,6 +315,17 @@
     <a class="nav-cta" href="{{ url_for('auth.signup') }}">Sign up free</a>
   </div>
 </nav>
+<div class="guest-services-bar" role="navigation" aria-label="Services">
+  <a href="{{ url_for('main.dashboard') }}" {% if request.endpoint == 'main.dashboard' %}class="active"{% endif %}>🏠 Services</a>
+  <a href="{{ url_for('main.new_assignment') }}" {% if request.endpoint == 'main.new_assignment' %}class="active"{% endif %}>📝 Create Assignment</a>
+  <a href="{{ url_for('main.remove_ai') }}" {% if request.endpoint == 'main.remove_ai' %}class="active"{% endif %}>✍️ Remove AI</a>
+  <a href="{{ url_for('main.ai_checker') }}" {% if request.endpoint == 'main.ai_checker' %}class="active"{% endif %}>🤖 AI Checker</a>
+  <a href="{{ url_for('main.plagiarism_checker') }}" {% if request.endpoint == 'main.plagiarism_checker' %}class="active"{% endif %}>📋 Plagiarism Check</a>
+  <a href="{{ url_for('main.post_human_assignment') }}" {% if request.endpoint == 'main.post_human_assignment' %}class="active"{% endif %}>🧑‍🏫 Human Writer</a>
+  <a href="{{ url_for('main.job_docs') }}" {% if request.endpoint == 'main.job_docs' %}class="active"{% endif %}>📄 Career</a>
+  <a href="{{ url_for('main.pricing') }}" {% if request.endpoint == 'main.pricing' %}class="active"{% endif %}>💳 Pricing</a>
+  <a href="{{ url_for('main.help_page') }}" {% if request.endpoint == 'main.help_page' %}class="active"{% endif %}>❓ Help</a>
+</div>
 <div class="container {% block container_class %}{% endblock %}">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
@@ -1224,5 +1235,36 @@ body.is-admin .no-copy *::selection { background: highlight; }
     }
   });
 </script>
+{% if current_user.is_authenticated %}
+<script>
+/* Sign out after 4 hours without activity. The server enforces this too; this makes an
+   open tab (or a laptop that was asleep or offline) sign out as soon as it is used again. */
+(function () {
+  var IDLE_MS = 4 * 60 * 60 * 1000, KEY = 'ssg_last_activity';
+  var PING_MS = 5 * 60 * 1000, STAMP_MS = 5000, lastPing = 0, lastStamp = 0;
+  function now() { return Date.now(); }
+  function stamp() { try { localStorage.setItem(KEY, String(now())); } catch (e) {} }
+  function last() { try { return parseInt(localStorage.getItem(KEY) || '', 10) || now(); } catch (e) { return now(); } }
+  function check() { if (now() - last() >= IDLE_MS) { window.location.href = "{{ url_for('auth.logout', reason='idle') }}"; } }
+  function onActivity() {
+    var t = now();
+    if (t - lastStamp < STAMP_MS) return;
+    lastStamp = t; stamp();
+    if (t - lastPing > PING_MS) {
+      lastPing = t;
+      fetch('/api/keepalive', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+    }
+  }
+  ['click', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function (ev) {
+    window.addEventListener(ev, onActivity, { passive: true });
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+  window.addEventListener('online', check);
+  window.addEventListener('focus', check);
+  stamp(); lastStamp = now();
+  setInterval(check, 60 * 1000);
+})();
+</script>
+{% endif %}
 </body>
 </html>

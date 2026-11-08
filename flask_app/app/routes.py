@@ -348,7 +348,7 @@ def register_routes(app):
 
     GUEST_SERVICES = {
         "assignments": {
-            "icon": "📝", "title": "Create Assignment", "endpoint": "main.new_assignment",
+            "icon": "assign", "title": "Create Assignment", "endpoint": "main.new_assignment",
             "tagline": "AI-written essays, discussion posts and presentations with real, properly cited sources, up to 5 pages.",
             "steps": ["Enter your topic, page count and citation style.",
                       "Review the real academic sources we found and approve them.",
@@ -360,7 +360,7 @@ def register_routes(app):
             "cta": "Sign up to create an assignment",
         },
         "remove-ai": {
-            "icon": "✍️", "title": "Remove AI", "endpoint": "main.remove_ai",
+            "icon": "removeai", "title": "Remove AI", "endpoint": "main.remove_ai",
             "tagline": "Upload your content and one of our writers rewrites it in their own words and understanding.",
             "steps": ["Upload a Word, PDF or text file, or paste your text.",
                       "A writer rewrites it, keeping your meaning, structure and citations.",
@@ -371,7 +371,7 @@ def register_routes(app):
             "cta": "Sign up to use Remove AI",
         },
         "human-writer": {
-            "icon": "🧑‍🏫", "title": "Human Writer", "endpoint": "main.post_human_assignment",
+            "icon": "cap", "title": "Human Writer", "endpoint": "main.post_human_assignment",
             "tagline": "Post an assignment and have it completed entirely by a qualified human writer, with no AI involved.",
             "steps": ["Post your assignment details and deadline.",
                       "A qualified writer takes it on.",
@@ -380,7 +380,7 @@ def register_routes(app):
             "cta": "Sign up to post an assignment",
         },
         "career": {
-            "icon": "📄", "title": "Career Section", "endpoint": "main.job_docs",
+            "icon": "briefcase", "title": "Career Section", "endpoint": "main.job_docs",
             "tagline": "Free career documents to help with your job search, written for you instantly.",
             "steps": ["Choose the document you need.", "Add a few details about yourself.", "Get a draft you can edit and download."],
             "points": ["Free for members"],
@@ -388,13 +388,13 @@ def register_routes(app):
         },
     }
     GUEST_TILES = [
-        ("📝", "Create Assignment", "Essays, discussion posts and presentations with real citations.", "main.new_assignment"),
-        ("✍️", "Remove AI", "Our writers rewrite your content in their own words.", "main.remove_ai"),
-        ("🤖", "AI Checker", "See how likely your text is to read as AI-written.", "main.ai_checker"),
-        ("📋", "Plagiarism Check", "Check your text for matches with existing sources.", "main.plagiarism_checker"),
-        ("🧑‍🏫", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
-        ("📄", "Career Section", "Free career documents for your job search.", "main.job_docs"),
-        ("💳", "Plans & Pricing", "The 7-day Weekly Pass for $25.", "main.pricing"),
+        ("assign", "Create Assignment", "Essays, discussion posts and presentations with real citations.", "main.new_assignment"),
+        ("removeai", "Remove AI", "Our writers rewrite your content in their own words.", "main.remove_ai"),
+        ("bot", "AI Checker", "See how likely your text is to read as AI-written.", "main.ai_checker"),
+        ("files", "Plagiarism Check", "Check your text for matches with existing sources.", "main.plagiarism_checker"),
+        ("cap", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
+        ("briefcase", "Career Section", "Free career documents for your job search.", "main.job_docs"),
+        ("card", "Plans & Pricing", "The 7-day Weekly Pass for $25.", "main.pricing"),
     ]
 
     def public_or_login(guest_handler):

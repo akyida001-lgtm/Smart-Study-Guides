@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}{{ svc.title }} — Smart Study Guides{% endblock %}
 {% block content %}
 <div class="sp-wrap">
   <a class="sp-back" href="{{ url_for('main.dashboard') }}">← All services</a>
 
   <div class="sp-head">
-    <span class="sp-icon">{{ svc.icon }}</span>
+    <span class="ic">{{ icon(svc.icon) }}</span>
     <h1>{{ svc.title }}</h1>
     <p>{{ svc.tagline }}</p>
   </div>

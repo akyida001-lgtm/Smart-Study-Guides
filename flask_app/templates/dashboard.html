@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Dashboard — Smart Study Guides{% endblock %}
 {% block content %}
 
@@ -49,12 +50,12 @@
   <div>
     <h2 class="dx-h">Services</h2>
     <div class="dx-tiles">
-      <a class="dx-tile lead" href="{{ url_for('main.new_assignment') }}"><span class="dx-ico">✍️</span><b>Create assignment</b><span>Essays, discussion posts and presentations with real, cited sources.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.remove_ai') }}"><span class="dx-ico">🖋️</span><b>Remove AI</b><span>A writer rewrites your text in their own words.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.ai_checker') }}"><span class="dx-ico">🤖</span><b>AI checker</b><span>See how your text scores.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.plagiarism_checker') }}"><span class="dx-ico">📋</span><b>Plagiarism check</b><span>Find matches with existing sources.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.post_human_assignment') }}"><span class="dx-ico">🧑‍🏫</span><b>Human writer</b><span>Have a person write it from scratch.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.job_docs') }}"><span class="dx-ico">📄</span><b>Career section</b><span>CVs and cover letters, free.</span></a>
+      <a class="dx-tile lead" href="{{ url_for('main.new_assignment') }}"><span class="ic">{{ icon('assign') }}</span><b>Create assignment</b><span>Essays, discussion posts and presentations with real, cited sources.</span></a>
+      <a class="dx-tile" href="{{ url_for('main.remove_ai') }}"><span class="ic">{{ icon('removeai') }}</span><b>Remove AI</b><span>A writer rewrites your text in their own words.</span></a>
+      <a class="dx-tile" href="{{ url_for('main.ai_checker') }}"><span class="ic">{{ icon('bot') }}</span><b>AI checker</b><span>See how your text scores.</span></a>
+      <a class="dx-tile" href="{{ url_for('main.plagiarism_checker') }}"><span class="ic">{{ icon('files') }}</span><b>Plagiarism check</b><span>Find matches with existing sources.</span></a>
+      <a class="dx-tile" href="{{ url_for('main.post_human_assignment') }}"><span class="ic">{{ icon('cap') }}</span><b>Human writer</b><span>Have a person write it from scratch.</span></a>
+      <a class="dx-tile" href="{{ url_for('main.job_docs') }}"><span class="ic">{{ icon('briefcase') }}</span><b>Career section</b><span>CVs and cover letters, free.</span></a>
     </div>
 
     <h2 class="dx-h">Your work <a href="{{ url_for('main.my_assignments') }}">View all</a></h2>

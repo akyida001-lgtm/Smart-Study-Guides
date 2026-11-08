@@ -302,30 +302,33 @@
       {% endwith %}
 
 {% else %}
-<!-- ── Guest: top nav layout ── -->
-<nav class="nav">
+<!-- ── Guest: one header (brand, pages, sign in / sign up) ── -->
+{% from "_icons.html" import icon %}
+<nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.index') }}">Smart Study<span class="dot">.</span>Guides</a>
-  <button class="nav-toggle" id="nav-toggle-btn" aria-label="Toggle menu">
-    <span></span><span></span><span></span>
-  </button>
-  <div class="nav-right" id="nav-right">
-    <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
-    <a class="nav-link" href="/updates">📣 Updates &amp; Offers</a>
-    <a class="nav-link" href="{{ url_for('auth.login') }}">Sign in</a>
+  <div class="gn-links" id="gn-links">
+    <a class="gn-link{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span>Dashboard</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.new_assignment' %} is-active{% endif %}" href="{{ url_for('main.new_assignment') }}" title="Assignment"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.remove_ai' %} is-active{% endif %}" href="{{ url_for('main.remove_ai') }}" title="Remove AI"><span class="gn-ic">{{ icon('removeai') }}</span><span>Remove AI</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.ai_checker' %} is-active{% endif %}" href="{{ url_for('main.ai_checker') }}" title="AI Checker"><span class="gn-ic">{{ icon('bot') }}</span><span>AI Checker</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.post_human_assignment' %} is-active{% endif %}" href="{{ url_for('main.post_human_assignment') }}" title="Human Writer"><span class="gn-ic">{{ icon('cap') }}</span><span>Human Writer</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Career"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Career</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.pricing' %} is-active{% endif %}" href="{{ url_for('main.pricing') }}" title="Pricing"><span class="gn-ic">{{ icon('card') }}</span><span>Pricing</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.help_page' %} is-active{% endif %}" href="{{ url_for('main.help_page') }}" title="Help"><span class="gn-ic">{{ icon('help') }}</span><span>Help</span></a>
+    <a class="gn-link{% if request.path == '/updates' %} is-active{% endif %}" href="/updates" title="Updates &amp; Offers"><span class="gn-ic">{{ icon('bell') }}</span><span>Updates</span></a>
+  </div>
+  <div class="gn-auth">
+    <a class="gn-signin" href="{{ url_for('auth.login') }}">Sign in</a>
     <a class="nav-cta" href="{{ url_for('auth.signup') }}">Sign up free</a>
+    <button class="gn-burger" id="gn-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="gn-links">{{ icon('menu') }}</button>
   </div>
 </nav>
-<div class="guest-services-bar" role="navigation" aria-label="Services">
-  <a href="{{ url_for('main.dashboard') }}" {% if request.endpoint == 'main.dashboard' %}class="active"{% endif %}>🏠 Services</a>
-  <a href="{{ url_for('main.new_assignment') }}" {% if request.endpoint == 'main.new_assignment' %}class="active"{% endif %}>📝 Create Assignment</a>
-  <a href="{{ url_for('main.remove_ai') }}" {% if request.endpoint == 'main.remove_ai' %}class="active"{% endif %}>✍️ Remove AI</a>
-  <a href="{{ url_for('main.ai_checker') }}" {% if request.endpoint == 'main.ai_checker' %}class="active"{% endif %}>🤖 AI Checker</a>
-  <a href="{{ url_for('main.plagiarism_checker') }}" {% if request.endpoint == 'main.plagiarism_checker' %}class="active"{% endif %}>📋 Plagiarism Check</a>
-  <a href="{{ url_for('main.post_human_assignment') }}" {% if request.endpoint == 'main.post_human_assignment' %}class="active"{% endif %}>🧑‍🏫 Human Writer</a>
-  <a href="{{ url_for('main.job_docs') }}" {% if request.endpoint == 'main.job_docs' %}class="active"{% endif %}>📄 Career</a>
-  <a href="{{ url_for('main.pricing') }}" {% if request.endpoint == 'main.pricing' %}class="active"{% endif %}>💳 Pricing</a>
-  <a href="{{ url_for('main.help_page') }}" {% if request.endpoint == 'main.help_page' %}class="active"{% endif %}>❓ Help</a>
-</div>
+<script>
+(function(){var b=document.getElementById('gn-burger'),m=document.getElementById('gn-links');if(!b||!m)return;
+b.addEventListener('click',function(e){e.stopPropagation();var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o);});
+document.addEventListener('click',function(e){if(!m.contains(e.target)&&!b.contains(e.target)){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});})();
+</script>
 <div class="container {% block container_class %}{% endblock %}">
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}

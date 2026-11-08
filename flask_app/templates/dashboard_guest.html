@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Our Services — Smart Study Guides{% endblock %}
 {% block content %}
 <section class="dx-mast">
@@ -21,8 +22,8 @@
 
 <h2 class="dx-h">Services</h2>
 <div class="dx-tiles dx-tiles-wide">
-  {% for icon, title, desc, endpoint in tiles %}
-  <a class="dx-tile{% if loop.first %} lead{% endif %}" href="{{ url_for(endpoint) }}"><span class="dx-ico">{{ icon }}</span><b>{{ title }}</b><span>{{ desc }}</span></a>
+  {% for ic, title, desc, endpoint in tiles %}
+  <a class="dx-tile{% if loop.first %} lead{% endif %}" href="{{ url_for(endpoint) }}"><span class="ic">{{ icon(ic) }}</span><b>{{ title }}</b><span>{{ desc }}</span></a>
   {% endfor %}
 </div>
 <p class="dx-foot">New here? <a href="{{ url_for('auth.signup') }}">Create an account</a> first, then sign in. Already signed up? <a href="{{ url_for('auth.login') }}">Sign in</a>.</p>

@@ -1,45 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Our Services — Smart Study Guides{% endblock %}
 {% block content %}
-<div class="gd-wrap">
-  <div class="gd-hero">
-    <h1>Our services</h1>
-    <p>Have a look around. You only need an account when you're ready to use something.</p>
-    <div class="gd-hero-btns">
-      <a class="btn accent" href="{{ url_for('auth.signup') }}">Sign up free</a>
-      <a class="btn ghost" href="{{ url_for('auth.login') }}">Sign in</a>
+<section class="dx-mast">
+  <div class="dx-top">
+    <div>
+      <h1 class="dx-greet">Coursework help, start to finish</h1>
+      <p class="dx-status">Look around first. You only need an account when you want to use something.</p>
+      <div class="dx-cta">
+        <a class="btn accent" href="{{ url_for('auth.signup') }}">Sign up free</a>
+        <a class="dx-link" href="{{ url_for('auth.login') }}">I already have an account</a>
+      </div>
+    </div>
+    <div class="dx-pass">
+      <div class="dx-pass-name"><span>Weekly Pass</span><span>$25</span></div>
+      <div class="dx-days" aria-hidden="true">{% for i in range(7) %}<i class="on" style="--i:{{ i }}"></i>{% endfor %}</div>
+      <div class="dx-pass-note"><strong>7 days of access.</strong> One payment, no auto-renewal.</div>
     </div>
   </div>
+</section>
 
-  <div class="gd-grid">
-    {% for icon, title, desc, endpoint in tiles %}
-    <a class="gd-card" href="{{ url_for(endpoint) }}">
-      <span class="gd-icon">{{ icon }}</span>
-      <span class="gd-title">{{ title }}</span>
-      <span class="gd-desc">{{ desc }}</span>
-      <span class="gd-more">View →</span>
-    </a>
-    {% endfor %}
-  </div>
-
-  <p class="gd-foot">Already signed up? <a href="{{ url_for('auth.login') }}">Sign in</a>. New here? <a href="{{ url_for('auth.signup') }}">Create an account</a> first, then sign in.</p>
+<h2 class="dx-h">Services</h2>
+<div class="dx-tiles dx-tiles-wide">
+  {% for icon, title, desc, endpoint in tiles %}
+  <a class="dx-tile{% if loop.first %} lead{% endif %}" href="{{ url_for(endpoint) }}"><span class="dx-ico">{{ icon }}</span><b>{{ title }}</b><span>{{ desc }}</span></a>
+  {% endfor %}
 </div>
-
-<style>
-.gd-wrap { max-width: 980px; margin: 0 auto; padding: 8px 0 32px; }
-.gd-hero { text-align: center; margin: 8px 0 28px; }
-.gd-hero h1 { margin: 0 0 8px; font-size: 30px; }
-.gd-hero p { margin: 0 0 16px; color: var(--slate-500); font-size: 16px; }
-.gd-hero-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.gd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.gd-card { display: flex; flex-direction: column; gap: 6px; padding: 20px; border: 1px solid var(--border);
-           border-radius: 14px; background: var(--card-bg); color: var(--text); text-decoration: none;
-           transition: transform .15s ease, box-shadow .15s ease; }
-.gd-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
-.gd-icon { font-size: 28px; }
-.gd-title { font-size: 17px; font-weight: 700; }
-.gd-desc { font-size: 14px; color: var(--slate-500); line-height: 1.5; flex: 1; }
-.gd-more { font-size: 13px; font-weight: 600; color: var(--accent, #6366f1); margin-top: 4px; }
-.gd-foot { text-align: center; margin-top: 28px; color: var(--slate-500); font-size: 14px; }
-</style>
+<p class="dx-foot">New here? <a href="{{ url_for('auth.signup') }}">Create an account</a> first, then sign in. Already signed up? <a href="{{ url_for('auth.login') }}">Sign in</a>.</p>
 {% endblock %}

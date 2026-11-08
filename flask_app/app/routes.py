@@ -452,6 +452,10 @@ def register_routes(app):
         today_count = _get_today_usage(current_user.id)
         plan_info   = PLANS.get(active_sub.plan, {}) if active_sub else {}
         daily_limit = plan_info.get("daily_limit") if active_sub else 0
+        period_days = days_left = 0
+        if active_sub:
+            period_days = PERIOD_DAYS.get(active_sub.billing_period, 30)
+            days_left   = max(0, math.ceil((active_sub.end_date - datetime.utcnow()).total_seconds() / 86400))
 
         # Show review prompt after first completed assignment, once only
         completed_count = sum(1 for a in assignments if a.status == "done")
@@ -471,6 +475,8 @@ def register_routes(app):
             today_count=today_count,
             daily_limit=daily_limit,
             plan_info=plan_info,
+            period_days=period_days,
+            days_left=days_left,
             show_review=show_review,
         )
 

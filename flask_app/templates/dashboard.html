@@ -39,14 +39,9 @@
     </div>
   </div>
 
-  <div class="dx-figs">
-    <div class="dx-fig"><b>{{ total_pages }}</b><span>pages written</span></div>
-    <div class="dx-fig"><b>{{ in_progress }}</b><span>in progress</span></div>
-    <div class="dx-fig"><b>{% if active_sub %}{% if daily_limit %}{{ daily_limit - today_count }}{% else %}∞{% endif %}{% else %}—{% endif %}</b><span>left today</span></div>
-  </div>
 </section>
 
-<div class="dx-grid">
+<div class="dx-grid{% if not referral_link %} dx-one{% endif %}">
   <div>
     <h2 class="dx-h">Services</h2>
     <div class="dx-tiles">
@@ -85,6 +80,7 @@
     {% endif %}
   </div>
 
+  {% if referral_link %}
   <aside class="dx-aside">
     {% if referral_link %}
     <div class="dx-box">
@@ -96,11 +92,8 @@
       </div>
     </div>
     {% endif %}
-    <div class="dx-box">
-      <p class="dx-quote">“{{ daily_quote.text }}”</p>
-      <div class="dx-quote-by">{{ daily_quote.author }}</div>
-    </div>
   </aside>
+  {% endif %}
 </div>
 
 <script>

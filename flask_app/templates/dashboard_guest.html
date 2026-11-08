@@ -26,5 +26,4 @@
   <a class="dx-tile{% if loop.first %} lead{% endif %}" href="{{ url_for(endpoint) }}"><span class="ic">{{ icon(ic) }}</span><b>{{ title }}</b><span>{{ desc }}</span></a>
   {% endfor %}
 </div>
-<p class="dx-foot">New here? <a href="{{ url_for('auth.signup') }}">Create an account</a> first, then sign in. Already signed up? <a href="{{ url_for('auth.login') }}">Sign in</a>.</p>
 {% endblock %}

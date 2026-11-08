@@ -4838,3 +4838,14 @@ html[data-theme="dark"] .sf-bottom-links a:hover { color: #63cab7; }
 .dx-tile{padding:18px}
 .dx-tile:hover .ic{background:var(--accent);color:#fff}
 .dx-tile.lead:hover .ic{background:rgba(255,255,255,.26)}
+
+/* ── Compact footer + tighter home/dashboard ── */
+.site-footer.sf-compact{margin-top:28px;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;font-size:12.5px}
+.sf-compact .sf-logo-sm{font-weight:800;font-size:14px;white-space:nowrap}
+.sf-mini{display:flex;flex-wrap:wrap;gap:4px 18px}
+.sf-mini a{color:var(--slate-500);text-decoration:none}
+.sf-mini a:hover{color:var(--navy-900)}
+.dx-mast{padding:28px 32px 24px;margin-bottom:22px}
+.dx-grid.dx-one{grid-template-columns:1fr}
+.landing-hero{padding:48px 36px;margin-bottom:24px}
+@media(max-width:600px){.site-footer.sf-compact{padding:14px 18px;justify-content:center;text-align:center}.sf-mini{justify-content:center}}

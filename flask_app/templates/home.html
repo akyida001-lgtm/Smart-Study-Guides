@@ -4,7 +4,7 @@
 {% block og_title %}Smart Study Guides — AI Academic Assignment Writer{% endblock %}
 {% block og_description %}Get polished, plagiarism-clean academic assignments written by AI — with real citations. Delivered as a .docx file.{% endblock %}
 {% block extra_head %}
-<!-- SoftwareApplication + AggregateRating (generates ⭐ stars in Google) -->
+<!-- SoftwareApplication schema -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -14,13 +14,6 @@
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Web",
   "description": "AI-powered academic assignment writer that generates polished, properly-cited essays and papers with real research sources — delivered as Word documents.",
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.8",
-    "reviewCount": "312",
-    "bestRating": "5",
-    "worstRating": "1"
-  },
   "offers": {
     "@type": "AggregateOffer",
     "lowPrice": "25.00",
@@ -35,26 +28,6 @@
     "Plagiarism checker",
     "Word document (.docx) delivery",
     "APA, MLA, Chicago, Harvard citation styles"
-  ],
-  "review": [
-    {
-      "@type": "Review",
-      "author": {"@type": "Person", "name": "Liam R."},
-      "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
-      "reviewBody": "Submitted my 3000-word assignment in 15 minutes. Sources were perfect and the AI score came back 0%. Absolutely worth every cent."
-    },
-    {
-      "@type": "Review",
-      "author": {"@type": "Person", "name": "Sophie M."},
-      "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
-      "reviewBody": "I was skeptical at first but this tool is incredible. The references it found were exactly what my professor expected. Passed Turnitin with no issues."
-    },
-    {
-      "@type": "Review",
-      "author": {"@type": "Person", "name": "Priya K."},
-      "reviewRating": {"@type": "Rating", "ratingValue": "5", "bestRating": "5"},
-      "reviewBody": "Used it for three assignments this semester. All came back with great marks."
-    }
   ],
   "publisher": {
     "@type": "Organization",
@@ -160,24 +133,6 @@
   </div>
 </section>
 
-<section class="landing-grid">
-  <div class="landing-feature">
-    <div class="landing-icon">📚</div>
-    <h3>Real research, real citations</h3>
-    <p>Pulls live academic sources you can review and approve before writing starts.</p>
-  </div>
-  <div class="landing-feature">
-    <div class="landing-icon">🔍</div>
-    <h3>Built-in checkers</h3>
-    <p>Run your text through the AI checker and plagiarism checker before you submit.</p>
-  </div>
-  <div class="landing-feature">
-    <div class="landing-icon">📄</div>
-    <h3>Formatted Word doc</h3>
-    <p>APA, MLA, Harvard or Chicago — delivered as a properly formatted .docx by email.</p>
-  </div>
-</section>
-
 <section class="landing-how">
   <h2>How it works</h2>
   <div class="landing-steps">
@@ -188,75 +143,4 @@
   </div>
 </section>
 
-<!-- Testimonials (backs the AggregateRating schema for Google stars) -->
-<section class="landing-reviews">
-  <h2>What students say</h2>
-  <p class="landing-reviews-sub">★★★★★ Rated 4.8 / 5 by 300+ students</p>
-  <div class="reviews-grid">
-    <div class="review-card">
-      <div class="review-stars">★★★★★</div>
-      <p class="review-body">"Submitted my 3,000-word assignment in 15 minutes. Sources were perfect and the AI score came back 0%. Absolutely worth every cent."</p>
-      <div class="review-author">— Liam R., Conestoga College</div>
-    </div>
-    <div class="review-card">
-      <div class="review-stars">★★★★★</div>
-      <p class="review-body">"I was skeptical at first but this tool is incredible. The references it found were exactly what my professor expected. Passed Turnitin with no issues."</p>
-      <div class="review-author">— Sophie M., University of Manchester</div>
-    </div>
-    <div class="review-card">
-      <div class="review-stars">★★★★★</div>
-      <p class="review-body">"Used it for three assignments this semester. All came back with great marks."</p>
-      <div class="review-author">— Priya K., University of Waterloo</div>
-    </div>
-    <div class="review-card">
-      <div class="review-stars">★★★★★</div>
-      <p class="review-body">"The sources it finds are real and credible. My supervisor even asked me to share my bibliography — that's how good the citations were."</p>
-      <div class="review-author">— Marcus B., Trinity College Dublin</div>
-    </div>
-    <div class="review-card">
-      <div class="review-stars">★★★★☆</div>
-      <p class="review-body">"Really impressed with how fast it works. Got a full essay with proper APA referencing in under 10 minutes."</p>
-      <div class="review-author">— Emily T., George Brown College</div>
-    </div>
-    <div class="review-card">
-      <div class="review-stars">★★★★★</div>
-      <p class="review-body">"Saved me during finals week. The writing quality was so natural — my professor had no idea it was AI-assisted. Highly recommend."</p>
-      <div class="review-author">— Jonas W., Technical University of Munich</div>
-    </div>
-  </div>
-</section>
-
-<section class="landing-pricing">
-  <h2>Simple weekly pricing</h2>
-  <p class="landing-pricing-sub">$25 for a 7-day pass — essays, discussion posts, presentations and other short assignments.</p>
-  {% if not (user and user.is_authenticated) %}
-    <a class="btn accent" href="{{ url_for('auth.signup') }}">Get started</a>
-  {% else %}
-    <a class="btn accent" href="{{ url_for('main.pricing') }}">View plans</a>
-  {% endif %}
-</section>
-
-{% if not (user and user.is_authenticated) %}
-<div class="welcome-popup" id="welcome-popup">
-  <button class="welcome-popup-close" aria-label="Close" onclick="closeWelcomePopup()">×</button>
-  <div class="welcome-popup-emoji">🎁</div>
-  <h4>Get started today</h4>
-  <p>$25 for a 7-day pass. 10% off your first pass. No hidden fees.</p>
-  <a class="btn accent full" href="{{ url_for('auth.signup') }}">Create free account</a>
-</div>
-<script>
-  (function(){
-    if (sessionStorage.getItem('ssg_welcome_dismissed') === '1') return;
-    setTimeout(function(){
-      var el = document.getElementById('welcome-popup');
-      if (el) el.classList.add('show');
-    }, 900);
-  })();
-  function closeWelcomePopup(){
-    var el = document.getElementById('welcome-popup');
-    if (el) el.classList.remove('show');
-    try { sessionStorage.setItem('ssg_welcome_dismissed','1'); } catch(e) {}
-  }
-</script>
-{% endif %}
 {% endblock %}

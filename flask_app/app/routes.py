@@ -120,8 +120,7 @@ def _notify(user_id: str, ntype: str, title: str, body: str):
 WORDS_PER_PAGE = 265
 
 # ── Subscription plans ─────────────────────────────────────────────────────────
-# Current offer: one 7-day Weekly Pass. The monthly / 6-month / yearly plans are
-# kept as "legacy" so existing subscribers keep working, but can no longer be bought.
+# The only thing for sale is the 7-day Weekly Pass.
 WEEKLY_PASS_PRICE_USD   = 25.00
 WEEKLY_PASS_DAILY_LIMIT = 3     # short assignments per day while the pass is active
 
@@ -131,25 +130,24 @@ PLANS = {
         "weekly": WEEKLY_PASS_PRICE_USD,
         "desc": f"{WEEKLY_PASS_DAILY_LIMIT} short assignments per day for 7 days",
     },
-    "basic": {
-        "name": "Basic", "daily_limit": 2, "legacy": True,
-        "monthly": 27.99, "halfyear": 139.99, "yearly": 249.99,
-        "desc": "2 AI assignments per day",
-    },
-    "standard": {
-        "name": "Standard", "daily_limit": 4, "legacy": True,
-        "monthly": 37.99, "halfyear": 189.99, "yearly": 329.99,
-        "desc": "4 AI assignments per day",
-    },
-    "unlimited": {
-        "name": "Unlimited", "daily_limit": None, "legacy": True,
-        "monthly": 57.99, "halfyear": 289.99, "yearly": 499.99,
-        "desc": "Unlimited AI assignments",
-    },
 }
+PERIOD_DAYS = {"weekly": 7}
 
-# Length of each billing period in days (legacy periods keep their old lengths).
-PERIOD_DAYS = {"weekly": 7, "monthly": 30, "halfyear": 180, "yearly": 360}
+# Subscriptions bought before the Weekly Pass existed. Not for sale and not shown anywhere.
+# They are only here so people who already paid keep their daily limit until their paid
+# period ends (an unknown plan would otherwise be treated as unlimited).
+_PAID_LEGACY_PLANS = {
+    "basic":     {"name": "Basic",     "daily_limit": 2},
+    "standard":  {"name": "Standard",  "daily_limit": 4},
+    "unlimited": {"name": "Unlimited", "daily_limit": None},
+}
+_PAID_LEGACY_PERIOD_DAYS = {"monthly": 30, "halfyear": 180, "yearly": 360}
+
+def _plan_info(plan_key):
+    return PLANS.get(plan_key) or _PAID_LEGACY_PLANS.get(plan_key) or {}
+
+def _period_days(billing_period):
+    return PERIOD_DAYS.get(billing_period) or _PAID_LEGACY_PERIOD_DAYS.get(billing_period, 7)
 
 # The pass is for short work: essays, discussion posts, presentations, ordinary
 # assignments. Long projects are not supported. (Paid assignments are also capped
@@ -221,7 +219,7 @@ def _activate_subscription(sub):
     start = latest_end if latest_end and latest_end > now else now
     sub.status     = "active"
     sub.start_date = start
-    sub.end_date   = start + timedelta(days=PERIOD_DAYS.get(sub.billing_period, 30))
+    sub.end_date   = start + timedelta(days=_period_days(sub.billing_period))
 
 
 def _get_today_usage(user_id):
@@ -259,7 +257,7 @@ def _can_generate(user_id):
         if trial_count < 2:
             return True, "free_trial", None, 0, 2
         return False, "no_subscription", None, 0, 0
-    plan_info   = PLANS.get(sub.plan, {})
+    plan_info   = _plan_info(sub.plan)
     daily_limit = plan_info.get("daily_limit")
     today_count = _get_today_usage(user_id)
     if daily_limit is None:
@@ -450,11 +448,11 @@ def register_routes(app):
         # Subscription
         active_sub  = _get_active_subscription(current_user.id)
         today_count = _get_today_usage(current_user.id)
-        plan_info   = PLANS.get(active_sub.plan, {}) if active_sub else {}
+        plan_info   = _plan_info(active_sub.plan) if active_sub else {}
         daily_limit = plan_info.get("daily_limit") if active_sub else 0
         period_days = days_left = 0
         if active_sub:
-            period_days = PERIOD_DAYS.get(active_sub.billing_period, 30)
+            period_days = _period_days(active_sub.billing_period)
             days_left   = max(0, math.ceil((active_sub.end_date - datetime.utcnow()).total_seconds() / 86400))
 
         # Show review prompt after first completed assignment, once only
@@ -865,7 +863,7 @@ def register_routes(app):
                 flash("You need an active subscription to generate assignments.", "error")
                 return redirect(url_for("main.pricing"))
             else:
-                plan_name = PLANS.get(sub.plan, {}).get("name", "your")
+                plan_name = _plan_info(sub.plan).get("name", "your")
                 tail = ("Come back tomorrow." if sub.plan == "pass"
                         else "Come back tomorrow or upgrade your plan.")
                 flash(
@@ -2009,8 +2007,8 @@ def register_routes(app):
             plan           = data.get("plan", "")
             billing_period = data.get("billing_period", "weekly")
 
-            # Only the current offer can be bought; legacy plans are hidden.
-            if plan not in PLANS or PLANS[plan].get("legacy"):
+            # Only the Weekly Pass can be bought.
+            if plan not in PLANS:
                 return jsonify({"error": "Invalid plan."}), 400
             if billing_period != "weekly":
                 return jsonify({"error": "Invalid billing period."}), 400
@@ -2089,7 +2087,7 @@ def register_routes(app):
                     _activate_subscription(sub)
                     db.session.commit()
                     activated = True
-                    plan_label = PLANS.get(sub.plan, {}).get("name", sub.plan)
+                    plan_label = _plan_info(sub.plan).get("name", sub.plan)
                     _notify(current_user.id, "payment_success",
                             f"Subscription activated — {plan_label} plan",
                             f"Your {plan_label} subscription is now active until "
@@ -2119,7 +2117,7 @@ def register_routes(app):
             .order_by(Subscription.created_at.desc()).limit(20).all()
         )
         today_count = _get_today_usage(current_user.id)
-        plan_info   = PLANS.get(active_sub.plan, {}) if active_sub else {}
+        plan_info   = _plan_info(active_sub.plan) if active_sub else {}
         daily_limit = plan_info.get("daily_limit")
         return render_template(
             "subscription_manage.html",
@@ -2160,7 +2158,7 @@ def register_routes(app):
                     if sub and sub.status == "pending":
                         _activate_subscription(sub)
                         db.session.commit()
-                        plan_label = PLANS.get(sub.plan, {}).get("name", sub.plan)
+                        plan_label = _plan_info(sub.plan).get("name", sub.plan)
                         _notify(sub.user_id, "payment_success",
                                 f"Subscription activated — {plan_label} plan",
                                 f"Your {plan_label} plan is now active until "

@@ -143,7 +143,7 @@ class Subscription(db.Model):
     user = db.relationship("User", backref="subscriptions")
 
     PLAN_LABELS = {
-        "pass": "Weekly Pass",
+        "pass": "Weekly Pass",   # basic / standard / unlimited: old plans, kept so existing subscriptions display
         "basic": "Basic",
         "standard": "Standard",
         "unlimited": "Unlimited",

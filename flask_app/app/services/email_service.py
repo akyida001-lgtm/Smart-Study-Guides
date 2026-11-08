@@ -132,7 +132,7 @@ def send_admin_notification_email(email: str, name: str, subject: str, body: str
 
 
 def send_ai_removal_admin_alert(admin_email: str, student_name: str, topic: str,
-                                ai_score: float, deadline_str: str, job_url: str):
+                                ai_score, deadline_str: str, job_url: str):
     """Alert admins that a student has submitted a job for AI removal."""
     html = f"""
     <div style="font-family:system-ui,sans-serif;max-width:580px;margin:0 auto;padding:32px;background:#0b1733;color:#ffffff;border-radius:12px;">
@@ -141,7 +141,7 @@ def send_ai_removal_admin_alert(admin_email: str, student_name: str, topic: str,
       <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
         <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;width:90px;">Student</td><td style="color:#ffffff;font-size:13px;">{student_name}</td></tr>
         <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Topic</td><td style="color:#ffffff;font-size:13px;">{topic}</td></tr>
-        <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">AI Score</td><td style="color:#ff6b6b;font-size:13px;font-weight:700;">{ai_score}% AI detected</td></tr>
+        <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">AI Score</td><td style="color:#ff6b6b;font-size:13px;font-weight:700;">{f"{ai_score}% AI detected" if ai_score is not None else "Not measured"}</td></tr>
         <tr><td style="color:#94a3b8;padding:6px 0;font-size:13px;">Deadline</td><td style="color:#ffd166;font-size:13px;font-weight:700;">{deadline_str}</td></tr>
       </table>
       <p style="margin:0 0 24px;">

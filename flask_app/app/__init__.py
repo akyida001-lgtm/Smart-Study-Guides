@@ -187,6 +187,20 @@ def create_app():
                 conn.execute(text("ALTER TABLE assignments ADD COLUMN instruction_image_url VARCHAR(1000)"))
                 conn.commit()
 
+        # AI removal jobs: allow standalone uploads (no assignment, no pre-measured score)
+        with db.engine.connect() as conn:
+            existing_j = {row[0] for row in conn.execute(
+                text("SELECT column_name FROM information_schema.columns WHERE table_name='ai_removal_jobs'")
+            )}
+            if existing_j:
+                if "title" not in existing_j:
+                    conn.execute(text("ALTER TABLE ai_removal_jobs ADD COLUMN title VARCHAR(200)"))
+                if "source_filename" not in existing_j:
+                    conn.execute(text("ALTER TABLE ai_removal_jobs ADD COLUMN source_filename VARCHAR(255)"))
+                conn.execute(text("ALTER TABLE ai_removal_jobs ALTER COLUMN assignment_id DROP NOT NULL"))
+                conn.execute(text("ALTER TABLE ai_removal_jobs ALTER COLUMN original_ai_score DROP NOT NULL"))
+                conn.commit()
+
         # Auto-grant staff access to all owner accounts
         try:
             db.session.execute(

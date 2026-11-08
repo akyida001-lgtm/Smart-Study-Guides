@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Remove AI — Smart Study Guides{% endblock %}
+{% block content %}
+<div class="tool-page">
+  <div class="tool-header">
+    <h1>✍️ Remove AI</h1>
+    <p class="tool-sub">Upload your content and one of our writers will rewrite it in their own words and understanding, keeping your meaning and structure. Turnaround is 30 to 120 minutes depending on length.</p>
+  </div>
+
+  {% if not has_access %}
+  <div class="flash error" style="margin-bottom:20px;">
+    An active <strong>Weekly Pass</strong> is required to send content to our writers.
+    <a href="{{ url_for('main.pricing') }}" style="margin-left:6px;">View the Weekly Pass →</a>
+  </div>
+  {% endif %}
+
+  <div class="card" style="max-width:760px;margin:0 0 24px;">
+    <form method="post" action="{{ url_for('main.remove_ai') }}" enctype="multipart/form-data" id="ra-form">
+
+      <label for="ra-title" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Title <span style="font-weight:400;color:var(--slate-400);">(optional)</span></label>
+      <input id="ra-title" name="title" type="text" maxlength="200" placeholder="e.g. Marketing essay, Week 4 discussion"
+             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);font-size:14px;margin-bottom:18px;">
+
+      <label for="ra-file" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Upload your content</label>
+      <input id="ra-file" name="file" type="file" accept=".txt,.docx,.pdf"
+             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font-size:14px;">
+      <div style="font-size:12px;color:var(--slate-400);margin:6px 0 16px;">Word (.docx), PDF or text (.txt) files up to 5 MB.</div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <label for="ra-text" style="font-size:13px;font-weight:600;">…or paste your text</label>
+        <span id="ra-wc" class="wc-badge">0 words</span>
+      </div>
+      <textarea id="ra-text" name="text" class="tool-textarea" rows="10" placeholder="Paste the content you want our writers to rewrite…"></textarea>
+      <div style="font-size:12px;color:var(--slate-400);margin:6px 0 18px;">
+        {{ min_words }} to {{ "{:,}".format(max_words) }} words per request. If you upload a file, the pasted text is ignored.
+      </div>
+
+      <label for="ra-notes" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Notes for the writer <span style="font-weight:400;color:var(--slate-400);">(optional)</span></label>
+      <textarea id="ra-notes" name="notes" rows="3" maxlength="2000" placeholder="e.g. Keep the APA citations, academic tone, UK spelling"
+                style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;margin-bottom:18px;"></textarea>
+
+      <button type="submit" id="ra-submit" class="btn accent full tool-btn" {% if not has_access %}disabled{% endif %}>✍️ Send to our writers</button>
+      <div id="ra-error" class="tool-error" style="display:none;"></div>
+    </form>
+  </div>
+
+  <div class="card" style="max-width:760px;margin:0 0 24px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px;">How it works</div>
+    <ol style="margin:0;padding-left:20px;color:var(--slate-500);font-size:14px;line-height:1.7;">
+      <li>Upload your file or paste your text.</li>
+      <li>A writer is assigned and rewrites it in their own words, keeping your meaning, structure and citations.</li>
+      <li>You get an email when it is ready. Download it here.</li>
+    </ol>
+    <div style="font-size:12px;color:var(--slate-400);margin-top:10px;">
+      Included with your Weekly Pass. You can have up to {{ max_open }} requests in progress at a time.
+    </div>
+  </div>
+
+  {% if recent %}
+  <div class="card" style="max-width:760px;">
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Your requests</div>
+    {% for j in recent %}
+    <a href="{{ url_for('main.remove_ai_status', job_id=j.id) }}"
+       style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border);text-decoration:none;color:var(--text);">
+      <span style="min-width:0;">
+        <span style="display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ j.display_title[:70] }}</span>
+        <span style="font-size:12px;color:var(--slate-400);">{{ (j.word_count or 0)|int }} words · {{ j.submitted_at.strftime('%d %b, %H:%M') }}</span>
+      </span>
+      <span style="font-size:12px;font-weight:700;white-space:nowrap;color:{% if j.status == 'completed' %}#16a34a{% else %}#d97706{% endif %};">
+        {{ j.STATUS_LABELS.get(j.status, j.status) }}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var text = document.getElementById('ra-text');
+  var file = document.getElementById('ra-file');
+  var wc   = document.getElementById('ra-wc');
+  var form = document.getElementById('ra-form');
+  var btn  = document.getElementById('ra-submit');
+  var err  = document.getElementById('ra-error');
+
+  function count(v) { v = v.trim(); return v ? v.split(/\s+/).length : 0; }
+  text.addEventListener('input', function () { wc.textContent = count(text.value).toLocaleString() + ' words'; });
+
+  form.addEventListener('submit', function (e) {
+    var hasFile = file.files && file.files.length > 0;
+    if (!hasFile && count(text.value) === 0) {
+      e.preventDefault();
+      err.textContent = 'Please upload a file or paste your text first.';
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+  });
+})();
+</script>
+{% endblock %}

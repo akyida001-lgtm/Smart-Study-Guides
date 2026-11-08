@@ -336,17 +336,23 @@ class OAuth(db.Model):
 
 
 class AIRemovalJob(db.Model):
-    """Tracks AI-removal requests submitted by students when AI score > 1%."""
+    """A request for one of our writers to rewrite a piece of text in their own words.
+
+    Either attached to an assignment (assignment_id set) or a standalone upload from
+    the Remove AI page (assignment_id is NULL and `title` is used instead).
+    """
     __tablename__ = "ai_removal_jobs"
 
     id             = db.Column(db.Integer, primary_key=True)
-    assignment_id  = db.Column(db.Integer, db.ForeignKey("assignments.id"), nullable=False, index=True)
+    assignment_id  = db.Column(db.Integer, db.ForeignKey("assignments.id"), nullable=True, index=True)
     user_id        = db.Column(db.String,  db.ForeignKey("users.id"),       nullable=False, index=True)
     writer_id      = db.Column(db.String,  db.ForeignKey("users.id"),       nullable=True)
 
     # What the student submitted
     original_text      = db.Column(db.Text,  nullable=False)
-    original_ai_score  = db.Column(db.Float, nullable=False)
+    original_ai_score  = db.Column(db.Float, nullable=True)   # NULL = not measured (standalone uploads)
+    title              = db.Column(db.String(200), nullable=True)   # standalone uploads
+    source_filename    = db.Column(db.String(255), nullable=True)   # standalone uploads
     word_count         = db.Column(db.Integer, nullable=True)
     student_notes      = db.Column(db.Text, nullable=True)
 
@@ -366,6 +372,13 @@ class AIRemovalJob(db.Model):
     assignment = db.relationship("Assignment", backref="ai_removal_jobs")
     student    = db.relationship("User", foreign_keys=[user_id],  backref="ai_removal_submissions")
     writer     = db.relationship("User", foreign_keys=[writer_id], backref="ai_removal_assignments")
+
+    @property
+    def display_title(self):
+        """Name shown for this job: the assignment topic, else the upload title."""
+        if self.assignment is not None and self.assignment.topic:
+            return self.assignment.topic
+        return self.title or "Untitled"
 
     @property
     def deadline_minutes(self):

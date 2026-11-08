@@ -26,7 +26,7 @@
   <!-- Header row -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
     <div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);">{{ job.assignment.topic[:80] }}</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);">{{ job.display_title[:80] }}</div>
       <div style="font-size:13px;color:var(--slate-400);margin-top:2px;">
         Student: <strong style="color:var(--text);">{{ job.student.display_name }}</strong> ({{ job.student.email or '—' }}) ·
         Submitted: {{ job.submitted_at.strftime('%H:%M %d %b') }}
@@ -45,7 +45,7 @@
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
     <div style="background:var(--surface-2);border-radius:8px;padding:10px 16px;">
       <div style="font-size:11px;color:var(--slate-400);margin-bottom:2px;">Original AI Score</div>
-      <div style="font-size:20px;font-weight:800;color:#ff6b6b;">{{ job.original_ai_score }}%</div>
+      <div style="font-size:20px;font-weight:800;color:#ff6b6b;">{% if job.original_ai_score is not none %}{{ job.original_ai_score }}%{% else %}Not measured{% endif %}</div>
     </div>
     {% if job.final_ai_score is not none %}
     <div style="background:var(--surface-2);border-radius:8px;padding:10px 16px;">

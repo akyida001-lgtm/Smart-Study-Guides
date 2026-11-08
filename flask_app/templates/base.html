@@ -158,6 +158,9 @@
 
       <div class="snav-divider"></div>
 
+      <a class="snav-item {% if request.endpoint in ('main.remove_ai', 'main.remove_ai_status') %}active{% endif %}" href="{{ url_for('main.remove_ai') }}">
+        <span class="snav-icon">✍️</span> Remove AI
+      </a>
       <a class="snav-item {% if request.endpoint == 'main.ai_checker' %}active{% endif %}" href="{{ url_for('main.ai_checker') }}">
         <span class="snav-icon">🤖</span> AI Checker
       </a>
@@ -351,6 +354,7 @@
       </div>
       <div class="sf-links-col">
         <div class="sf-links-heading">Tools</div>
+        <a href="{{ url_for('main.remove_ai') }}">Remove AI</a>
         <a href="{{ url_for('main.ai_checker') }}">AI Checker</a>
         <a href="{{ url_for('main.plagiarism_checker') }}">Plagiarism Check</a>
         <a href="{{ url_for('main.post_human_assignment') }}">Human Writer</a>

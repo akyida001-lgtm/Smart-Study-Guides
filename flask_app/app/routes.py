@@ -1450,8 +1450,143 @@ def register_routes(app):
 
     @main.route("/humanize", methods=["GET", "POST"])
     def humanize_tool_removed():
-        """The Humanizer was removed. Send old links and bookmarks to the home page."""
-        return redirect(url_for("main.index"), code=301)
+        """The old Humanizer page is now Remove AI. Keep old links and bookmarks working."""
+        return redirect(url_for("main.remove_ai"), code=301)
+
+    # ---------- Remove AI (human rewrite service) ----------
+    # The client uploads or pastes content and one of our writers rewrites it in
+    # their own words. Jobs reuse the AIRemovalJob queue, admin assignment and writer upload.
+
+    REMOVE_AI_MIN_WORDS     = 50
+    REMOVE_AI_MAX_WORDS     = 3000
+    REMOVE_AI_MAX_OPEN_JOBS = 3                 # queued / in-progress requests per user
+    REMOVE_AI_MAX_UPLOAD    = 5 * 1024 * 1024   # 5 MB
+    REMOVE_AI_EXTENSIONS    = (".txt", ".docx", ".pdf")
+
+    def _remove_ai_deadline_minutes(words: int) -> int:
+        if words <= 800:
+            return 30
+        if words <= 1500:
+            return 60
+        return 120
+
+    def _read_upload_text(upload):
+        """Return (text, error_message) for an uploaded .txt, .docx or text-based .pdf file."""
+        import io
+        ext = os.path.splitext((upload.filename or "").lower())[1]
+        if ext not in REMOVE_AI_EXTENSIONS:
+            return "", "Please upload a .txt, .docx or .pdf file, or paste your text instead."
+        data = upload.read(REMOVE_AI_MAX_UPLOAD + 1)
+        if len(data) > REMOVE_AI_MAX_UPLOAD:
+            return "", "That file is too large. The limit is 5 MB."
+        try:
+            if ext == ".txt":
+                text = data.decode("utf-8", errors="replace")
+            elif ext == ".docx":
+                import docx
+                text = "\n".join(p.text for p in docx.Document(io.BytesIO(data)).paragraphs)
+            else:
+                from pypdf import PdfReader
+                text = "\n".join((pg.extract_text() or "") for pg in PdfReader(io.BytesIO(data)).pages)
+        except Exception:
+            current_app.logger.exception("Remove AI: could not read upload")
+            return "", "We couldn't read that file. Try another format or paste the text instead."
+        text = text.strip()
+        if not text:
+            return "", "We couldn't find any text in that file. If it's a scanned PDF, paste the text instead."
+        return text, None
+
+    @main.route("/remove-ai", methods=["GET", "POST"])
+    @require_login
+    def remove_ai():
+        from .services.email_service import send_ai_removal_admin_alert
+        from werkzeug.utils import secure_filename as _sf
+
+        sub        = _get_active_subscription(current_user.id)
+        has_access = bool(sub) or _is_owner(current_user)
+
+        if request.method == "POST":
+            def back(msg):
+                flash(msg, "error")
+                return redirect(url_for("main.remove_ai"))
+
+            if not has_access:
+                flash("An active Weekly Pass is required to use Remove AI.", "error")
+                return redirect(url_for("main.pricing"))
+
+            title  = (request.form.get("title") or "").strip()[:200]
+            notes  = (request.form.get("notes") or "").strip()[:2000]
+            upload = request.files.get("file")
+            source_filename = None
+            if upload and upload.filename:
+                text, err = _read_upload_text(upload)
+                if err:
+                    return back(err)
+                source_filename = _sf(upload.filename)[:255]
+            else:
+                text = (request.form.get("text") or "").strip()
+
+            words = _word_count(text)
+            if words < REMOVE_AI_MIN_WORDS:
+                return back(f"Please add at least {REMOVE_AI_MIN_WORDS} words.")
+            if words > REMOVE_AI_MAX_WORDS:
+                return back(f"That's {words:,} words. The maximum per request is {REMOVE_AI_MAX_WORDS:,}.")
+
+            open_jobs = AIRemovalJob.query.filter(
+                AIRemovalJob.user_id == current_user.id,
+                AIRemovalJob.status.in_(["pending", "assigned"]),
+            ).count()
+            if open_jobs >= REMOVE_AI_MAX_OPEN_JOBS:
+                return back(f"You already have {open_jobs} requests in progress. "
+                            "Please wait for one to finish before submitting another.")
+
+            if not title:
+                title = os.path.splitext(source_filename)[0][:200] if source_filename else "Pasted text"
+            minutes  = _remove_ai_deadline_minutes(words)
+            deadline = datetime.utcnow() + timedelta(minutes=minutes)
+
+            job = AIRemovalJob(
+                assignment_id     = None,
+                user_id           = current_user.id,
+                original_text     = text,
+                original_ai_score = None,
+                word_count        = words,
+                student_notes     = notes or None,
+                title             = title,
+                source_filename   = source_filename,
+                deadline          = deadline,
+            )
+            db.session.add(job)
+            db.session.commit()
+
+            domains = os.environ.get("REPLIT_DOMAINS", "smart-study-guides.com")
+            base    = f"https://{domains.split(',')[0]}"
+            dl_str  = deadline.strftime("%H:%M, %d %b %Y") + f" ({minutes} min)"
+            for admin_email in OWNER_EMAILS_SET:
+                try:
+                    send_ai_removal_admin_alert(
+                        admin_email, current_user.display_name, title, None,
+                        dl_str, f"{base}/admin/ai-removal-jobs",
+                    )
+                except Exception:
+                    pass
+
+            flash("Submitted! One of our writers will rewrite your content and you'll be notified when it's ready.", "success")
+            return redirect(url_for("main.remove_ai_status", job_id=job.id))
+
+        recent = (AIRemovalJob.query.filter_by(user_id=current_user.id)
+                  .order_by(AIRemovalJob.submitted_at.desc()).limit(10).all())
+        return render_template(
+            "remove_ai.html", user=current_user, has_access=has_access, recent=recent,
+            min_words=REMOVE_AI_MIN_WORDS, max_words=REMOVE_AI_MAX_WORDS,
+            max_open=REMOVE_AI_MAX_OPEN_JOBS,
+        )
+
+    @main.route("/remove-ai/<int:job_id>")
+    @require_login
+    def remove_ai_status(job_id):
+        job = AIRemovalJob.query.filter_by(id=job_id, user_id=current_user.id).first_or_404()
+        return render_template("ai_removal_status.html", a=job.assignment, job=job)
 
     # ---------- AI Checker ----------
 
@@ -3605,12 +3740,13 @@ Now write the complete {doc_label} below:
         if student and student.email:
             domains    = os.environ.get("REPLIT_DOMAINS", "smart-study-guides.com")
             base       = f"https://{domains.split(',')[0]}"
-            status_url = f"{base}/assignments/{job.assignment_id}/ai-removal-status"
+            status_url = (f"{base}/assignments/{job.assignment_id}/ai-removal-status"
+                          if job.assignment_id else f"{base}/remove-ai/{job.id}")
             try:
                 send_ai_removal_completed_student(
                     student.email,
                     student.display_name,
-                    job.assignment.topic,
+                    job.display_title,
                     round(final_ai_score, 1),
                     status_url,
                 )

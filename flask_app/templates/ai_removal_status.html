@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}AI Removal Status — {{ a.topic[:50] }} — Smart Study Guides{% endblock %}
+{% block title %}AI Removal Status — {{ job.display_title[:50] }} — Smart Study Guides{% endblock %}
 {% block content %}
 
 <div class="page-header">
   <h1>✍️ AI Removal Status</h1>
-  <p style="color:var(--slate-400);margin-top:6px;">{{ a.topic }}</p>
+  <p style="color:var(--slate-400);margin-top:6px;">{{ job.display_title }}</p>
 </div>
 
 <!-- Status card -->
@@ -39,10 +39,12 @@
 
   <!-- Job details -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+    {% if job.original_ai_score is not none %}
     <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;">
       <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Original AI Score</div>
       <div style="font-size:22px;font-weight:800;color:#ff6b6b;">{{ job.original_ai_score }}%</div>
     </div>
+    {% endif %}
     <div style="background:var(--surface-2);border-radius:10px;padding:14px 18px;">
       <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Deadline</div>
       <div style="font-size:15px;font-weight:700;color:{% if job.is_overdue %}#ff6b6b{% else %}#ffd166{% endif %};">
@@ -73,10 +75,17 @@
       <div style="font-size:12px;color:#86efac;">Human Written</div>
     </div>
     <div style="margin-left:auto;">
-      <div style="font-size:12px;color:#86efac;margin-bottom:4px;">Verified by Ryter Pro</div>
-      <div style="font-size:11px;color:#4ade80;">✅ Passes AI detection</div>
+      <div style="font-size:12px;color:#86efac;">Measured by Ryter Pro</div>
     </div>
   </div>
+
+  {% if job.final_text %}
+  <div style="margin-bottom:16px;">
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Your rewritten text</div>
+    <textarea readonly id="ra-final" rows="12" class="tool-textarea">{{ job.final_text }}</textarea>
+    <button type="button" class="btn ghost" style="margin-top:8px;" onclick="var t=document.getElementById('ra-final');t.select();navigator.clipboard.writeText(t.value);this.textContent='Copied ✓';">Copy text</button>
+  </div>
+  {% endif %}
 
   <!-- Download button -->
   {% if job.final_file_url %}
@@ -84,8 +93,8 @@
     ⬇ Download Your Paper
   </a>
   {% endif %}
-  <a href="{{ url_for('main.my_assignments') }}" class="btn ghost" style="display:block;text-align:center;padding:12px;">
-    📂 My Assignments
+  <a href="{{ url_for('main.my_assignments') if job.assignment_id else url_for('main.remove_ai') }}" class="btn ghost" style="display:block;text-align:center;padding:12px;">
+    {% if job.assignment_id %}📂 My Assignments{% else %}✍️ Remove AI{% endif %}
   </a>
 
   {% else %}
@@ -95,7 +104,7 @@
     <span style="color:var(--slate-400);font-size:14px;">This page refreshes automatically every 30 seconds…</span>
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <a href="{{ url_for('main.my_assignments') }}" class="btn ghost" style="flex:1;text-align:center;padding:12px;">📂 My Assignments</a>
+    <a href="{{ url_for('main.my_assignments') if job.assignment_id else url_for('main.remove_ai') }}" class="btn ghost" style="flex:1;text-align:center;padding:12px;">{% if job.assignment_id %}📂 My Assignments{% else %}✍️ Remove AI{% endif %}</a>
     <a href="{{ url_for('main.chat_page') }}" class="btn ghost" style="flex:1;text-align:center;padding:12px;">💬 Chat Support</a>
   </div>
 

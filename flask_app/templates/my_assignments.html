@@ -6,7 +6,7 @@
   <h1>📂 My Assignments</h1>
   <div style="display:flex;gap:8px;">
     <a class="btn ghost" href="{{ url_for('main.post_human_assignment') }}">✍️ Human Writer</a>
-    <a class="btn accent" href="{{ url_for('main.new_assignment') }}">+ AI Assignment</a>
+    <a class="btn accent" href="{{ url_for('main.new_assignment') }}">+ New Assignment</a>
   </div>
 </div>
 
@@ -23,7 +23,7 @@
 <!-- ── AI Assignments ───────────────────────────────────────────────────────── -->
 <div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;">
   <h2 style="font-size:17px;font-weight:600;color:var(--slate-500);margin:0;letter-spacing:.4px;">
-    🤖 AI-Generated Assignments
+    🤖 Assignments
   </h2>
   {% if assignments %}
   <label class="select-all-label">
@@ -82,7 +82,7 @@
 
             {% if a.status == 'complete' and a.docx_url %}
               {# ── AI file download ── #}
-              <a class="btn-sm accent" href="{{ a.docx_url }}" download title="Download AI-generated file">⬇ AI Draft</a>
+              <a class="btn-sm accent" href="{{ a.docx_url }}" download title="Download your file">⬇ Draft</a>
 
               {# ── AI Removal completed download ── #}
               {% if latest_removal %}
@@ -144,9 +144,9 @@
 {% else %}
 <div class="card empty-state" style="margin-bottom:32px;">
   <div class="empty-icon">📄</div>
-  <h3>No AI assignments yet</h3>
+  <h3>No assignments yet</h3>
   <p>Create your first assignment and we'll research, write, and format it — delivered as a .docx file.</p>
-  <a class="btn accent" href="{{ url_for('main.new_assignment') }}">+ Create AI Assignment</a>
+  <a class="btn accent" href="{{ url_for('main.new_assignment') }}">+ Create Assignment</a>
 </div>
 {% endif %}
 

@@ -250,7 +250,7 @@ def mark_paper_with_rubric(paper_text: str, rubric_bytes: bytes,
         )
 
 
-SUPPORT_SYSTEM = """You are a friendly, warm customer support agent for Smart Study Guides — an AI-powered academic assignment writing platform.
+SUPPORT_SYSTEM = """You are a friendly, warm customer support agent for Smart Study Guides — an academic assignment and coursework platform.
 Keep replies concise (2–4 sentences max). Be empathetic and helpful.
 Topics you can help with: assignment creation, credits, payments, downloads, rubric marking, account issues.
 If you cannot resolve an issue tell the student a human agent will assist shortly.

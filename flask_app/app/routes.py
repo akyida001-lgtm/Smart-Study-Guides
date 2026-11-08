@@ -349,7 +349,7 @@ def register_routes(app):
     GUEST_SERVICES = {
         "assignments": {
             "icon": "assign", "title": "Create Assignment", "endpoint": "main.new_assignment",
-            "tagline": "AI-written essays, discussion posts and presentations with real, properly cited sources, up to 5 pages.",
+            "tagline": "Essays, discussion posts and presentations with real, properly cited sources, up to 5 pages.",
             "steps": ["Enter your topic, page count and citation style.",
                       "Review the real academic sources we found and approve them.",
                       "We write it and deliver a formatted Word (.docx) document."],

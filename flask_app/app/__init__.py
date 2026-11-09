@@ -270,6 +270,10 @@ def create_app():
         from flask import request as _r
         if _r.method != "GET":
             return False
+        # Pages the browser loads ahead of time (prefetch / prerender) are not the person using the site
+        purpose = ((_r.headers.get("Sec-Purpose") or "") + (_r.headers.get("Purpose") or "") + (_r.headers.get("X-Moz") or "")).lower()
+        if "prefetch" in purpose or "prerender" in purpose:
+            return True
         p = _r.path
         return (p in ("/api/chat/unread-count", "/api/notifications")
                 or (p.startswith("/api/chat/") and p.endswith("/messages")))
@@ -296,6 +300,54 @@ def create_app():
             _s["last_active"] = now
         return None
 
+    # ── Compress text responses (HTML, CSS, JS, JSON) and version static files ───────
+    import gzip as _gzip
+    _COMPRESSIBLE = {"text/html", "text/css", "text/plain", "text/xml", "text/javascript",
+                     "application/javascript", "application/json", "application/xml", "image/svg+xml"}
+    _static_gz = {}
+
+    @app.after_request
+    def _compress_response(response):
+        from flask import request as _req
+        try:
+            if response.status_code != 200 or response.headers.get("Content-Encoding"):
+                return response
+            if "gzip" not in (_req.headers.get("Accept-Encoding") or "").lower():
+                return response
+            if (response.mimetype or "") not in _COMPRESSIBLE:
+                return response
+            is_static = _req.path.startswith("/static/")
+            if response.is_streamed and not is_static:
+                return response                      # live streams (progress updates) stay uncompressed
+            if is_static:
+                response.direct_passthrough = False
+            data = response.get_data()
+            if len(data) < 1024:
+                return response
+            key = (_req.path, response.headers.get("ETag")) if is_static else None
+            gz = _static_gz.get(key) if key else None
+            if gz is None:
+                gz = _gzip.compress(data, 9 if is_static else 6)
+                if key and len(_static_gz) < 64:
+                    _static_gz[key] = gz
+            response.set_data(gz)
+            response.headers["Content-Encoding"] = "gzip"
+            response.headers["Content-Length"] = str(len(gz))
+            response.vary.add("Accept-Encoding")
+        except Exception:
+            pass
+        return response
+
+    def _asset_url(filename):
+        """URL of a static file with its modified time, so it can be cached for a year safely."""
+        from flask import url_for
+        try:
+            v = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except OSError:
+            v = 0
+        return f"{url_for('static', filename=filename)}?v={v}"
+    app.jinja_env.globals["asset_url"] = _asset_url
+
     @app.after_request
     def _set_response_headers(response):
         from flask_login import current_user
@@ -305,8 +357,15 @@ def create_app():
             is_redirect = response.status_code in (301, 302, 303, 307, 308)
             is_api = _req.path.startswith("/api/")
 
+            if _req.path.startswith("/static/"):
+                # Versioned files (?v=...) never change, so the browser keeps them for a year
+                # and pages stop re-downloading the stylesheet on every click.
+                response.headers["Cache-Control"] = ("public, max-age=31536000, immutable"
+                                                     if "v" in _req.args else "public, max-age=86400")
+                response.headers.pop("Pragma", None)
+                response.headers.pop("Expires", None)
             # Cache-control: prevent caching of authenticated / redirect responses
-            if is_auth or is_redirect:
+            elif is_auth or is_redirect:
                 response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
                 response.headers["Pragma"] = "no-cache"
                 response.headers["Expires"] = "0"

@@ -4849,3 +4849,25 @@ html[data-theme="dark"] .sf-bottom-links a:hover { color: #63cab7; }
 .dx-grid.dx-one{grid-template-columns:1fr}
 .landing-hero{padding:48px 36px;margin-bottom:24px}
 @media(max-width:600px){.site-footer.sf-compact{padding:14px 18px;justify-content:center;text-align:center}.sf-mini{justify-content:center}}
+
+/* ── Tighter rows and columns ── */
+.container{padding:20px 28px}
+.card{padding:18px 22px;margin-bottom:16px}
+.btn{padding:9px 18px}
+.nav{padding:10px 28px}
+.nav-guest{padding:8px 24px}
+.gn-link{padding-top:7px;padding-bottom:7px}
+.snav-item{padding:8px 12px}
+table th,table td{padding-block:9px}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=search],input[type=url],select{padding-block:9px}
+.dx-mast{padding:22px 28px 20px;margin-bottom:18px}
+.dx-grid{gap:18px}
+.dx-tiles{gap:10px;margin-bottom:20px}
+.dx-tile{padding:14px}
+.dx-box{padding:14px}
+.dx-row{padding:10px 16px}
+.ic{width:36px;height:36px;margin-bottom:6px}
+.landing-hero{padding:36px 32px;margin-bottom:18px}
+.landing-step{padding:12px}
+.site-footer.sf-compact{margin-top:18px;padding:10px 28px}
+@media(max-width:900px){.container{padding:14px 14px}.card{padding:14px 16px}.nav-guest{padding:8px 14px}}

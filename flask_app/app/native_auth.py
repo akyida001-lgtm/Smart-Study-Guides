@@ -456,7 +456,7 @@ def init_auth(app):
     # ----------------- logout -----------------
     @bp.route("/auth/logout", methods=["GET", "POST"])
     def logout():
-        idle = request.args.get("reason") == "idle"
+        idle = request.args.get("reason") in ("idle", "timeout")
         logout_user()
         session.clear()
         resp = redirect(url_for("auth.login") if idle else url_for("main.index"))

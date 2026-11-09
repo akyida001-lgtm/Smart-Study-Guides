@@ -40,51 +40,55 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&family=Newsreader:wght@500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=41" />
-  <style>
-  body { opacity: 0; transition: opacity 0.18s ease-in; }
-  body.fade-in { opacity: 1; }
-</style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/human_writer.css') }}?v=2" />
+  <link rel="stylesheet" href="{{ asset_url('css/styles.css') }}" />
+  <link rel="stylesheet" href="{{ asset_url('css/human_writer.css') }}" />
 
-  <!-- ── Instant navigation: preload pages in background ── -->
-  <script type="speculationrules">
-  {
-    "prerender": [{
-      "where": {
-        "and": [
-          { "href_matches": "/*" },
-          { "not": { "selector_matches": "[data-no-prefetch]" } }
-        ]
-      },
-      "eagerness": "moderate"
-    }],
-    "prefetch": [{
-      "where": {
-        "and": [
-          { "href_matches": "/*" },
-          { "not": { "selector_matches": "[data-no-prefetch]" } }
-        ]
-      },
-      "eagerness": "moderate"
-    }]
-  }
-  </script>
+  <!-- ── Instant pages: every main page is loaded in the background as soon as someone arrives ── -->
+  <script>window.ssgWhenActive = function (f) { if (document.prerendering) { document.addEventListener('prerenderingchange', f, { once: true }); } else { f(); } };</script>
+  {% if current_user.is_authenticated and not current_user.is_writer %}
+    {% set ssg_pages = [url_for('main.dashboard'), url_for('main.new_assignment'), url_for('main.my_assignments'), url_for('main.remove_ai'), url_for('main.ai_checker'), url_for('main.plagiarism_checker'), url_for('main.post_human_assignment'), url_for('main.job_docs'), url_for('main.pricing'), url_for('main.subscription_manage'), url_for('main.transactions'), url_for('main.profile'), url_for('main.help_page')] %}
+  {% elif not current_user.is_authenticated %}
+    {% set ssg_pages = [url_for('main.dashboard'), url_for('main.new_assignment'), url_for('main.remove_ai'), url_for('main.ai_checker'), url_for('main.plagiarism_checker'), url_for('main.post_human_assignment'), url_for('main.job_docs'), url_for('main.pricing'), url_for('main.help_page'), url_for('auth.login'), url_for('auth.signup'), url_for('main.index'), '/updates', '/terms', '/privacy'] %}
+  {% else %}
+    {% set ssg_pages = [] %}
+  {% endif %}
+  {% set ssg_pages = ssg_pages | reject('equalto', request.path) | list %}
+  {% if ssg_pages %}
+  <script type="speculationrules" id="ssg-spec">{{ {"prerender": [{"urls": ssg_pages[:10], "eagerness": "immediate"}], "prefetch": ([{"urls": ssg_pages[10:], "eagerness": "immediate"}] if ssg_pages[10:] else [])} | tojson }}</script>
+  {% endif %}
   <script>
-  // Fallback for browsers without Speculation Rules (Firefox, Safari)
-  if (!HTMLScriptElement.supports || !HTMLScriptElement.supports('speculationrules')) {
-    var ssgPrefetch = function (e) {
-      var link = e.target.closest('a');
-      if (link && link.href && link.origin === location.origin && !link.hasAttribute('data-no-prefetch')) {
-        var l = document.createElement('link');
-        l.rel = 'prefetch';
-        l.href = link.href;
-        document.head.appendChild(l);
-      }
-    };
-    document.addEventListener('mouseover', ssgPrefetch);
-    document.addEventListener('touchstart', ssgPrefetch, { passive: true });
-  }
+  (function () {
+    var supported = HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules');
+    // Chrome / Edge: keep the preloaded pages fresh while the tab stays open
+    var el = document.getElementById('ssg-spec');
+    if (supported && el) {
+      var rules = el.textContent, last = Date.now();
+      var refresh = function () {
+        if (document.hidden || document.prerendering) return;
+        var old = document.getElementById('ssg-spec'); if (old) old.remove();
+        setTimeout(function () {
+          var n = document.createElement('script'); n.type = 'speculationrules'; n.id = 'ssg-spec'; n.textContent = rules;
+          document.head.appendChild(n);
+        }, 500);
+        last = Date.now();
+      };
+      setInterval(refresh, 5 * 60 * 1000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - last > 2 * 60 * 1000) refresh(); });
+    }
+    // Firefox / Safari: no prerendering, so quietly prefetch the public pages once the page has loaded
+    if (!supported) {
+      var guest = {{ 'false' if current_user.is_authenticated else 'true' }};
+      var pages = {{ ssg_pages | tojson }};
+      var pf = function (u) { var l = document.createElement('link'); l.rel = 'prefetch'; l.href = u; document.head.appendChild(l); };
+      if (guest) window.addEventListener('load', function () { setTimeout(function () { pages.forEach(function (u, i) { setTimeout(function () { pf(u); }, i * 250); }); }, 800); });
+      var hover = function (e) {
+        var link = e.target.closest && e.target.closest('a');
+        if (link && link.href && link.origin === location.origin && !link.hasAttribute('data-no-prefetch')) pf(link.href);
+      };
+      document.addEventListener('mouseover', hover);
+      document.addEventListener('touchstart', hover, { passive: true });
+    }
+  })();
   </script>
 </head>
 <body{% if current_user.is_authenticated and current_user.is_staff %} class="is-admin"{% endif %}>
@@ -466,8 +470,7 @@ document.addEventListener('click',function(e){if(!m.contains(e.target)&&!b.conta
   }
 
   /* Poll for unread every 30s (lightweight) */
-  setInterval(refreshUnreadCount, 30000);
-  refreshUnreadCount();
+  ssgWhenActive(function () { setInterval(refreshUnreadCount, 30000); refreshUnreadCount(); });
 
   function fcNow() {
     var d = new Date();
@@ -926,8 +929,7 @@ document.addEventListener('click',function(e){if(!m.contains(e.target)&&!b.conta
       if (open) { loaded = d.items; ntfRender(); }
     } catch(e) {}
   }
-  setInterval(ntfPoll, 60000);
-  ntfPoll();
+  ssgWhenActive(function () { setInterval(ntfPoll, 60000); ntfPoll(); });
 })();
 </script>
 
@@ -1118,13 +1120,21 @@ body.is-admin .no-copy *::selection { background: highlight; }
 {% if current_user.is_authenticated %}
 <script>
 (function() {
-  var SESSION_MS   = 6 * 60 * 60 * 1000;   // 6 hours
+  var SESSION_MS   = 4 * 60 * 60 * 1000;   // 4 hours (the server enforces the same limit)
   var WARNING_MS   = SESSION_MS - 10 * 60 * 1000; // warn 10 min before
   var STORAGE_KEY  = 'ssg_last_active';
   var LOGOUT_URL   = '{{ url_for("auth.logout") }}';
 
   function now() { return Date.now(); }
-  function touch() { localStorage.setItem(STORAGE_KEY, now()); }
+  var lastPing = now();
+  function touch() {
+    try { localStorage.setItem(STORAGE_KEY, now()); } catch (e) {}
+    // tell the server the person is still here (at most every 5 minutes)
+    if (now() - lastPing > 5 * 60 * 1000 && !document.prerendering) {
+      lastPing = now();
+      fetch('/api/keepalive', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+    }
+  }
   function idle()  { return now() - (parseInt(localStorage.getItem(STORAGE_KEY) || now(), 10)); }
 
   // Reset timer on any user activity
@@ -1132,6 +1142,7 @@ body.is-admin .no-copy *::selection { background: highlight; }
     document.addEventListener(ev, touch, { passive: true });
   });
   touch(); // record login / page-load as activity
+  document.addEventListener('prerenderingchange', function () { lastPing = now(); touch(); });
 
   // Warning banner (created lazily)
   var _banner = null;
@@ -1158,9 +1169,10 @@ body.is-admin .no-copy *::selection { background: highlight; }
   }
 
   setInterval(function() {
+    if (document.prerendering) return;
     var idleMs = idle();
     if (idleMs >= SESSION_MS) {
-      window.location.href = LOGOUT_URL + '?reason=timeout';
+      window.location.href = LOGOUT_URL + '?reason=idle';
       return;
     }
     if (idleMs >= WARNING_MS) {
@@ -1173,52 +1185,5 @@ body.is-admin .no-copy *::selection { background: highlight; }
 })();
 </script>
 {% endif %}
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    document.body.classList.add('fade-in');
-  });
-  document.addEventListener('click', function (e) {
-    var link = e.target.closest('a');
-    if (link && link.href && link.target !== '_blank' && link.href.indexOf('mailto:') !== 0 && link.href.indexOf('#') !== 0) {
-      var sameSite = link.href.indexOf(window.location.origin) === 0;
-      if (sameSite) {
-        e.preventDefault();
-        document.body.style.opacity = '0';
-        setTimeout(function () { window.location.href = link.href; }, 150);
-      }
-    }
-  });
-</script>
-{% if current_user.is_authenticated %}
-<script>
-/* Sign out after 4 hours without activity. The server enforces this too; this makes an
-   open tab (or a laptop that was asleep or offline) sign out as soon as it is used again. */
-(function () {
-  var IDLE_MS = 4 * 60 * 60 * 1000, KEY = 'ssg_last_activity';
-  var PING_MS = 5 * 60 * 1000, STAMP_MS = 5000, lastPing = 0, lastStamp = 0;
-  function now() { return Date.now(); }
-  function stamp() { try { localStorage.setItem(KEY, String(now())); } catch (e) {} }
-  function last() { try { return parseInt(localStorage.getItem(KEY) || '', 10) || now(); } catch (e) { return now(); } }
-  function check() { if (now() - last() >= IDLE_MS) { window.location.href = "{{ url_for('auth.logout', reason='idle') }}"; } }
-  function onActivity() {
-    var t = now();
-    if (t - lastStamp < STAMP_MS) return;
-    lastStamp = t; stamp();
-    if (t - lastPing > PING_MS) {
-      lastPing = t;
-      fetch('/api/keepalive', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
-    }
-  }
-  ['click', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function (ev) {
-    window.addEventListener(ev, onActivity, { passive: true });
-  });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
-  window.addEventListener('online', check);
-  window.addEventListener('focus', check);
-  stamp(); lastStamp = now();
-  setInterval(check, 60 * 1000);
-})();
-</script>
-{% endif %}
-</body>
+</body></body>
 </html>

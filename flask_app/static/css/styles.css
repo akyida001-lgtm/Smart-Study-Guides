@@ -4875,7 +4875,7 @@ input[type=text],input[type=email],input[type=password],input[type=number],input
 /* ── Colours: dashboard follows the teal header ── */
 body{background:#f1f7f7 !important}
 .dx-mast{background:radial-gradient(900px 340px at 85% -20%,rgba(0,229,200,.28),transparent 60%),linear-gradient(155deg,#00796b 0%,#004d54 58%,#00343c 100%)}
-.dx-status,.dx-pass-note,.dx-tile.lead span:not(.ic){color:#c8ecea}
+.dx-status,.dx-pass-note,.dx-tile.lead span:not(.ic){color:#e2f7f5}
 .dx-link{color:#e6faf7;border-bottom-color:rgba(230,250,247,.4)}
 .dx-link:hover{color:#fff;border-color:#fff}
 .dx-pass{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Smart Study Guides — Coursework and Assignment Help{% endblock %}
-{% block meta_description %}Smart Study Guides helps with coursework and assignments: polished, properly cited essays, discussion posts and presentations with real research sources, delivered as a Word document. Weekly Pass: $25 for 7 days.{% endblock %}
-{% block og_title %}Smart Study Guides — Coursework and Assignment Help{% endblock %}
-{% block og_description %}Coursework and assignment help with real citations. Polished, plagiarism-clean work delivered as a .docx file.{% endblock %}
+{% block title %}Smart Study Guides — Assignment &amp; Homework Help for Students{% endblock %}
+{% block meta_description %}Assignment and homework help for students. Essays, discussion posts and presentations with real sources and proper citations, delivered as a Word file.{% endblock %}
+{% block og_title %}Smart Study Guides — Assignment &amp; Homework Help for Students{% endblock %}
+{% block og_description %}Assignment and homework help for students: essays, discussion posts and presentations with real citations, delivered as a Word file.{% endblock %}
 {% block extra_head %}
 <!-- SoftwareApplication schema -->
 <script type="application/ld+json">
@@ -13,7 +13,7 @@
   "url": "https://smart-study-guides.com",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Web",
-  "description": "Coursework and assignment help: essays, discussion posts and presentations with real research sources, delivered as Word documents.",
+  "description": "Assignment and homework help for students: essays, discussion posts and presentations with real research sources and proper citations, delivered as Word documents.",
   "offers": {
     "@type": "AggregateOffer",
     "lowPrice": "25.00",
@@ -24,7 +24,7 @@
   "featureList": [
     "Essays, discussion posts and presentations",
     "Real academic sources and citations",
-    "AI content checker",
+    "Built-in plagiarism checker",
     "Plagiarism checker",
     "Word document (.docx) delivery",
     "APA, MLA, Chicago, Harvard citation styles"
@@ -72,7 +72,7 @@
       "name": "What is Smart Study Guides?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Smart Study Guides is a coursework and assignment service that produces fully written, properly cited essays and assignments. It sources real academic references and delivers a formatted Word document."
+        "text": "Smart Study Guides is an assignment and homework helper for students. It produces fully written, properly cited essays, discussion posts and presentations. It sources real academic references and delivers a formatted Word document."
       }
     },
     {
@@ -114,9 +114,9 @@
 {% block content %}
 <section class="landing-hero">
   <div class="landing-hero-inner">
-    <span class="landing-eyebrow">Coursework &amp; assignment help • Plagiarism-clean</span>
-    <h1>Smart Study Guides</h1>
-    <p class="landing-sub">Polished, properly-cited academic assignments in minutes. Real research, delivered as a Word document.</p>
+    <span class="landing-eyebrow">Assignment &amp; homework help • Plagiarism-clean</span>
+    <h1>Assignment &amp; Homework Help for Students</h1>
+    <p class="landing-sub">Essays, discussion posts and presentations with real research sources and proper citations. Delivered as a Word document in minutes.</p>
     <div class="landing-cta-row">
       {% if user and user.is_authenticated %}
         <a class="btn accent" href="{{ url_for('main.dashboard') }}">Open my dashboard</a>

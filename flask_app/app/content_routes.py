@@ -112,18 +112,3 @@ def admin_content_toggle(post_id):
     post.published = not post.published
     db.session.commit()
     return jsonify({"published": post.published})
-
-
-@content_bp.route("/updates")
-def public_updates():
-    results   = Post.query.filter_by(type=PostType.result,   published=True).order_by(Post.created_at.desc()).all()
-    discounts = Post.query.filter_by(type=PostType.discount, published=True).order_by(Post.created_at.desc()).all()
-    videos    = Post.query.filter_by(type=PostType.video,    published=True).order_by(Post.created_at.desc()).all()
-    pictures  = Post.query.filter_by(type=PostType.picture,  published=True).order_by(Post.created_at.desc()).all()
-    return render_template(
-        "public_updates.html",
-        results=results,
-        discounts=discounts,
-        videos=videos,
-        pictures=pictures,
-    )

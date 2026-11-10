@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Feed moderation — Smart Study Guides{% endblock %}
+{% block content %}
+{% macro actions(kind, obj) -%}
+  {% set restore = url_for('feed.admin_feed_post', pid=obj.id, action='restore') if kind == 'post' else url_for('feed.admin_feed_comment', cid=obj.id, action='restore') %}
+  {% set remove  = url_for('feed.admin_feed_post', pid=obj.id, action='remove')  if kind == 'post' else url_for('feed.admin_feed_comment', cid=obj.id, action='remove') %}
+  <form method="post" style="display:inline"><button class="btn ghost" formaction="{{ restore }}">Restore</button></form>
+  <form method="post" style="display:inline"><button class="btn ghost" formaction="{{ remove }}">Remove</button></form>
+  {% if not obj.is_official and obj.user_id not in banned and obj.user_id != 'system' %}
+  <form method="post" style="display:inline"><input type="hidden" name="ban" value="1"><button class="btn ghost" style="color:#dc2626" formaction="{{ remove }}">Remove + ban author</button></form>
+  {% endif %}
+{%- endmacro %}
+{% macro meta(kind, obj) -%}
+  <div class="fm-meta">
+    <span class="fm-chip {{ obj.status }}">{{ obj.status }}</span>
+    {% if obj.report_count %}<span class="fm-chip warn">{{ obj.report_count }} report{{ '' if obj.report_count == 1 else 's' }}: {{ (reasons.get((kind, obj.id)) or [])|join(', ') }}</span>{% endif %}
+    <span>{{ obj.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+    <span>author: <strong>{% if obj.is_official %}official ({{ emails.get(obj.user_id, 'admin') }}){% else %}{{ emails.get(obj.user_id, obj.user_id) }}{% endif %}</strong>{% if obj.user_id in banned %} <em>(banned)</em>{% endif %}</span>
+  </div>
+{%- endmacro %}
+<div class="page-header"><h1>Feed moderation</h1></div>
+<p class="sub" style="margin-bottom:16px;">Authors are anonymous to everyone except admins. A post or comment reported by {{ 3 }} different people is hidden until you review it.
+  <a href="{{ url_for('feed.updates_page') }}">← Back to Updates</a></p>
+
+<div class="card"><h2 style="font-size:17px;margin:0 0 10px;">Needs review</h2>
+  {% for p in flagged_posts %}
+    <div class="fm-row"><div class="fm-body">{{ p.body|truncate(220) or '(media only)' }} <span class="fm-kind">{{ p.kind }}</span></div>{{ meta('post', p) }}<div>{{ actions('post', p) }}</div></div>
+  {% endfor %}
+  {% for c in flagged_comments %}
+    <div class="fm-row"><div class="fm-body">💬 {{ c.body|truncate(220) }}</div>{{ meta('comment', c) }}<div>{{ actions('comment', c) }}</div></div>
+  {% endfor %}
+  {% if not flagged_posts and not flagged_comments %}<p class="sub">Nothing reported. 🎉</p>{% endif %}
+</div>
+
+<div class="card"><h2 style="font-size:17px;margin:0 0 10px;">Recent posts</h2>
+  {% for p in recent %}
+    <div class="fm-row"><div class="fm-body">{{ p.body|truncate(160) or '(media only)' }} <span class="fm-kind">{{ p.kind }}</span></div>{{ meta('post', p) }}
+      <div>{% if p.status != 'removed' %}{{ actions('post', p) }}{% endif %}</div></div>
+  {% endfor %}
+</div>
+
+<div class="card"><h2 style="font-size:17px;margin:0 0 10px;">Banned from posting</h2>
+  {% for b in bans %}
+    <div class="fm-row"><div class="fm-body">{{ emails.get(b.user_id, b.user_id) }} <span class="fm-kind">{{ b.reason }}</span></div>
+      <form method="post" action="{{ url_for('feed.admin_feed_unban') }}"><input type="hidden" name="user_id" value="{{ b.user_id }}"><button class="btn ghost">Unban</button></form></div>
+  {% else %}<p class="sub">Nobody is banned.</p>{% endfor %}
+</div>
+<style>
+.fm-row{padding:12px 0;border-top:1px solid var(--slate-100);display:grid;gap:6px}
+.fm-row:first-of-type{border-top:0}
+.fm-body{font-size:14px;color:var(--navy-900);word-break:break-word}
+.fm-kind{font-size:11px;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--slate-500);margin-left:6px}
+.fm-meta{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--slate-400);align-items:center}
+.fm-chip{padding:2px 8px;border-radius:999px;font-weight:600;background:var(--surface-2);color:var(--slate-500)}
+.fm-chip.hidden,.fm-chip.warn{background:#fef3c7;color:#92400e}.fm-chip.removed{background:#fee2e2;color:#991b1b}
+</style>
+{% endblock %}

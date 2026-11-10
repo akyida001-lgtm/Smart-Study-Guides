@@ -204,6 +204,14 @@ def create_app():
                 conn.execute(text("ALTER TABLE ai_removal_jobs ALTER COLUMN original_ai_score DROP NOT NULL"))
                 conn.commit()
 
+        # Updates feed: bring over the old admin posts once
+        try:
+            from .feed import import_legacy_posts
+            import_legacy_posts()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.warning("Feed import skipped: %s", e)
+
         # Auto-grant staff access to all owner accounts
         try:
             db.session.execute(
@@ -261,6 +269,8 @@ def create_app():
     init_auth(app)
     register_routes(app)
     app.register_blueprint(content_bp)
+    from .feed import feed_bp
+    app.register_blueprint(feed_bp)
 
     # ── Sign out after 4 hours of inactivity ───────────────────────────────────
     IDLE_TIMEOUT_SECONDS = 4 * 60 * 60
@@ -357,11 +367,11 @@ def create_app():
             is_redirect = response.status_code in (301, 302, 303, 307, 308)
             is_api = _req.path.startswith("/api/")
 
-            if _req.path.startswith("/static/"):
-                # Versioned files (?v=...) never change, so the browser keeps them for a year
-                # and pages stop re-downloading the stylesheet on every click.
+            if _req.path.startswith(("/static/", "/updates/media/")):
+                # Versioned files (?v=...) and uploaded media (unique file names) never change, so the
+                # browser keeps them for a year and pages stop re-downloading them on every click.
                 response.headers["Cache-Control"] = ("public, max-age=31536000, immutable"
-                                                     if "v" in _req.args else "public, max-age=86400")
+                                                     if ("v" in _req.args or _req.path.startswith("/updates/media/")) else "public, max-age=86400")
                 response.headers.pop("Pragma", None)
                 response.headers.pop("Expires", None)
             # Cache-control: prevent caching of authenticated / redirect responses

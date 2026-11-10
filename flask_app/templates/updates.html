@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Updates — Smart Study Guides{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ asset_url('css/feed.css') }}">
+<div class="fd" id="fd" data-auth="{{ 1 if current_user.is_authenticated else 0 }}" data-admin="{{ 1 if is_admin else 0 }}" data-can-post="{{ 1 if can_post else 0 }}"
+     data-tag="{{ tag }}" data-post="{{ focus_post }}" data-login="{{ url_for('auth.login', next='/updates') }}">
+  <div class="fd-top">
+    <h1>Updates</h1>
+    <div class="fd-tabs" role="tablist" aria-label="Updates sections">
+      <button data-act="tab" data-tab="feed" role="tab" class="on" aria-selected="true">Feed</button>
+      <button data-act="tab" data-tab="reels" role="tab" aria-selected="false">Reels</button>
+      <button data-act="tab" data-tab="saved" role="tab" aria-selected="false">Saved</button>
+    </div>
+    {% if is_admin %}<a class="btn ghost" href="{{ url_for('feed.admin_feed') }}">Moderation</a>{% endif %}
+  </div>
+  {% if tag %}<a class="fd-chip" href="{{ url_for('feed.updates_page') }}">#{{ tag }} <span aria-label="Clear filter">✕</span></a>{% endif %}
+
+  <div class="fd-layout">
+    <main>
+      <div class="fd-composer">
+        <span class="fd-ava {{ 'off' if is_admin else '' }}" aria-hidden="true">{% if is_admin %}📚{% else %}🎭{% endif %}</span>
+        {% if current_user.is_authenticated %}
+          <button class="fd-fake" data-act="compose">Share an update{% if not is_admin %} anonymously{% endif %}…</button>
+          <button class="fd-ci" data-act="compose" aria-label="Add photo or video">📷</button>
+        {% else %}
+          <a class="fd-fake" style="text-decoration:none;display:block" href="{{ url_for('auth.login', next='/updates') }}">Sign in to share an update</a>
+        {% endif %}
+      </div>
+      <div id="fd-list"></div>
+      <div id="fd-reels" class="fd-reels" hidden></div>
+      <div id="fd-sentinel" style="height:1px"></div>
+    </main>
+    <aside class="fd-rail-side">
+      <div class="fd-box"><h3>About this feed</h3>
+        <p>News, offers and posts from the Smart Study Guides community. Everyone posts anonymously, so you'll never see a name or account, only a made-up nickname.</p></div>
+      {% if trending %}<div class="fd-box fd-trend"><h3>Trending</h3>{% for t in trending %}<a href="{{ url_for('feed.updates_page', tag=t) }}">#{{ t }}</a>{% endfor %}</div>{% endif %}
+      <div class="fd-box"><h3>Keep it kind</h3>
+        <ul><li>No harassment, hate or illegal content.</li><li>Don't share personal details.</li><li>Use the ⋯ menu to report anything that breaks the rules.</li></ul>
+        <p style="margin-top:8px">Admins can see who posted, only to keep the community safe.</p></div>
+    </aside>
+  </div>
+
+  <!-- composer -->
+  <div class="fd-modal" id="fd-modal" hidden>
+    <form class="fd-dlg" id="fd-form" role="dialog" aria-modal="true" aria-label="Create update">
+      <div class="fd-dh"><span>Create update</span><button type="button" data-act="close" aria-label="Close">✕</button></div>
+      <div class="fd-dbody">
+        <div class="fd-as"><span class="fd-ava {{ 'off' if is_admin else '' }}">{% if is_admin %}📚{% else %}🎭{% endif %}</span>
+          <div><b>{% if is_admin %}Smart Study Guides{% else %}Anonymous{% endif %}</b>{% if is_admin %}Official account{% else %}Your name and account stay hidden{% endif %}</div></div>
+        <textarea id="fd-body" maxlength="2000" placeholder="What's on your mind? Use #hashtags so people can find it." aria-label="Update text"></textarea>
+        <div class="fd-prev" id="fd-prev"></div>
+        <div class="fd-add"><span>Add to your update</span>
+          <button type="button" data-act="pickphoto" aria-label="Add photos">📷</button><button type="button" data-act="pickvideo" aria-label="Add video">🎬</button>
+          <input type="file" id="fd-file" multiple hidden></div>
+      </div>
+      <div class="fd-err" id="fd-err" role="alert"></div>
+      <div class="fd-foot"><small><span id="fd-count">0/2000</span><br>Up to 4 photos or 1 video (25 MB). Admins can see who posted, only for moderation.</small>
+        <button type="submit" id="fd-post" disabled>Post</button></div>
+    </form>
+  </div>
+  <!-- comments sheet (reels) -->
+  <div class="fd-sheet" id="fd-sheet" hidden><div class="fd-dlg"><div class="fd-dh"><span>Comments</span><button type="button" data-act="sheetclose" aria-label="Close">✕</button></div><div class="fd-dbody fd-cmts" id="fd-sheet-body"></div></div></div>
+  <!-- photo viewer -->
+  <div class="fd-lb" id="fd-lb" hidden><button class="x" data-act="lbclose" aria-label="Close">✕</button><button class="p fd-lb-nav" data-act="lbprev" aria-label="Previous">‹</button>
+    <img id="fd-lb-img" alt=""><button class="n fd-lb-nav" data-act="lbnext" aria-label="Next">›</button><span class="c" id="fd-lb-n"></span></div>
+  <div class="fd-menu" id="fd-menu" hidden role="menu"></div>
+  <div class="fd-toast" id="fd-toast" role="status" aria-live="polite"></div>
+</div>
+<script src="{{ asset_url('js/feed.js') }}" defer></script>
+{% endblock %}

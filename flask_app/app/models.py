@@ -449,3 +449,80 @@ class PostMedia(db.Model):
 
     def __repr__(self):
         return f"<PostMedia {self.id} post={self.post_id}>"
+
+
+# ── Updates feed (anonymous community feed) ────────────────────────────────────
+# user_id is kept so admins can moderate, but it is never sent to other users.
+
+class FeedPost(db.Model):
+    __tablename__ = "feed_posts"
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.String(64), nullable=False, index=True)
+    body           = db.Column(db.Text, nullable=False, default="")
+    kind           = db.Column(db.String(8), nullable=False, default="text")   # text | image | video
+    media          = db.Column(db.Text, nullable=False, default="[]")          # JSON: [{url,type,w,h}]
+    tags           = db.Column(db.Text, nullable=False, default="")             # " tag1 tag2 " (lowercase)
+    is_official    = db.Column(db.Boolean, nullable=False, default=False)       # posted by an admin
+    is_pinned      = db.Column(db.Boolean, nullable=False, default=False)
+    status         = db.Column(db.String(10), nullable=False, default="visible", index=True)  # visible | hidden | removed
+    like_count     = db.Column(db.Integer, nullable=False, default=0)
+    comment_count  = db.Column(db.Integer, nullable=False, default=0)
+    view_count     = db.Column(db.Integer, nullable=False, default=0)
+    report_count   = db.Column(db.Integer, nullable=False, default=0)
+    legacy_post_id = db.Column(db.Integer, unique=True, nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class FeedComment(db.Model):
+    __tablename__ = "feed_comments"
+
+    id           = db.Column(db.Integer, primary_key=True)
+    post_id      = db.Column(db.Integer, db.ForeignKey("feed_posts.id"), nullable=False, index=True)
+    user_id      = db.Column(db.String(64), nullable=False, index=True)
+    parent_id    = db.Column(db.Integer, nullable=True, index=True)
+    body         = db.Column(db.Text, nullable=False)
+    is_official  = db.Column(db.Boolean, nullable=False, default=False)
+    status       = db.Column(db.String(10), nullable=False, default="visible")
+    like_count   = db.Column(db.Integer, nullable=False, default=0)
+    report_count = db.Column(db.Integer, nullable=False, default=0)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class FeedLike(db.Model):
+    __tablename__ = "feed_likes"
+    __table_args__ = (db.UniqueConstraint("user_id", "kind", "target_id", name="uq_feed_like"),)
+
+    id        = db.Column(db.Integer, primary_key=True)
+    user_id   = db.Column(db.String(64), nullable=False, index=True)
+    kind      = db.Column(db.String(8), nullable=False)       # post | comment
+    target_id = db.Column(db.Integer, nullable=False, index=True)
+
+
+class FeedSave(db.Model):
+    __tablename__ = "feed_saves"
+    __table_args__ = (db.UniqueConstraint("user_id", "post_id", name="uq_feed_save"),)
+
+    id      = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), nullable=False, index=True)
+    post_id = db.Column(db.Integer, nullable=False, index=True)
+
+
+class FeedReport(db.Model):
+    __tablename__ = "feed_reports"
+    __table_args__ = (db.UniqueConstraint("user_id", "kind", "target_id", name="uq_feed_report"),)
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.String(64), nullable=False)
+    kind       = db.Column(db.String(8), nullable=False)
+    target_id  = db.Column(db.Integer, nullable=False, index=True)
+    reason     = db.Column(db.String(40), nullable=False, default="other")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class FeedBan(db.Model):
+    __tablename__ = "feed_bans"
+
+    user_id    = db.Column(db.String(64), primary_key=True)
+    reason     = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

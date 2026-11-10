@@ -2783,6 +2783,8 @@ def register_routes(app):
             db.session.execute(t("DELETE FROM human_order_messages WHERE order_id IN (SELECT id FROM human_orders WHERE user_id = :u)"), {"u": uid})
             db.session.execute(t("DELETE FROM human_order_files WHERE order_id IN (SELECT id FROM human_orders WHERE user_id = :u)"), {"u": uid})
             db.session.execute(t("DELETE FROM human_orders WHERE user_id = :u"), {"u": uid})
+            from .feed import delete_user_feed_data
+            delete_user_feed_data(uid)
             db.session.execute(t("DELETE FROM ai_removal_jobs WHERE user_id = :u"), {"u": uid})
             db.session.execute(t("DELETE FROM reviews WHERE assignment_id IN (SELECT id FROM assignments WHERE user_id = :u)"), {"u": uid})
             db.session.execute(t("DELETE FROM sources WHERE assignment_id IN (SELECT id FROM assignments WHERE user_id = :u)"), {"u": uid})

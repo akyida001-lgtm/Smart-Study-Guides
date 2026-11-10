@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+flask_app/instance/
+.env
+node_modules/
+*.log

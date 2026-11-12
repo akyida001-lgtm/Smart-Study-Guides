@@ -41,18 +41,14 @@
 
 </section>
 
+{% set dx_pages = [('My assignments','main.my_assignments','folder'),('New assignment','main.new_assignment','assign'),('Remove AI','main.remove_ai','removeai'),('AI checker','main.ai_checker','bot'),('Plagiarism','main.plagiarism_checker','files'),('Human writer','main.post_human_assignment','cap'),('Career','main.job_docs','briefcase'),('Updates','feed.updates_page','megaphone'),('Pricing','main.pricing','card'),('Billing','main.subscription_manage','wallet'),('Help','main.help_page','help'),('Profile','main.profile','user')] %}
+<h2 class="dx-h">Pages</h2>
+<nav class="dx-pages" aria-label="Pages">
+  {% for label, ep, ic in dx_pages %}<a class="dx-pg" href="{{ url_for(ep) }}"><span class="ic">{{ icon(ic) }}</span><span>{{ label }}</span></a>{% endfor %}
+</nav>
+
 <div class="dx-grid{% if not referral_link %} dx-one{% endif %}">
   <div>
-    <h2 class="dx-h">Services</h2>
-    <div class="dx-tiles">
-      <a class="dx-tile lead" href="{{ url_for('main.new_assignment') }}"><span class="ic">{{ icon('assign') }}</span><b>Create assignment</b><span>Essays, discussion posts and presentations with real, cited sources.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.remove_ai') }}"><span class="ic">{{ icon('removeai') }}</span><b>Remove AI</b><span>A writer rewrites your text in their own words.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.ai_checker') }}"><span class="ic">{{ icon('bot') }}</span><b>AI checker</b><span>See how your text scores.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.plagiarism_checker') }}"><span class="ic">{{ icon('files') }}</span><b>Plagiarism check</b><span>Find matches with existing sources.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.post_human_assignment') }}"><span class="ic">{{ icon('cap') }}</span><b>Human writer</b><span>Have a person write it from scratch.</span></a>
-      <a class="dx-tile" href="{{ url_for('main.job_docs') }}"><span class="ic">{{ icon('briefcase') }}</span><b>Career section</b><span>CVs and cover letters, free.</span></a>
-    </div>
-
     <h2 class="dx-h">Your work <a href="{{ url_for('main.my_assignments') }}">View all</a></h2>
     {% if assignments %}
     <div class="dx-rows">

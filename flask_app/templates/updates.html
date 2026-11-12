@@ -20,7 +20,7 @@
       <div class="fd-composer">
         <span class="fd-ava {{ 'off' if is_admin else '' }}" aria-hidden="true">{% if is_admin %}📚{% else %}🎭{% endif %}</span>
         {% if current_user.is_authenticated %}
-          <button class="fd-fake" data-act="compose">Share an update{% if not is_admin %} anonymously{% endif %}…</button>
+          <button class="fd-fake" data-act="compose">{% if is_admin %}Share an update…{% else %}Share anonymously…{% endif %}</button>
           <button class="fd-ci" data-act="compose" aria-label="Add photo or video">📷</button>
         {% else %}
           <a class="fd-fake" style="text-decoration:none;display:block" href="{{ url_for('auth.login', next='/updates') }}">Sign in to share an update</a>

@@ -394,7 +394,9 @@ def register_routes(app):
         ("files", "Plagiarism Check", "Check your text for matches with existing sources.", "main.plagiarism_checker"),
         ("cap", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
         ("briefcase", "Career Section", "Free career documents for your job search.", "main.job_docs"),
+        ("megaphone", "Updates", "News, offers and posts from other students.", "feed.updates_page"),
         ("card", "Plans & Pricing", "The 7-day Weekly Pass for $25.", "main.pricing"),
+        ("help", "Help", "Guides and answers to common questions.", "main.help_page"),
     ]
 
     def public_or_login(guest_handler):

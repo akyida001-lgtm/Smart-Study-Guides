@@ -1,3 +1,4 @@
+{% from "_icons.html" import icon %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -16,6 +17,21 @@
   <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='img/favicon.png') }}?v=2" />
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2" />
   <meta name="theme-color" content="#00bcd4" />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+  /* Light / dark theme: follows the phone's setting until the person chooses one with the moon/sun button. */
+  (function () {
+    var KEY = 'ssg-theme', root = document.documentElement, meta = document.querySelector('meta[name="theme-color"]');
+    var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+    function stored() { try { var t = localStorage.getItem(KEY); return t === 'dark' || t === 'light' ? t : null; } catch (e) { return null; } }
+    function apply(t) { root.setAttribute('data-theme', t); if (meta) meta.setAttribute('content', t === 'dark' ? '#043d44' : '#00bcd4'); }
+    apply(stored() || (mq && mq.matches ? 'dark' : 'light'));
+    window.ssgSetTheme = function (t) { try { localStorage.setItem(KEY, t); } catch (e) {} apply(t); };
+    window.ssgToggleTheme = function () { window.ssgSetTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
+    if (mq && mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.theme-btn')) window.ssgToggleTheme(); });
+  })();
+  </script>
 
   <!-- ── Open Graph (Facebook, WhatsApp, LinkedIn) ── -->
   <meta property="og:type"        content="website" />
@@ -260,6 +276,7 @@
       <button class="topbar-menu-btn" id="topbar-menu-btn" aria-label="Open menu" type="button">
         <span></span><span></span><span></span>
       </button>
+      <a class="tb-brand" href="{{ url_for('main.dashboard') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
       <div class="topbar-right">
         <!-- ── Notification bell ── -->
         <div class="ntf-wrap" id="ntf-wrap">
@@ -288,6 +305,7 @@
         <div class="tb-infobar" id="tb-infobar">
           <span id="tb-clock" class="tb-item"></span>
         </div>
+        <button class="theme-btn" type="button" aria-label="Switch between light and dark mode" title="Light / dark"><span class="ti-moon">{{ icon('moon') }}</span><span class="ti-sun">{{ icon('sun') }}</span></button>
 
         {% if not current_user.is_writer and not session.get('admin_writer_preview') %}
           {% if active_plan == "admin" %}
@@ -298,6 +316,7 @@
             <a class="topbar-credits topbar-plan-none" href="{{ url_for('main.pricing') }}" title="Get a plan">Subscribe</a>
           {% endif %}
         {% endif %}
+        <a class="tb-avatar" href="{{ url_for('main.profile') }}" aria-label="Your profile">{{ ((current_user.first_name or current_user.display_name or '?')[:1])|upper }}</a>
       </div>
     </header>
     <div class="app-content">
@@ -309,7 +328,7 @@
 <!-- ── Guest: one header (brand, pages, sign in / sign up) ── -->
 {% from "_icons.html" import icon %}
 <nav class="nav nav-guest" aria-label="Main">
-  <a class="brand" href="{{ url_for('main.index') }}">Smart Study<span class="dot">.</span>Guides</a>
+  <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">
     <a class="gn-link{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span>Dashboard</span></a>
     <a class="gn-link{% if request.endpoint == 'main.new_assignment' %} is-active{% endif %}" href="{{ url_for('main.new_assignment') }}" title="Assignment"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment</span></a>
@@ -321,10 +340,12 @@
     <a class="gn-link{% if request.endpoint == 'main.pricing' %} is-active{% endif %}" href="{{ url_for('main.pricing') }}" title="Pricing"><span class="gn-ic">{{ icon('card') }}</span><span>Pricing</span></a>
     <a class="gn-link{% if request.endpoint == 'main.help_page' %} is-active{% endif %}" href="{{ url_for('main.help_page') }}" title="Help"><span class="gn-ic">{{ icon('help') }}</span><span>Help</span></a>
     <a class="gn-link{% if request.path == '/updates' %} is-active{% endif %}" href="/updates" title="Updates &amp; Offers"><span class="gn-ic">{{ icon('bell') }}</span><span>Updates</span></a>
+    <a class="gn-link gn-only-m" href="{{ url_for('auth.login') }}"><span class="gn-ic">{{ icon('user') }}</span><span>Sign in</span></a>
   </div>
   <div class="gn-auth">
     <a class="gn-signin" href="{{ url_for('auth.login') }}">Sign in</a>
-    <a class="nav-cta" href="{{ url_for('auth.signup') }}">Sign up free</a>
+    <a class="nav-cta" href="{{ url_for('auth.signup') }}">Sign up<span class="hide-sm"> free</span></a>
+    <button class="theme-btn gn-theme" type="button" aria-label="Switch between light and dark mode" title="Light / dark"><span class="ti-moon">{{ icon('moon') }}</span><span class="ti-sun">{{ icon('sun') }}</span></button>
     <button class="gn-burger" id="gn-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="gn-links">{{ icon('menu') }}</button>
   </div>
 </nav>

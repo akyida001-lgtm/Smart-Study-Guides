@@ -267,36 +267,73 @@
     updatePost();
   }
   function updatePost() { var n = q('#fd-body').value.trim().length; q('#fd-count').textContent = q('#fd-body').value.length + '/2000'; q('#fd-post').disabled = !(n || files.length); }
-  function addFiles(fl) {
-    var err = q('#fd-err'); err.textContent = '';
-    Array.prototype.forEach.call(fl, function (f) {
-      var vid = f.type.indexOf('video') === 0, img = f.type.indexOf('image') === 0;
-      if (!vid && !img) { err.textContent = 'Only photos and videos can be added.'; return; }
-      if (vid && (f.size > 25 * 1048576)) { err.textContent = 'Videos can be up to 25 MB.'; return; }
-      if (img && f.size > 10 * 1048576) { err.textContent = 'Photos can be up to 10 MB each.'; return; }
-      if ((vid && files.length) || (files.some(function (x) { return x.type.indexOf('video') === 0; }))) { err.textContent = 'Add either up to 4 photos or one video.'; return; }
-      if (img && files.length >= 4) { err.textContent = 'You can add up to 4 photos.'; return; }
-      files.push(f);
+  var SMALL_VIDEO = 3.5 * 1048576, MAX_BODY = 3.9 * 1048576;   // the host rejects request bodies over ~4.5 MB
+  function isVid(f) { return f.type.indexOf('video') === 0; }
+  function shrink(f) {            // resize + re-encode photos in the browser so they stay small (also drops hidden metadata)
+    return new Promise(function (res) {
+      if (f.type === 'image/gif' || !window.createImageBitmap) return res(f);
+      createImageBitmap(f).then(function (bmp) {
+        var k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas'), name = (f.name || 'photo').replace(/\.\w+$/, '');
+        c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+        c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+        c.toBlob(function (b) {
+          if (b && b.type === 'image/webp') return res(new File([b], name + '.webp', { type: b.type }));
+          c.toBlob(function (j) { res(j && j.size < f.size ? new File([j], name + '.jpg', { type: 'image/jpeg' }) : f); }, 'image/jpeg', 0.82);
+        }, 'image/webp', 0.82);
+      }).catch(function () { res(f); });
     });
-    renderPreviews();
+  }
+  function addFiles(fl) {
+    var err = q('#fd-err'), jobs = []; err.textContent = '';
+    Array.prototype.forEach.call(fl, function (f) {
+      var vid = isVid(f), img = f.type.indexOf('image') === 0;
+      if (!vid && !img) { err.textContent = 'Only photos and videos can be added.'; return; }
+      if (f.size > 25 * 1048576) { err.textContent = vid ? 'Videos can be up to 25 MB.' : 'That photo is too large.'; return; }
+      if ((vid && (files.length || jobs.length)) || files.some(isVid)) { err.textContent = 'Add either up to 4 photos or one video.'; return; }
+      if (img && files.length + jobs.length >= 4) { err.textContent = 'You can add up to 4 photos.'; return; }
+      jobs.push(vid ? Promise.resolve(f) : shrink(f));
+    });
+    Promise.all(jobs).then(function (done) {
+      var before = files.length; done.forEach(function (f) { files.push(f); });
+      if (!files.some(isVid) && files.reduce(function (n, f) { return n + f.size; }, 0) > MAX_BODY) { files.length = before; err.textContent = 'Those photos are too large together. Try fewer or smaller photos.'; }
+      renderPreviews();
+    });
+  }
+  function directUpload(file, bar) {   // big videos go straight to storage, not through the server
+    return api('/api/feed/video-upload', { method: 'POST', json: { type: file.type || 'video/mp4', size: file.size } }).then(function (d) {
+      return new Promise(function (res, rej) {
+        var x = new XMLHttpRequest(); x.open('PUT', d.upload_url); x.setRequestHeader('Content-Type', d.content_type);
+        x.upload.onprogress = function (e) { if (e.lengthComputable) bar(Math.round(e.loaded / e.total * 100)); };
+        x.onload = function () { (x.status >= 200 && x.status < 300) ? res(d.key) : rej(new Error('The video upload failed. Please try again.')); };
+        x.onerror = function () { rej(new Error('Couldn\'t upload the video. Check your connection and try again.')); };
+        x.send(file);
+      });
+    });
   }
   function submitPost() {
-    var btn = q('#fd-post'), fd = new FormData(), x = new XMLHttpRequest();
-    fd.append('body', q('#fd-body').value.trim()); files.forEach(function (f) { fd.append('files', f); });
-    btn.disabled = true; btn.classList.add('busy'); q('#fd-err').textContent = '';
-    x.open('POST', '/api/feed/posts'); x.setRequestHeader('X-Requested-With', 'ssg-feed'); x.withCredentials = true;
-    x.upload.onprogress = function (e) { if (e.lengthComputable) btn.style.setProperty('--p', Math.round(e.loaded / e.total * 100) + '%'); };
-    x.onload = function () {
-      var d = {}; try { d = JSON.parse(x.responseText); } catch (e) {}
-      btn.classList.remove('busy'); btn.style.removeProperty('--p');
-      if (x.status === 201) {
-        closeCompose(); q('#fd-body').value = ''; files = []; renderPreviews();
-        posts[d.post.id] = d.post; if (tab === 'feed' && !cfg.tag) { var first = list.querySelector('.fd-post:not(.pinned)'); (list.querySelector('.fd-empty') || {}).outerHTML = ''; list.insertAdjacentHTML('afterbegin', postHTML(d.post)); watch(); }
-        toast('Posted'); window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else { btn.disabled = false; q('#fd-err').textContent = d.error || 'Couldn\'t post. Please try again.'; }
-    };
-    x.onerror = function () { btn.classList.remove('busy'); btn.disabled = false; q('#fd-err').textContent = 'Network problem. Please try again.'; };
-    x.send(fd);
+    var btn = q('#fd-post'), err = q('#fd-err'), vid = files.filter(isVid)[0];
+    btn.disabled = true; btn.classList.add('busy'); err.textContent = '';
+    function bar(n) { btn.style.setProperty('--p', n + '%'); }
+    function stop(msg) { btn.classList.remove('busy'); btn.style.removeProperty('--p'); btn.disabled = false; err.textContent = msg; }
+    (vid && vid.size > SMALL_VIDEO ? directUpload(vid, bar) : Promise.resolve(null)).then(function (key) {
+      var fd = new FormData(), x = new XMLHttpRequest();
+      fd.append('body', q('#fd-body').value.trim());
+      if (key) fd.append('video_key', key); else files.forEach(function (f) { fd.append('files', f); });
+      x.open('POST', '/api/feed/posts'); x.setRequestHeader('X-Requested-With', 'ssg-feed'); x.withCredentials = true;
+      x.upload.onprogress = function (e) { if (!key && e.lengthComputable) bar(Math.round(e.loaded / e.total * 100)); };
+      x.onload = function () {
+        var d = {}; try { d = JSON.parse(x.responseText); } catch (e) {}
+        if (x.status === 201) {
+          btn.classList.remove('busy'); btn.style.removeProperty('--p');
+          closeCompose(); q('#fd-body').value = ''; files = []; renderPreviews();
+          posts[d.post.id] = d.post;
+          if (tab === 'feed' && !cfg.tag) { (list.querySelector('.fd-empty') || {}).outerHTML = ''; list.insertAdjacentHTML('afterbegin', postHTML(d.post)); watch(); }
+          toast('Posted'); window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else stop(x.status === 413 ? 'That upload is too large. Try smaller photos.' : (d.error || 'Couldn\'t post. Please try again.'));
+      };
+      x.onerror = function () { stop('Network problem. Please try again.'); };
+      x.send(fd);
+    }).catch(function (e) { stop(e.message || 'Couldn\'t upload the video. Please try again.'); });
   }
 
   // ── lightbox ───────────────────────────────────────────────────────────────

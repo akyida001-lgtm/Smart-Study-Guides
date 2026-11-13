@@ -57,3 +57,26 @@ def upload_id_scan(user_id: str, file_bytes: bytes, content_type: str) -> str:
     filename = f"id_scans/{user_id}/{uuid.uuid4().hex}.{ext}"
     _upload(filename, file_bytes, content_type)
     return _get_signed_url(filename, 7)
+
+
+# ── helpers for direct browser uploads (used by the Updates feed on serverless hosts) ──
+def configured() -> bool:
+    return all(os.environ.get(k) for k in ("R2_ENDPOINT_URL", "R2_PUBLIC_URL", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"))
+
+def public_url(key: str) -> str:
+    return f"{os.environ.get('R2_PUBLIC_URL', '').rstrip('/')}/{key}"
+
+def presign_put(key: str, content_type: str, size: int, expires: int = 900) -> str:
+    """A short-lived URL the browser can PUT one file of exactly `size` bytes to."""
+    return _client().generate_presigned_url(
+        "put_object", ExpiresIn=expires,
+        Params={"Bucket": _bucket(), "Key": key, "ContentType": content_type, "ContentLength": size})
+
+def head(key: str) -> dict:
+    return _client().head_object(Bucket=_bucket(), Key=key)
+
+def read_range(key: str, n: int) -> bytes:
+    return _client().get_object(Bucket=_bucket(), Key=key, Range=f"bytes=0-{n - 1}")["Body"].read()
+
+def delete(key: str) -> None:
+    _client().delete_object(Bucket=_bucket(), Key=key)

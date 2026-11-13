@@ -1543,7 +1543,7 @@ def register_routes(app):
     REMOVE_AI_MIN_WORDS     = 50
     REMOVE_AI_MAX_WORDS     = 3000
     REMOVE_AI_MAX_OPEN_JOBS = 3                 # queued / in-progress requests per user
-    REMOVE_AI_MAX_UPLOAD    = 5 * 1024 * 1024   # 5 MB
+    REMOVE_AI_MAX_UPLOAD    = 4 * 1024 * 1024   # 4 MB (the host rejects request bodies over about 4.5 MB)
     REMOVE_AI_EXTENSIONS    = (".txt", ".docx", ".pdf")
 
     def _remove_ai_deadline_minutes(words: int) -> int:
@@ -1561,7 +1561,7 @@ def register_routes(app):
             return "", "Please upload a .txt, .docx or .pdf file, or paste your text instead."
         data = upload.read(REMOVE_AI_MAX_UPLOAD + 1)
         if len(data) > REMOVE_AI_MAX_UPLOAD:
-            return "", "That file is too large. The limit is 5 MB."
+            return "", "That file is too large. The limit is 4 MB."
         try:
             if ext == ".txt":
                 text = data.decode("utf-8", errors="replace")

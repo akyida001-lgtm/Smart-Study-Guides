@@ -24,7 +24,8 @@ from .native_auth import require_login
 feed_bp = Blueprint("feed", __name__)
 
 MAX_BODY, MAX_COMMENT, MAX_IMAGES = 2000, 500, 4
-MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 45 * 1024 * 1024
+# Vercel (and most serverless hosts) reject request bodies over ~4.5 MB, so anything bigger goes straight to storage.
+MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 4_200_000
 POSTS_PER_HOUR, POSTS_PER_DAY, COMMENTS_PER_HOUR, REPORTS_TO_HIDE = 5, 20, 30, 3
 
 _ADJ = ["Curious", "Sleepy", "Brave", "Quiet", "Clever", "Cheerful", "Gentle", "Witty", "Calm", "Bold", "Lucky", "Swift",
@@ -33,6 +34,9 @@ _ANIMALS = [("Fox", "🦊"), ("Panda", "🐼"), ("Owl", "🦉"), ("Otter", "🦦
             ("Rabbit", "🐰"), ("Penguin", "🐧"), ("Falcon", "🦅"), ("Turtle", "🐢"), ("Lion", "🦁"), ("Giraffe", "🦒"),
             ("Hedgehog", "🦔"), ("Whale", "🐳"), ("Zebra", "🦓"), ("Bee", "🐝"), ("Butterfly", "🦋"), ("Deer", "🦌"),
             ("Elephant", "🐘"), ("Frog", "🐸"), ("Monkey", "🐵"), ("Wolf", "🐺"), ("Seal", "🦭")]
+class StorageUnavailable(Exception):
+    """Raised when there is nowhere to save an upload (no R2 settings and a read-only disk)."""
+
 REPORT_REASONS = {"spam", "harassment", "inappropriate", "false", "other"}
 
 
@@ -130,12 +134,42 @@ def _media_dir():
 
 def _store(data, ext, ctype):
     name = f"{uuid.uuid4().hex}.{ext}"
-    if os.environ.get("R2_ENDPOINT_URL") and os.environ.get("R2_PUBLIC_URL"):
-        from .services import supabase_storage
-        return supabase_storage.upload_file(f"feed/{name}", data, ctype)
-    with open(os.path.join(_media_dir(), name), "wb") as f:
-        f.write(data)
-    return f"/updates/media/{name}"
+    from .services import supabase_storage
+    try:
+        if supabase_storage.configured():
+            return supabase_storage.upload_file(f"feed/{name}", data, ctype)
+        with open(os.path.join(_media_dir(), name), "wb") as f:      # local development only
+            f.write(data)
+        return f"/updates/media/{name}"
+    except Exception:
+        current_app.logger.exception("Feed upload could not be saved")
+        raise StorageUnavailable()
+
+def _direct_video(key):
+    """A video the browser uploaded straight to storage: check it before it can be posted."""
+    from .services import supabase_storage as st
+    if not st.configured() or not re.fullmatch(r"feed/[a-f0-9]{32}\.(mp4|webm)", key or ""):
+        raise ValueError("That video upload isn't valid. Please try again.")
+    if FeedPost.query.filter(FeedPost.media.like(f"%{key}%")).first():
+        raise ValueError("That video was already used in another post.")
+    def drop():
+        try:
+            st.delete(key)
+        except Exception:
+            pass
+    try:
+        size = int(st.head(key).get("ContentLength", 0))
+        head = st.read_range(key, 16) if 0 < size <= MAX_VIDEO_BYTES else b""
+    except Exception:
+        raise ValueError("We couldn't find your uploaded video. Please try again.")
+    if size <= 0 or size > MAX_VIDEO_BYTES:
+        drop()
+        raise ValueError("Videos can be up to 25 MB.")
+    kind = _sniff(head)
+    if kind not in ("mp4", "webm") or (kind == "webm") != key.endswith(".webm"):
+        drop()
+        raise ValueError("That file isn't a supported video (MP4, MOV or WebM).")
+    return "video", [{"url": st.public_url(key), "type": "video", "w": 0, "h": 0}]
 
 def _process_files(files):
     """Validate and store uploads. Returns (kind, media list). Up to 4 photos, or one video."""
@@ -242,10 +276,19 @@ def api_create_post():
         if FeedPost.query.filter(FeedPost.user_id == uid, FeedPost.created_at >= now - timedelta(hours=1)).count() >= POSTS_PER_HOUR \
                 or FeedPost.query.filter(FeedPost.user_id == uid, FeedPost.created_at >= now - timedelta(days=1)).count() >= POSTS_PER_DAY:
             return _err("You're posting too fast. Please try again a bit later.", 429)
+    files = [f for f in request.files.getlist("files") if f and f.filename]
+    video_key = (request.form.get("video_key") or "").strip()
     try:
-        kind, media = _process_files([f for f in request.files.getlist("files") if f and f.filename])
+        if video_key:
+            if files:
+                return _err("Add either up to 4 photos or one video, not both.")
+            kind, media = _direct_video(video_key)
+        else:
+            kind, media = _process_files(files)
     except ValueError as e:
         return _err(str(e))
+    except StorageUnavailable:
+        return _err("Uploads aren't available right now. Please try again later.", 503)
     if not body and not media:
         return _err("Write something or add a photo or video.")
     p = FeedPost(user_id=uid, body=body, kind=kind, media=json.dumps(media, separators=(",", ":")),
@@ -253,6 +296,36 @@ def api_create_post():
     db.session.add(p)
     db.session.commit()
     return jsonify(post=_posts_json([p])[0]), 201
+
+@feed_bp.route("/api/feed/video-upload", methods=["POST"])
+@require_login
+def api_video_upload():
+    """Hand the browser a short-lived link so a video goes straight to storage (it can't pass through the server)."""
+    _guard()
+    uid = _uid()
+    if _banned(uid):
+        return _err("You can't post right now.", 403)
+    from .services import supabase_storage as st
+    if not st.configured():
+        return _err("Video uploads aren't set up yet.", 503)
+    data = request.get_json(silent=True) or {}
+    ext = {"video/mp4": "mp4", "video/quicktime": "mp4", "video/webm": "webm"}.get((data.get("type") or "").lower())
+    try:
+        size = int(data.get("size") or 0)
+    except (TypeError, ValueError):
+        size = 0
+    if not ext:
+        return _err("Only MP4, MOV or WebM videos can be uploaded.")
+    if size <= 0 or size > MAX_VIDEO_BYTES:
+        return _err("Videos can be up to 25 MB.")
+    ctype = "video/webm" if ext == "webm" else "video/mp4"
+    key = f"feed/{uuid.uuid4().hex}.{ext}"
+    try:
+        url = st.presign_put(key, ctype, size)
+    except Exception:
+        current_app.logger.exception("Could not create a video upload link")
+        return _err("Video uploads aren't available right now.", 503)
+    return jsonify(upload_url=url, key=key, content_type=ctype)
 
 @feed_bp.route("/api/feed/posts/<int:pid>", methods=["DELETE"])
 @require_login

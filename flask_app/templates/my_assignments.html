@@ -50,7 +50,7 @@
       <tbody>
         {% for a in assignments %}
         <tr id="ai-row-{{ a.id }}" class="asgn-row">
-          <td>
+          <td class="asgn-chk">
             <input type="checkbox"
               class="row-check ai-check"
               data-id="{{ a.id }}"
@@ -181,7 +181,7 @@
       <tbody>
         {% for o in human_orders %}
         <tr id="hw-row-{{ o.id }}" class="asgn-row">
-          <td>
+          <td class="asgn-chk">
             <input type="checkbox"
               class="row-check hw-check"
               data-id="{{ o.id }}"

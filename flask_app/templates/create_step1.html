@@ -82,7 +82,7 @@
   <!-- Mode tabs -->
   <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:22px;">
     <button type="button" id="tab-standard" onclick="switchMode('standard')"
-      style="flex:1;padding:11px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:.15s;">
+      style="flex:1;padding:11px 8px;font-size:13px;font-weight:700;border:none;cursor:pointer;background:#00796b;color:#fff;transition:.15s;">
       📚 Academic
     </button>
     <button type="button" id="tab-simple" onclick="switchMode('simple')"
@@ -655,7 +655,7 @@ function switchMode(mode) {
   Object.keys(tabs).forEach(function(m) {
     var el = document.getElementById(tabs[m]);
     var active = (m === mode);
-    el.style.background = active ? 'var(--accent)' : 'var(--surface-2)';
+    el.style.background = active ? '#00796b' : 'var(--surface-2)';
     el.style.color      = active ? '#fff' : 'var(--slate-600)';
   });
 

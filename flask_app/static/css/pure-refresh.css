@@ -1,0 +1,259 @@
+/* ============================================================
+   PURE REFRESH — design & readability override (loads last)
+   - Dark mode: pure white text instead of dim greys
+   - Both themes: richer gradients, glow accents, softer depth
+   ============================================================ */
+
+/* ---------- shared foundations ---------- */
+:root {
+  --pr-accent: #00bfa5;
+  --pr-accent-2: #ff6b4a;
+  --pr-glow-teal: rgba(0, 191, 165, 0.35);
+  --pr-glow-coral: rgba(255, 107, 74, 0.30);
+}
+
+html { scroll-behavior: smooth; }
+
+::selection { background: rgba(0, 191, 165, 0.30); }
+
+/* slim, tinted scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00bfa5, #00897b);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* buttons: gradient fill + lift on hover */
+.btn, .btn-sm, .nav-cta, .lp-btn-primary {
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.btn:hover, .btn-sm:hover, .nav-cta:hover, .lp-btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.btn:active, .btn-sm:active, .nav-cta:active { transform: translateY(0); }
+
+.btn.accent, .nav-cta {
+  background: linear-gradient(135deg, #ff7a59, #e8542f) !important;
+  box-shadow: 0 6px 18px var(--pr-glow-coral);
+}
+.btn.accent:hover, .nav-cta:hover {
+  box-shadow: 0 10px 26px var(--pr-glow-coral);
+}
+
+/* cards: softer depth + hover lift */
+.card, .wizard-card, .dx-tile, .hu-stat-card, .source-card {
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.card:hover, .wizard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(6, 17, 43, 0.12);
+}
+
+/* hero on landing */
+.hero, .landing-hero {
+  background: linear-gradient(120deg, #0d2060 0%, #1a2b7a 45%, #00796b 100%) !important;
+  background-size: 200% 200% !important;
+  animation: pr-hero-shift 14s ease infinite;
+}
+@keyframes pr-hero-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* links get an underline slide instead of plain hover */
+a { transition: color .15s ease; text-decoration: none; }
+
+/* focus rings for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--pr-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- LIGHT theme polish ---------- */
+html[data-theme="light"] body,
+html body {
+  background:
+    radial-gradient(1000px 500px at 85% -10%, rgba(0, 191, 165, 0.07), transparent 60%),
+    radial-gradient(900px 480px at -10% 20%, rgba(255, 107, 74, 0.06), transparent 60%),
+    var(--page-bg);
+}
+
+html[data-theme="light"] .card,
+html[data-theme="light"] .wizard-card {
+  border: 1px solid rgba(13, 32, 96, 0.08);
+  box-shadow: 0 6px 20px rgba(6, 17, 43, 0.06), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+/* ============================================================
+   DARK THEME — pure white text, deeper surfaces, glow accents
+   ============================================================ */
+html[data-theme="dark"] {
+  /* page: deep navy with subtle aurora tints */
+  background: #070d1a;
+}
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(1100px 560px at 88% -12%, rgba(0, 191, 165, 0.10), transparent 55%),
+    radial-gradient(950px 520px at -12% 18%, rgba(64, 96, 220, 0.12), transparent 55%),
+    #070d1a !important;
+  color: #ffffff !important;
+}
+
+/* body text: pure white everywhere the dim greys were used */
+html[data-theme="dark"] p,
+html[data-theme="dark"] li,
+html[data-theme="dark"] td,
+html[data-theme="dark"] th,
+html[data-theme="dark"] label,
+html[data-theme="dark"] span,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card p,
+html[data-theme="dark"] .card li,
+html[data-theme="dark"] .sub,
+html[data-theme="dark"] .card .sub,
+html[data-theme="dark"] .auth-sub,
+html[data-theme="dark"] .tool-sub,
+html[data-theme="dark"] .wizard-card-sub,
+html[data-theme="dark"] .landing-sub,
+html[data-theme="dark"] .landing-reviews-sub,
+html[data-theme="dark"] .db-balance-sub,
+html[data-theme="dark"] .dx-pg,
+html[data-theme="dark"] .dx-tile,
+html[data-theme="dark"] .dx-tile.lead,
+html[data-theme="dark"] .fc-bubble-ai,
+html[data-theme="dark"] .bubble-ai,
+html[data-theme="dark"] .src-rc-title,
+html[data-theme="dark"] .src-rc-abstract,
+html[data-theme="dark"] .src-rc-authors,
+html[data-theme="dark"] .src-rc-year,
+html[data-theme="dark"] .src-search-text,
+html[data-theme="dark"] .lv-doc,
+html[data-theme="dark"] .lv-doc-wrap,
+html[data-theme="dark"] .cpw-body,
+html[data-theme="dark"] .cpw-hint,
+html[data-theme="dark"] .hire-modal-lead,
+html[data-theme="dark"] .hire-why-list li,
+html[data-theme="dark"] .course-dd-item,
+html[data-theme="dark"] .fc-textarea,
+html[data-theme="dark"] .chat-textarea,
+html[data-theme="dark"] .asgn-table tbody td {
+  color: #ffffff !important;
+}
+
+/* secondary / meta text: bright off-white, not grey */
+html[data-theme="dark"] .fc-meta,
+html[data-theme="dark"] .fc-sys,
+html[data-theme="dark"] .fc-agent-status,
+html[data-theme="dark"] .chat-agent-status,
+html[data-theme="dark"] .src-rc-meta,
+html[data-theme="dark"] .src-results-sub,
+html[data-theme="dark"] .src-search-sub,
+html[data-theme="dark"] .wstep-label,
+html[data-theme="dark"] .hire-why-title,
+html[data-theme="dark"] .cpw-title,
+html[data-theme="dark"] .snav-item,
+html[data-theme="dark"] .sidebar-close,
+html[data-theme="dark"] .sidebar-user-credits,
+html[data-theme="dark"] .ntf-bell {
+  color: #dbe6f5 !important;
+}
+
+/* headings: pure white with a soft teal glow on large ones */
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] h5,
+html[data-theme="dark"] h6,
+html[data-theme="dark"] .card h2,
+html[data-theme="dark"] .card h3,
+html[data-theme="dark"] .sidebar-brand a,
+html[data-theme="dark"] .sidebar-user-name {
+  color: #ffffff !important;
+}
+html[data-theme="dark"] h1 { text-shadow: 0 0 24px rgba(0, 191, 165, 0.25); }
+
+/* surfaces: deep glassy panels with tinted borders */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .wizard-card,
+html[data-theme="dark"] .dx-tile,
+html[data-theme="dark"] .hu-stat-card,
+html[data-theme="dark"] .chat-page-wrap,
+html[data-theme="dark"] .fc-bubble-ai,
+html[data-theme="dark"] .bubble-ai,
+html[data-theme="dark"] .chat-messages,
+html[data-theme="dark"] .src-search-anim,
+html[data-theme="dark"] .hire-modal-why,
+html[data-theme="dark"] .wf-cost-preview {
+  background: linear-gradient(160deg, rgba(30, 42, 58, 0.92), rgba(20, 30, 46, 0.92)) !important;
+  border-color: rgba(94, 234, 212, 0.14) !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+/* chat bubbles: white AI text stays; user bubble gets teal gradient */
+html[data-theme="dark"] .fc-bubble-user,
+html[data-theme="dark"] .bubble-user,
+html[data-theme="dark"] .hu-msg-mine {
+  background: linear-gradient(135deg, #009688, #00695c) !important;
+  color: #ffffff !important;
+}
+
+/* inputs: white text */
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  color: #ffffff !important;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder { color: #9fb2cc !important; }
+
+/* sidebar: deepest panel, bright active item */
+html[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #050b16, #081120) !important;
+}
+html[data-theme="dark"] .snav-item:hover,
+html[data-theme="dark"] .snav-item.active {
+  color: #ffffff !important;
+  background: rgba(94, 234, 212, 0.10) !important;
+}
+
+/* nav/topbar: subtle glass */
+html[data-theme="dark"] .nav,
+html[data-theme="dark"] .app-topbar {
+  background: rgba(8, 15, 30, 0.85) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* badges & chips pop on the dark canvas */
+html[data-theme="dark"] .badge.complete,
+html[data-theme="dark"] .status-badge.green { color: #7cf5c0 !important; }
+html[data-theme="dark"] .badge.failed,
+html[data-theme="dark"] .status-badge.red   { color: #ff9d9d !important; }
+
+/* hero / mastheads in dark: aurora gradient */
+html[data-theme="dark"] .hero,
+html[data-theme="dark"] .landing-hero {
+  background: linear-gradient(120deg, #0a1440 0%, #123a6e 45%, #00564d 100%) !important;
+  background-size: 200% 200% !important;
+  animation: pr-hero-shift 14s ease infinite;
+}
+
+/* ---------- mobile: same purity, tighter polish ---------- */
+@media (max-width: 640px) {
+  html[data-theme="dark"] body { background-attachment: fixed; }
+  .card:hover, .wizard-card:hover { transform: none; } /* no jitter while scrolling on touch */
+  .hero, .landing-hero { animation: none; background-size: cover !important; }
+  html[data-theme="dark"] .card,
+  html[data-theme="dark"] .wizard-card { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30); }
+}
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .hero, .landing-hero { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}

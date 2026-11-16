@@ -252,8 +252,152 @@ html[data-theme="dark"] .landing-hero {
   html[data-theme="dark"] .wizard-card { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30); }
 }
 
+/* ============================================================
+   PREMIUM MENUS — guest nav dropdown + app sidebar
+   ============================================================ */
+
+/* ---- Guest nav dropdown (mobile): spring pop-in ---- */
+@media (max-width: 900px) {
+  /* keep rendered (not display:none) so it CAN animate */
+  .gn-links {
+    display: flex !important;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+    transform-origin: top center;
+    pointer-events: none;
+    transition: opacity .20s ease,
+                transform .34s cubic-bezier(0.34, 1.35, 0.5, 1),
+                visibility 0s linear .34s;
+    /* premium glass panel */
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.65) !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 24px 60px rgba(0, 40, 40, 0.30),
+                0 2px 0 rgba(255, 255, 255, 0.9) inset,
+                0 -14px 30px rgba(0, 191, 165, 0.06) inset !important;
+    overflow: hidden;
+  }
+  /* gradient hairline across the top of the panel */
+  .gn-links::before {
+    content: "";
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, #00bfa5, #40c4ff, #ff6b4a);
+    flex: 0 0 auto;
+  }
+  .gn-links.open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition: opacity .18s ease,
+                transform .38s cubic-bezier(0.34, 1.35, 0.5, 1);
+  }
+  /* staggered item rise */
+  .gn-links .gn-link {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .22s ease, transform .28s cubic-bezier(0.34, 1.3, 0.5, 1),
+                background .15s ease, color .15s ease;
+  }
+  .gn-links.open .gn-link { opacity: 1; transform: none; }
+  .gn-links.open .gn-link:nth-child(1) { transition-delay: .04s; }
+  .gn-links.open .gn-link:nth-child(2) { transition-delay: .07s; }
+  .gn-links.open .gn-link:nth-child(3) { transition-delay: .10s; }
+  .gn-links.open .gn-link:nth-child(4) { transition-delay: .13s; }
+  .gn-links.open .gn-link:nth-child(5) { transition-delay: .16s; }
+  .gn-links.open .gn-link:nth-child(6) { transition-delay: .19s; }
+  .gn-links.open .gn-link:nth-child(7) { transition-delay: .22s; }
+  .gn-links.open .gn-link:nth-child(8) { transition-delay: .25s; }
+  .gn-links.open .gn-link:nth-child(9) { transition-delay: .28s; }
+  .gn-links.open .gn-link:nth-child(10) { transition-delay: .31s; }
+  .gn-links.open .gn-link:nth-child(11) { transition-delay: .34s; }
+  /* active item: solid teal pill */
+  .gn-links .gn-link.is-active {
+    background: linear-gradient(135deg, #00bfa5, #00897b) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(0, 137, 123, 0.35) !important;
+  }
+  .gn-links .gn-link.is-active .gn-ic { background: rgba(255, 255, 255, 0.22) !important; color: #ffffff !important; }
+
+  /* dark mode: smoky glass */
+  html[data-theme="dark"] .gn-links {
+    background: rgba(13, 22, 40, 0.88) !important;
+    border-color: rgba(94, 234, 212, 0.22) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
+                0 1px 0 rgba(94, 234, 212, 0.14) inset,
+                0 -14px 30px rgba(0, 191, 165, 0.07) inset !important;
+  }
+  html[data-theme="dark"] .gn-links .gn-link { color: #ffffff !important; }
+  html[data-theme="dark"] .gn-links .gn-link:hover { background: rgba(94, 234, 212, 0.10) !important; color: #ffffff !important; }
+}
+
+/* ---- App sidebar: springier slide + glow + fading overlay ---- */
+.sidebar {
+  transition: left 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+              box-shadow 0.38s ease;
+}
+.sidebar-open .sidebar {
+  box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.12),
+              0 0 50px rgba(0, 191, 165, 0.18),
+              24px 0 70px rgba(0, 0, 0, 0.45);
+}
+/* staggered nav item slide when the sidebar opens */
+.sidebar-open .snav-item {
+  animation: pr-item-in 0.30s cubic-bezier(0.3, 1.2, 0.5, 1) both;
+}
+.sidebar-open .snav-item:nth-child(1)  { animation-delay: .05s; }
+.sidebar-open .snav-item:nth-child(2)  { animation-delay: .07s; }
+.sidebar-open .snav-item:nth-child(3)  { animation-delay: .09s; }
+.sidebar-open .snav-item:nth-child(4)  { animation-delay: .11s; }
+.sidebar-open .snav-item:nth-child(5)  { animation-delay: .13s; }
+.sidebar-open .snav-item:nth-child(6)  { animation-delay: .15s; }
+.sidebar-open .snav-item:nth-child(7)  { animation-delay: .17s; }
+.sidebar-open .snav-item:nth-child(8)  { animation-delay: .19s; }
+.sidebar-open .snav-item:nth-child(9)  { animation-delay: .21s; }
+.sidebar-open .snav-item:nth-child(10) { animation-delay: .23s; }
+.sidebar-open .snav-item:nth-child(n+11) { animation-delay: .25s; }
+@keyframes pr-item-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+/* premium active/hover: teal edge bar */
+html .snav-item { position: relative; }
+html .snav-item.active::before,
+html[data-theme="dark"] .snav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #00bfa5, #40c4ff);
+}
+/* overlay: fade instead of hard show/hide */
+@media (max-width: 860px) {
+  .sidebar-overlay {
+    display: block !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.32s ease, visibility 0s linear 0.32s;
+    background: rgba(4, 10, 22, 0.6) !important;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  .sidebar-open .sidebar-overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.32s ease;
+  }
+}
+
 /* respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .hero, .landing-hero { animation: none !important; }
+  .sidebar-open .snav-item, .gn-links .gn-link { animation: none !important; transition: none !important; }
   * { transition-duration: 0.01ms !important; }
 }

@@ -354,8 +354,10 @@
 </nav>
 <script>
 (function(){var b=document.getElementById('gn-burger'),m=document.getElementById('gn-links');if(!b||!m)return;
-b.addEventListener('click',function(e){e.stopPropagation();var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o);});
-document.addEventListener('click',function(e){if(!m.contains(e.target)&&!b.contains(e.target)){m.classList.remove('open');b.setAttribute('aria-expanded','false');}});})();
+function setMenu(o){m.classList.toggle('open',o);b.setAttribute('aria-expanded',o);document.body.style.overflow=o?'hidden':'';}
+b.addEventListener('click',function(e){e.stopPropagation();setMenu(!m.classList.contains('open'));});
+document.addEventListener('click',function(e){if(!m.contains(e.target)&&!b.contains(e.target))setMenu(false);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')setMenu(false);});})();
 </script>
 <div class="container {% block container_class %}{% endblock %}">
   {% with messages = get_flashed_messages(with_categories=true) %}

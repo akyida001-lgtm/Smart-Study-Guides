@@ -388,7 +388,7 @@ def register_routes(app):
         },
     }
     GUEST_TILES = [
-        ("assign", "Create Assignment", "Essays, discussion posts and presentations with real citations.", "main.new_assignment"),
+        ("assign", "Assignment Order", "Create with AI or place an order with a human writer.", "main.assignment_order"),
         ("removeai", "Remove AI", "Our writers rewrite your content in their own words.", "main.remove_ai"),
         ("bot", "AI Checker", "See how likely your text is to read as AI-written.", "main.ai_checker"),
         ("files", "Plagiarism Check", "Check your text for matches with existing sources.", "main.plagiarism_checker"),
@@ -481,6 +481,10 @@ def register_routes(app):
         )
 
     # ---------- Assignment creation flow ----------
+
+    @main.route("/assignment-order")
+    def assignment_order():
+        return render_template("assignment_order.html", user=current_user)
 
     @main.route("/assignments/new", methods=["GET", "POST"])
     @guest_preview("assignments")

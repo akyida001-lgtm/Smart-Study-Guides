@@ -379,18 +379,18 @@ def register_routes(app):
             "cta": "Sign up to post an assignment",
         },
         "career": {
-            "icon": "briefcase", "title": "Career Section", "endpoint": "main.job_docs",
+            "icon": "briefcase", "title": "Free Resources", "endpoint": "main.job_docs",
             "tagline": "Free career documents to help with your job search, written for you instantly.",
             "steps": ["Choose the document you need.", "Add a few details about yourself.", "Get a draft you can edit and download."],
             "points": ["Free for members"],
-            "cta": "Sign up to use the Career Section",
+            "cta": "Sign up to use Free Resources",
         },
     }
     GUEST_TILES = [
         ("assign", "Assignment Order", "Create with AI or place an order with a human writer.", "main.assignment_order"),
         ("files", "Plagiarism & AI Check", "Check your text for plagiarism and AI. Download both reports.", "main.plagiarism_checker"),
         ("cap", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
-        ("briefcase", "Career Section", "Free career documents for your job search.", "main.job_docs"),
+        ("briefcase", "Free Resources", "Free career documents for your job search.", "main.job_docs"),
         ("megaphone", "Updates", "News, offers and posts from other students.", "feed.updates_page"),
         ("card", "Plans & Pricing", "The 7-day Weekly Pass for $25.", "main.pricing"),
         ("help", "Help", "Guides and answers to common questions.", "main.help_page"),

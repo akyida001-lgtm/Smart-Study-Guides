@@ -401,3 +401,21 @@ html[data-theme="dark"] .snav-item.active::before {
   .sidebar-open .snav-item, .gn-links .gn-link { animation: none !important; transition: none !important; }
   * { transition-duration: 0.01ms !important; }
 }
+
+
+/* ===== Sidebar redesign: grouped sections, icon chips, Dashboard hero ===== */
+.snav-home{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:2px 0 6px;border-radius:14px;text-decoration:none !important;
+  background:linear-gradient(135deg,rgba(0,191,165,.22),rgba(64,196,255,.14));border:1px solid rgba(94,234,212,.28);color:#fff !important;
+  box-shadow:0 6px 18px rgba(0,191,165,.12);transition:transform .15s,box-shadow .15s}
+.snav-home:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,191,165,.22)}
+.snav-home.active{border-color:#5eead4;box-shadow:0 0 0 1px #5eead4,0 10px 24px rgba(0,191,165,.25)}
+.snav-home-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;background:rgba(255,255,255,.14);flex-shrink:0}
+.snav-home-tx{display:flex;flex-direction:column;line-height:1.2}
+.snav-home-tx b{font-size:15px;font-weight:700;color:#fff}
+.snav-home-tx small{font-size:11.5px;color:rgba(255,255,255,.65);margin-top:2px}
+.snav-label{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.42);padding:16px 14px 6px}
+.sidebar-nav .snav-item{padding:8px 10px;gap:12px;border-radius:12px}
+.sidebar-nav .snav-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;background:rgba(255,255,255,.07);transition:background .15s}
+.sidebar-nav .snav-item:hover .snav-icon{background:rgba(255,255,255,.14)}
+.sidebar-nav .snav-item.active .snav-icon{background:linear-gradient(135deg,#00bfa5,#40c4ff);box-shadow:0 4px 12px rgba(0,191,165,.35)}
+.sidebar-nav .snav-free-tag{margin-left:auto}

@@ -172,27 +172,29 @@
     {% else %}
     <!-- ── Student / Admin navigation ── -->
     <nav class="sidebar-nav">
-      <a class="snav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
-        <span class="snav-icon">🏠</span> Dashboard
+      <a class="snav-home {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+        <span class="snav-home-ic">🏠</span>
+        <span class="snav-home-tx"><b>Dashboard</b><small>Your overview</small></span>
       </a>
+
+      <div class="snav-label">Services</div>
       <a class="snav-item {% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %}active{% endif %}" href="{{ url_for('main.assignment_order') }}">
         <span class="snav-icon">📝</span> Assignment Order
       </a>
-
-      <div class="snav-divider"></div>
-
       <a class="snav-item {% if request.endpoint == 'main.plagiarism_checker' %}active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}">
         <span class="snav-icon">📋</span> Plagiarism &amp; AI Check
       </a>
+      <a class="snav-item {% if 'job_docs' in request.endpoint %}active{% endif %}" href="{{ url_for('main.job_docs') }}">
+        <span class="snav-icon">📄</span> Free Resources
+        <span class="snav-free-tag">Free</span>
+      </a>
 
-      <div class="snav-divider"></div>
-
+      <div class="snav-label">My Work</div>
       <a class="snav-item {% if request.endpoint == 'main.my_assignments' %}active{% endif %}" href="{{ url_for('main.my_assignments') }}">
         <span class="snav-icon">📂</span> My Assignments
       </a>
 
-      <div class="snav-divider"></div>
-
+      <div class="snav-label">Account</div>
       <a class="snav-item {% if request.endpoint in ('main.pricing','main.buy_credits') %}active{% endif %}" href="{{ url_for('main.pricing') }}">
         <span class="snav-icon">💳</span> Plans &amp; Pricing
       </a>
@@ -203,15 +205,7 @@
         <span class="snav-icon">🧾</span> Billing History
       </a>
 
-      <div class="snav-divider"></div>
-
-      <a class="snav-item {% if 'job_docs' in request.endpoint %}active{% endif %}" href="{{ url_for('main.job_docs') }}">
-        <span class="snav-icon">📄</span> Career Section
-        <span class="snav-free-tag">Free</span>
-      </a>
-
-      <div class="snav-divider"></div>
-
+      <div class="snav-label">Help</div>
       <a class="snav-item" href="#" onclick="openFloatingChat();return false;" id="snav-chat-link" style="position:relative;">
         <span class="snav-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -327,7 +321,7 @@
     <a class="gn-link{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span>Dashboard</span></a>
     <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
     <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>
-    <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Career"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Career</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Free Resources"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Free Resources</span></a>
     <a class="gn-link{% if request.endpoint == 'main.pricing' %} is-active{% endif %}" href="{{ url_for('main.pricing') }}" title="Pricing"><span class="gn-ic">{{ icon('card') }}</span><span>Pricing</span></a>
     <a class="gn-link{% if request.endpoint == 'main.help_page' %} is-active{% endif %}" href="{{ url_for('main.help_page') }}" title="Help"><span class="gn-ic">{{ icon('help') }}</span><span>Help</span></a>
     <a class="gn-link{% if request.path == '/updates' %} is-active{% endif %}" href="/updates" title="Updates &amp; Offers"><span class="gn-ic">{{ icon('bell') }}</span><span>Updates</span></a>

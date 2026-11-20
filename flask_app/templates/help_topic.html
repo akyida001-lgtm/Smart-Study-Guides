@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.name|striptags }} — Help — Smart Study Guides{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+
+<a class="ht-back" href="{{ url_for('main.help_page') }}">← Help Center</a>
+
+<div class="ht-head">
+  <div class="ht-icon">{{ topic.icon }}</div>
+  <div>
+    <h1 class="ht-title">{{ topic.name|safe }}</h1>
+    <p class="ht-sub">{{ topic.sub|safe }}</p>
+  </div>
+</div>
+
+<div class="ht-card">
+  {% include 'help/' ~ topic.slug ~ '.html' %}
+</div>
+
+<div class="ht-foot">
+  <a class="ht-back" href="{{ url_for('main.help_page') }}">← Back to all help topics</a>
+</div>
+
+{% include 'help/_styles.html' %}
+{% endblock %}

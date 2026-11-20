@@ -329,6 +329,13 @@ def register_routes(app):
             ("https://smart-study-guides.com/pricing",          "0.9",  "weekly"),
             ("https://smart-study-guides.com/check-plagiarism", "0.85", "monthly"),
             ("https://smart-study-guides.com/help",             "0.7",  "monthly"),
+            ("https://smart-study-guides.com/help/getting-started", "0.6", "monthly"),
+            ("https://smart-study-guides.com/help/assignments", "0.6", "monthly"),
+            ("https://smart-study-guides.com/help/remove-ai", "0.6", "monthly"),
+            ("https://smart-study-guides.com/help/ai-checker", "0.6", "monthly"),
+            ("https://smart-study-guides.com/help/plagiarism-checker", "0.6", "monthly"),
+            ("https://smart-study-guides.com/help/career", "0.6", "monthly"),
+            ("https://smart-study-guides.com/help/billing", "0.6", "monthly"),
             ("https://smart-study-guides.com/about",            "0.6",  "monthly"),
             ("https://smart-study-guides.com/terms",            "0.4",  "yearly"),
             ("https://smart-study-guides.com/privacy",          "0.4",  "yearly"),
@@ -1894,9 +1901,27 @@ def register_routes(app):
 
     # ---------- Help & Tutorials ----------
 
+    HELP_TOPICS = [
+        {"slug": 'getting-started', "icon": '🚀', "name": 'Getting Started', "sub": 'Account setup, free credits &amp; platform overview'},
+        {"slug": 'assignments', "icon": '📝', "name": 'Generating Assignments', "sub": 'Academic papers with real verified sources — APA / MLA / Harvard / Chicago'},
+        {"slug": 'remove-ai', "icon": '✍️', "name": 'Remove AI', "sub": 'Have a writer rewrite your content in their own words'},
+        {"slug": 'ai-checker', "icon": '🔍', "name": 'AI Checker', "sub": 'Verify your AI score before submitting'},
+        {"slug": 'plagiarism-checker', "icon": '🛡️', "name": 'Plagiarism Checker', "sub": 'What your report looks like, how it works &amp; what you get'},
+        {"slug": 'career', "icon": '💼', "name": 'Career Section', "sub": 'CVs, cover letters, LinkedIn bios &amp; more — 100% free service'},
+        {"slug": 'billing', "icon": '💳', "name": 'Subscriptions &amp; Billing', "sub": 'Plans, payment methods &amp; billing history'},
+    ]
+
     @main.route("/help")
     def help_page():
         return render_template("help.html", user=current_user)
+
+    @main.route("/help/<slug>")
+    def help_topic(slug):
+        topic = next((t for t in HELP_TOPICS if t["slug"] == slug), None)
+        if topic is None:
+            from flask import abort
+            abort(404)
+        return render_template("help_topic.html", user=current_user, topic=topic)
 
     # ---------- Terms & Conditions ----------
 

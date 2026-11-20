@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Assignment Order — Smart Study Guides{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>📝 Assignment Order</h1>
+</div>
+
+<p style="color:var(--slate-500);margin:0 0 20px;">Choose how you want your assignment done.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;align-items:stretch;">
+
+  <!-- Create with AI -->
+  <div class="card" style="display:flex;flex-direction:column;">
+    <h2>🤖 Create with AI</h2>
+    <div class="sub">Fast and affordable. Best for short work.</div>
+
+    <div style="font-weight:700;margin-bottom:6px;">👍 Pros</div>
+    <ul style="margin:0 0 16px;padding-left:20px;line-height:1.7;">
+      <li>Instant delivery</li>
+      <li>Real sources with proper citations</li>
+      <li>Word (.docx) file ready to download</li>
+    </ul>
+
+    <div style="font-weight:700;margin-bottom:6px;">👎 Cons</div>
+    <ul style="margin:0 0 20px;padding-left:20px;line-height:1.7;">
+      <li>100% AI-written, which is risky for some schools</li>
+      <li>Limited to 5 pages</li>
+    </ul>
+
+    <a class="btn ghost full" style="margin-top:auto;" href="{{ url_for('main.new_assignment') }}">Create with AI →</a>
+  </div>
+
+  <!-- Place an Assignment Order -->
+  <div class="card" style="display:flex;flex-direction:column;">
+    <h2>✍️ Place an Assignment Order</h2>
+    <div class="sub">A qualified human writer completes it for you.</div>
+
+    <div style="font-weight:700;margin-bottom:6px;">✅ Benefits</div>
+    <ul style="margin:0 0 20px;padding-left:20px;line-height:1.7;">
+      <li>Written by a real human writer</li>
+      <li>Safe for schools that check for AI</li>
+      <li>Any length, including long papers</li>
+      <li>Accurate research and verified sources</li>
+      <li>Full confidentiality</li>
+      <li>Writers typically respond within 1–2 hours</li>
+    </ul>
+
+    <a class="btn accent full" style="margin-top:auto;" href="{{ url_for('main.post_human_assignment') }}">Place an Assignment Order →</a>
+  </div>
+
+</div>
+
+{% endblock %}

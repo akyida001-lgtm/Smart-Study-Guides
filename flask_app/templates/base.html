@@ -205,9 +205,6 @@
 
       <div class="snav-divider"></div>
 
-      <a class="snav-item {% if request.endpoint == 'main.post_human_assignment' %}active{% endif %}" href="{{ url_for('main.post_human_assignment') }}">
-        <span class="snav-icon">✍️</span> Human Writer
-      </a>
       <a class="snav-item {% if 'job_docs' in request.endpoint %}active{% endif %}" href="{{ url_for('main.job_docs') }}">
         <span class="snav-icon">📄</span> Career Section
         <span class="snav-free-tag">Free</span>
@@ -330,7 +327,6 @@
     <a class="gn-link{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span>Dashboard</span></a>
     <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
     <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>
-    <a class="gn-link{% if request.endpoint == 'main.post_human_assignment' %} is-active{% endif %}" href="{{ url_for('main.post_human_assignment') }}" title="Human Writer"><span class="gn-ic">{{ icon('cap') }}</span><span>Human Writer</span></a>
     <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Career"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Career</span></a>
     <a class="gn-link{% if request.endpoint == 'main.pricing' %} is-active{% endif %}" href="{{ url_for('main.pricing') }}" title="Pricing"><span class="gn-ic">{{ icon('card') }}</span><span>Pricing</span></a>
     <a class="gn-link{% if request.endpoint == 'main.help_page' %} is-active{% endif %}" href="{{ url_for('main.help_page') }}" title="Help"><span class="gn-ic">{{ icon('help') }}</span><span>Help</span></a>

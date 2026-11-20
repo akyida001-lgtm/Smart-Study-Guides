@@ -327,7 +327,6 @@ def register_routes(app):
         pages = [
             ("https://smart-study-guides.com/",                 "1.0",  "weekly"),
             ("https://smart-study-guides.com/pricing",          "0.9",  "weekly"),
-            ("https://smart-study-guides.com/check-ai",         "0.85", "monthly"),
             ("https://smart-study-guides.com/check-plagiarism", "0.85", "monthly"),
             ("https://smart-study-guides.com/help",             "0.7",  "monthly"),
             ("https://smart-study-guides.com/about",            "0.6",  "monthly"),
@@ -390,8 +389,7 @@ def register_routes(app):
     GUEST_TILES = [
         ("assign", "Assignment Order", "Create with AI or place an order with a human writer.", "main.assignment_order"),
         ("removeai", "Remove AI", "Our writers rewrite your content in their own words.", "main.remove_ai"),
-        ("bot", "AI Checker", "See how likely your text is to read as AI-written.", "main.ai_checker"),
-        ("files", "Plagiarism Check", "Check your text for matches with existing sources.", "main.plagiarism_checker"),
+        ("files", "Plagiarism & AI Check", "Check your text for plagiarism and AI. Download both reports.", "main.plagiarism_checker"),
         ("cap", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
         ("briefcase", "Career Section", "Free career documents for your job search.", "main.job_docs"),
         ("megaphone", "Updates", "News, offers and posts from other students.", "feed.updates_page"),
@@ -1680,9 +1678,8 @@ def register_routes(app):
     @main.route("/check-ai", methods=["GET", "POST"])
     def ai_checker():
         if request.method == "GET":
-            if not current_user.is_authenticated:
-                return render_template("landing_check_ai.html")
-            return render_template("check_ai.html", user=current_user)
+            # AI check now lives on the combined Plagiarism & AI page
+            return redirect(url_for("main.plagiarism_checker"))
         # POST — require auth
         if not current_user.is_authenticated:
             return jsonify({"error": "Please log in to use the AI Checker."}), 401

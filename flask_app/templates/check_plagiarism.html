@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Plagiarism Checker — Smart Study Guides{% endblock %}
+{% block title %}Plagiarism &amp; AI Check — Smart Study Guides{% endblock %}
 {% block content %}
 <div class="tool-page">
   <div class="tool-header">
-    <h1>📋 Plagiarism Checker</h1>
-    <p class="tool-sub">Paste your text below. We scan it against billions of web pages and academic databases via Copyleaks.</p>
+    <h1>📋 Plagiarism &amp; AI Check</h1>
+    <p class="tool-sub">Paste your text once. We run the plagiarism scan (Copyleaks) and the AI detection (Ryter Pro) together, and you download both reports.</p>
   </div>
 
   <div class="tool-single-col">
@@ -16,10 +16,10 @@
         </div>
       </div>
       <textarea id="text-in" class="tool-textarea"
-                placeholder="Paste the text you want to check for plagiarism…"
+                placeholder="Paste the text you want to check for plagiarism and AI…"
                 rows="12" oninput="updateMeta(this.value)"></textarea>
       <button id="check-btn" class="btn accent full tool-btn" onclick="runCheck()">
-        📋 Check for Plagiarism
+        📋 Run Plagiarism &amp; AI Check
       </button>
       <div id="tool-error" class="tool-error" style="display:none;"></div>
     </div>
@@ -27,8 +27,10 @@
     <!-- Results -->
     <div id="results-section" class="plg-results" style="display:none;">
 
+      <div class="plg-sources-title" style="margin-bottom:-8px;">📋 Plagiarism</div>
+
       <!-- Overall summary -->
-      <div class="plg-summary" id="plg-summary">
+      <div class="plg-summary" id="plg-summary" style="display:none;">
         <div class="plg-summary-scores">
           <div class="plg-summary-item plg-original">
             <div class="plg-summary-label">Original</div>
@@ -59,11 +61,41 @@
         <span>✅ No matching sources found — your text appears to be original.</span>
       </div>
 
-      <!-- Download report -->
+      <div id="plg-error" class="tool-error" style="display:none;"></div>
+
+      <!-- AI detection -->
+      <div class="plg-sources-title" style="margin-bottom:-8px;">🤖 AI Detection</div>
+      <div id="ai-error" class="tool-error" style="display:none;"></div>
+      <div class="aichk-summary" id="ai-summary" style="display:none;">
+        <div class="aichk-summary-scores">
+          <div class="aichk-summary-item aichk-ai">
+            <div class="aichk-summary-label">AI Content</div>
+            <div class="aichk-summary-val" id="sum-ai-val">—</div>
+          </div>
+          <div class="aichk-summary-divider"></div>
+          <div class="aichk-summary-item aichk-human">
+            <div class="aichk-summary-label">Human</div>
+            <div class="aichk-summary-val" id="sum-human-val">—</div>
+          </div>
+        </div>
+        <div class="aichk-bar-wrap">
+          <div class="aichk-bar-ai"   id="bar-ai"></div>
+          <div class="aichk-bar-human" id="bar-human"></div>
+        </div>
+        <div class="aichk-verdict" id="aichk-verdict"></div>
+        <div class="aichk-words"   id="aichk-words"></div>
+      </div>
+
+      <!-- Download reports -->
       <div id="download-row" class="report-download-row" style="display:none;">
-        <button class="btn report-dl-btn" id="dl-plg-btn" onclick="downloadPlgPdf()">
-          ⬇ Download Copyleaks Report (PDF)
+        <button class="btn report-dl-btn" id="dl-both-btn" onclick="downloadBoth()">
+          ⬇ Download Both Reports (PDF)
         </button>
+        <div style="margin-top:10px;font-size:13px;">
+          <a href="#" id="dl-plg-link" onclick="downloadPlgPdf();return false;">Plagiarism report only</a>
+          &nbsp;·&nbsp;
+          <a href="#" id="dl-ai-link" onclick="downloadAiPdf();return false;">AI report only</a>
+        </div>
       </div>
     </div>
   </div>
@@ -73,7 +105,7 @@
 <div id="loading-overlay" class="loading-overlay" style="display:none;">
   <div class="loading-card">
     <div class="loading-spinner"></div>
-    <p id="loading-msg">Scanning for plagiarism…<br/><small>This may take 30–90 seconds</small></p>
+    <p id="loading-msg">Checking plagiarism and AI…<br/><small>This may take 30–90 seconds</small></p>
   </div>
 </div>
 
@@ -178,12 +210,16 @@
 var _jobId = null;
 var _pollTimer = null;
 var _lastJobId = null;
+var _lastText = '';
+var _lastAi = null;
+var _pending = 0;
 
 (function(){
-  var saved = localStorage.getItem('ssg_plagiarism_text');
+  var saved = localStorage.getItem('ssg_plagiarism_text') || localStorage.getItem('ssg_ai_check_text');
   if (saved) {
     document.getElementById('text-in').value = saved;
     localStorage.removeItem('ssg_plagiarism_text');
+    localStorage.removeItem('ssg_ai_check_text');
     updateMeta(saved);
   }
 })();
@@ -201,24 +237,42 @@ function runCheck(){
   if (words > 3000) { showError('Too long — maximum 3,000 words.'); return; }
 
   hideError();
+  _lastText = text; _lastAi = null; _lastJobId = null; _jobId = null;
+  clearInterval(_pollTimer);
+  ['plg-summary','plg-sources-wrap','plg-no-sources','ai-summary','plg-error','ai-error','download-row'].forEach(function(id){
+    document.getElementById(id).style.display = 'none';
+  });
   document.getElementById('results-section').style.display = 'none';
   document.getElementById('loading-overlay').style.display = 'flex';
   document.getElementById('check-btn').disabled = true;
+  _pending = 2;
 
-  var fd = new FormData();
-  fd.append('text', text);
-
-  fetch('/api/plagiarism/start', { method: 'POST', body: fd })
+  /* ── AI detection ── */
+  var fa = new FormData();
+  fa.append('text', text);
+  fetch('/check-ai', { method: 'POST', body: fa })
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (data.error){ hideBusy(); showError(data.error); return; }
+      if (data.error){ showSectionError('ai-error', data.error); }
+      else { showAiResults(data); }
+    })
+    .catch(function(){ showSectionError('ai-error', 'AI check failed. Please try again.'); })
+    .then(sectionDone);
+
+  /* ── Plagiarism ── */
+  var fp = new FormData();
+  fp.append('text', text);
+  fetch('/api/plagiarism/start', { method: 'POST', body: fp })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.error){ showSectionError('plg-error', data.error); sectionDone(); return; }
       _jobId = data.job_id;
       _lastJobId = data.job_id;
       _pollTimer = setInterval(pollJob, 3000);
     })
     .catch(function(){
-      hideBusy();
-      showError('Request failed. Please try again.');
+      showSectionError('plg-error', 'Plagiarism scan failed. Please try again.');
+      sectionDone();
     });
 }
 
@@ -229,21 +283,36 @@ function pollJob(){
     .then(function(job){
       if (job.status === 'done'){
         clearInterval(_pollTimer);
-        hideBusy();
-        showResults(job.result);
-      } else if (job.status === 'error'){
+        showPlgResults(job.result);
+        sectionDone();
+      } else if (job.status === 'error' || job.status === 'not_found'){
         clearInterval(_pollTimer);
-        hideBusy();
-        showError(job.error || 'Scan failed. Please try again.');
+        _lastJobId = null;
+        showSectionError('plg-error', job.error || 'Scan failed. Please try again.');
+        sectionDone();
       }
-      /* still running → keep polling */
     })
-    .catch(function(){
-      /* network hiccup — keep polling */
-    });
+    .catch(function(){ /* keep polling */ });
 }
 
-function verdictInfo(sim){
+function sectionDone(){
+  _pending--;
+  if (_pending > 0) return;
+  hideBusy();
+  document.getElementById('results-section').style.display = 'flex';
+  document.getElementById('dl-plg-link').style.display = _lastJobId ? 'inline' : 'none';
+  document.getElementById('dl-ai-link').style.display  = _lastAi ? 'inline' : 'none';
+  document.getElementById('download-row').style.display = (_lastJobId || _lastAi) ? 'block' : 'none';
+}
+
+function showSectionError(id, msg){
+  var el = document.getElementById(id);
+  el.innerHTML = '⚠️ ' + escHtml(msg);
+  el.style.display = 'block';
+}
+
+/* ── Plagiarism results ── */
+function plgVerdict(sim){
   if (sim >= 30) return { icon:'🚨', text:'High similarity — likely to be flagged for plagiarism', cls:'vd-danger' };
   if (sim >= 15) return { icon:'⚠️',  text:'Moderate similarity — review matched sources',          cls:'vd-warn'   };
   return          { icon:'✅', text:'Low similarity — text appears mostly original',              cls:'vd-safe'   };
@@ -253,7 +322,7 @@ function srcClass(pct){
   return pct >= 30 ? 'danger' : pct >= 15 ? 'warn' : 'safe';
 }
 
-function showResults(data){
+function showPlgResults(data){
   var sim  = data.similarity;
   var orig = Math.max(0, 100 - sim);
 
@@ -262,12 +331,13 @@ function showResults(data){
   document.getElementById('bar-orig').style.width = orig + '%';
   document.getElementById('bar-sim').style.width  = sim  + '%';
 
-  var vd = verdictInfo(sim);
+  var vd = plgVerdict(sim);
   var el = document.getElementById('plg-verdict');
   el.textContent = vd.icon + ' ' + vd.text;
   el.className   = 'plg-verdict ' + vd.cls;
 
   document.getElementById('plg-words').textContent = data.words + ' words analyzed';
+  document.getElementById('plg-summary').style.display = 'block';
 
   var sources = data.sources || [];
   if (sources.length > 0){
@@ -295,37 +365,90 @@ function showResults(data){
     document.getElementById('plg-sources-wrap').style.display = 'none';
     document.getElementById('plg-no-sources').style.display   = 'block';
   }
+}
 
-  document.getElementById('results-section').style.display = 'flex';
-  document.getElementById('download-row').style.display = 'block';
+/* ── AI results ── */
+function aiVerdict(ai){
+  if (ai >= 70) return { icon:'🚨', text:'High — likely to be flagged',   cls:'vd-danger' };
+  if (ai >= 40) return { icon:'⚠️',  text:'Moderate — review before submitting', cls:'vd-warn'   };
+  return          { icon:'✅', text:'Low — looks human-written',         cls:'vd-safe'   };
+}
+
+function showAiResults(data){
+  var ai    = data.ai_score;
+  var human = data.human_pct !== undefined ? data.human_pct : (100 - ai);
+
+  document.getElementById('sum-ai-val').textContent    = ai.toFixed(1) + '%';
+  document.getElementById('sum-human-val').textContent = human.toFixed(1) + '%';
+  document.getElementById('bar-ai').style.width        = ai + '%';
+  document.getElementById('bar-human').style.width     = human + '%';
+
+  var vd = aiVerdict(ai);
+  var verdEl = document.getElementById('aichk-verdict');
+  verdEl.textContent = vd.icon + ' ' + vd.text;
+  verdEl.className   = 'aichk-verdict ' + vd.cls;
+
+  document.getElementById('aichk-words').textContent = data.words + ' words analyzed';
+  document.getElementById('ai-summary').style.display = 'block';
+  _lastAi = data;
+}
+
+/* ── Downloads ── */
+function saveBlob(blob, name){
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+function fetchPlgPdf(){
+  return fetch('/api/reports/plagiarism/' + _lastJobId + '/pdf').then(function(r){
+    if (!r.ok){ throw new Error('Plagiarism PDF failed'); }
+    return r.blob();
+  });
+}
+
+function fetchAiPdf(){
+  return fetch('/api/reports/ai/pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ai_score:  _lastAi.ai_score,
+      human_pct: _lastAi.human_pct,
+      detectors: _lastAi.detectors || [],
+      words:     _lastAi.words,
+      text:      _lastText,
+    }),
+  }).then(function(r){
+    if (!r.ok){ throw new Error('AI PDF failed'); }
+    return r.blob();
+  });
 }
 
 function downloadPlgPdf(){
-  if (!_lastJobId){ return; }
-  var btn = document.getElementById('dl-plg-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Generating PDF…';
+  if (!_lastJobId){ return Promise.resolve(); }
+  return fetchPlgPdf().then(function(b){ saveBlob(b, 'plagiarism_report.pdf'); })
+    .catch(function(){ alert('Could not generate the plagiarism PDF. Please try again.'); });
+}
 
-  var url = '/api/reports/plagiarism/' + _lastJobId + '/pdf';
-  fetch(url)
-    .then(function(r){
-      if (!r.ok){ throw new Error('PDF generation failed'); }
-      return r.blob();
-    })
-    .then(function(blob){
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'plagiarism_report.pdf';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+function downloadAiPdf(){
+  if (!_lastAi){ return Promise.resolve(); }
+  return fetchAiPdf().then(function(b){ saveBlob(b, 'ai_detection_report.pdf'); })
+    .catch(function(){ alert('Could not generate the AI PDF. Please try again.'); });
+}
+
+function downloadBoth(){
+  var btn = document.getElementById('dl-both-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating PDFs…';
+  downloadPlgPdf()
+    .then(function(){ return new Promise(function(res){ setTimeout(res, 600); }); })
+    .then(downloadAiPdf)
+    .then(function(){
       btn.disabled = false;
-      btn.textContent = '⬇ Download Copyleaks Report (PDF)';
-    })
-    .catch(function(){
-      alert('Could not generate PDF. Please try again.');
-      btn.disabled = false;
-      btn.textContent = '⬇ Download Copyleaks Report (PDF)';
+      btn.textContent = '⬇ Download Both Reports (PDF)';
     });
 }
 

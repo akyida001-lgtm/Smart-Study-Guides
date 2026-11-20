@@ -388,7 +388,6 @@ def register_routes(app):
     }
     GUEST_TILES = [
         ("assign", "Assignment Order", "Create with AI or place an order with a human writer.", "main.assignment_order"),
-        ("removeai", "Remove AI", "Our writers rewrite your content in their own words.", "main.remove_ai"),
         ("files", "Plagiarism & AI Check", "Check your text for plagiarism and AI. Download both reports.", "main.plagiarism_checker"),
         ("cap", "Human Writer", "Have a qualified human writer complete your assignment.", "main.post_human_assignment"),
         ("briefcase", "Career Section", "Free career documents for your job search.", "main.job_docs"),
@@ -1601,6 +1600,11 @@ def register_routes(app):
 
             title  = (request.form.get("title") or "").strip()[:200]
             notes  = (request.form.get("notes") or "").strip()[:2000]
+            if request.form.get("service") == "plagiarism":
+                svc_note = "SERVICE: Remove plagiarism. Rewrite afresh in your own words so it passes a plagiarism check."
+            else:
+                svc_note = "SERVICE: Humanize. Remove all AI traces so it reads as human-written."
+            notes = (svc_note + ("\n" + notes if notes else ""))
             upload = request.files.get("file")
             source_filename = None
             if upload and upload.filename:
@@ -1663,6 +1667,7 @@ def register_routes(app):
                   .order_by(AIRemovalJob.submitted_at.desc()).limit(10).all())
         return render_template(
             "remove_ai.html", user=current_user, has_access=has_access, recent=recent,
+            service=("plagiarism" if request.args.get("service") == "plagiarism" else "ai"),
             min_words=REMOVE_AI_MIN_WORDS, max_words=REMOVE_AI_MAX_WORDS,
             max_open=REMOVE_AI_MAX_OPEN_JOBS,
         )

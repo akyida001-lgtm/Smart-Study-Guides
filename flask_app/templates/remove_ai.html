@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Remove AI — Smart Study Guides{% endblock %}
+{% block title %}Humanize / Remove Plagiarism — Smart Study Guides{% endblock %}
 {% block content %}
 <div class="tool-page">
   <div class="tool-header">
-    <h1>✍️ Remove AI</h1>
-    <p class="tool-sub">Upload your content and one of our writers will rewrite it in their own words and understanding, keeping your meaning and structure. Turnaround is 30 to 120 minutes depending on length.</p>
+    <h1>✍️ Humanize / Remove Plagiarism</h1>
+    <p class="tool-sub">Our experienced, top-rated writers rewrite your content by hand: humanize it to remove AI, or rewrite it afresh to remove plagiarism. Your meaning and structure stay the same. Turnaround is 30 to 120 minutes depending on length.</p>
   </div>
 
   {% if not has_access %}
@@ -16,6 +16,18 @@
 
   <div class="card" style="max-width:760px;margin:0 0 24px;">
     <form method="post" action="{{ url_for('main.remove_ai') }}" enctype="multipart/form-data" id="ra-form">
+
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">What do you need?</div>
+      <div style="display:grid;gap:10px;margin-bottom:20px;">
+        <label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;">
+          <input type="radio" name="service" value="ai" {% if service != 'plagiarism' %}checked{% endif %} style="margin-top:3px;">
+          <span><strong>🤖 Humanize / Remove AI</strong><br><span style="font-size:13px;color:var(--slate-500);">A human writer rewrites it so it reads as genuinely human-written.</span></span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;">
+          <input type="radio" name="service" value="plagiarism" {% if service == 'plagiarism' %}checked{% endif %} style="margin-top:3px;">
+          <span><strong>📋 Remove Plagiarism</strong><br><span style="font-size:13px;color:var(--slate-500);">A human writer rewrites it afresh in their own words so it is original.</span></span>
+        </label>
+      </div>
 
       <label for="ra-title" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Title <span style="font-weight:400;color:var(--slate-400);">(optional)</span></label>
       <input id="ra-title" name="title" type="text" maxlength="200" placeholder="e.g. Marketing essay, Week 4 discussion"
@@ -39,7 +51,7 @@
       <textarea id="ra-notes" name="notes" rows="3" maxlength="2000" placeholder="e.g. Keep the APA citations, academic tone, UK spelling"
                 style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;margin-bottom:18px;"></textarea>
 
-      <button type="submit" id="ra-submit" class="btn accent full tool-btn" {% if not has_access %}disabled{% endif %}>✍️ Send to our writers</button>
+      <button type="submit" id="ra-submit" class="btn accent full tool-btn" {% if not has_access %}disabled{% endif %}>✍️ Send to our human writers</button>
       <div id="ra-error" class="tool-error" style="display:none;"></div>
     </form>
   </div>

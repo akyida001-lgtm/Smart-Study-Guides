@@ -41,7 +41,7 @@
 
 </section>
 
-{% set dx_pages = [('My assignments','main.my_assignments','folder'),('Assignment Order','main.assignment_order','assign'),('Remove AI','main.remove_ai','removeai'),('Plagiarism & AI','main.plagiarism_checker','files'),('Human writer','main.post_human_assignment','cap'),('Career','main.job_docs','briefcase'),('Updates','feed.updates_page','megaphone'),('Pricing','main.pricing','card'),('Billing','main.subscription_manage','wallet'),('Help','main.help_page','help'),('Profile','main.profile','user')] %}
+{% set dx_pages = [('My assignments','main.my_assignments','folder'),('Assignment Order','main.assignment_order','assign'),('Plagiarism & AI','main.plagiarism_checker','files'),('Human writer','main.post_human_assignment','cap'),('Career','main.job_docs','briefcase'),('Updates','feed.updates_page','megaphone'),('Pricing','main.pricing','card'),('Billing','main.subscription_manage','wallet'),('Help','main.help_page','help'),('Profile','main.profile','user')] %}
 <h2 class="dx-h">Pages</h2>
 <nav class="dx-pages" aria-label="Pages">
   {% for label, ep, ic in dx_pages %}<a class="dx-pg" href="{{ url_for(ep) }}"><span class="ic">{{ icon(ic) }}</span><span>{{ label }}</span></a>{% endfor %}

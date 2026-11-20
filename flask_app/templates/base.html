@@ -175,15 +175,12 @@
       <a class="snav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
         <span class="snav-icon">🏠</span> Dashboard
       </a>
-      <a class="snav-item {% if request.endpoint in ('main.assignment_order', 'main.new_assignment') %}active{% endif %}" href="{{ url_for('main.assignment_order') }}">
+      <a class="snav-item {% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %}active{% endif %}" href="{{ url_for('main.assignment_order') }}">
         <span class="snav-icon">📝</span> Assignment Order
       </a>
 
       <div class="snav-divider"></div>
 
-      <a class="snav-item {% if request.endpoint in ('main.remove_ai', 'main.remove_ai_status') %}active{% endif %}" href="{{ url_for('main.remove_ai') }}">
-        <span class="snav-icon">✍️</span> Remove AI
-      </a>
       <a class="snav-item {% if request.endpoint == 'main.plagiarism_checker' %}active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}">
         <span class="snav-icon">📋</span> Plagiarism &amp; AI Check
       </a>
@@ -331,8 +328,7 @@
   <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">
     <a class="gn-link{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span>Dashboard</span></a>
-    <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
-    <a class="gn-link{% if request.endpoint == 'main.remove_ai' %} is-active{% endif %}" href="{{ url_for('main.remove_ai') }}" title="Remove AI"><span class="gn-ic">{{ icon('removeai') }}</span><span>Remove AI</span></a>
+    <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
     <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>
     <a class="gn-link{% if request.endpoint == 'main.post_human_assignment' %} is-active{% endif %}" href="{{ url_for('main.post_human_assignment') }}" title="Human Writer"><span class="gn-ic">{{ icon('cap') }}</span><span>Human Writer</span></a>
     <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Career"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Career</span></a>

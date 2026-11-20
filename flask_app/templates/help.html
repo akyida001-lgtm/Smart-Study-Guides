@@ -19,6 +19,7 @@
   <a href="#assignments"     class="help-qlink">📝 Assignments</a>
   <a href="#remove-ai"       class="help-qlink">✍️ Remove AI</a>
   <a href="#ai-checker"      class="help-qlink">🔍 AI Checker</a>
+  <a href="#plagiarism-checker" class="help-qlink">🛡️ Plagiarism Checker</a>
   <a href="#career"          class="help-qlink">💼 Career Section</a>
   <a href="#credits"         class="help-qlink">💳 Billing</a>
 </div>
@@ -300,6 +301,108 @@
           <div class="help-step-desc">Flagged sentences are highlighted. A score of <strong>0–15%</strong> is generally low. Anything above 30% is likely to be flagged.</div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ 4b. PLAGIARISM CHECKER -->
+<div class="help-section" id="plagiarism-checker">
+  <div class="help-section-header" onclick="toggleSection(this)">
+    <div class="help-section-title">
+      <span class="help-section-icon">🛡️</span>
+      <div>
+        <div class="help-section-name">Plagiarism Checker</div>
+        <div class="help-section-sub">What your report looks like, how it works &amp; what you get</div>
+      </div>
+    </div>
+    <span class="help-chevron">▾</span>
+  </div>
+  <div class="help-section-body">
+
+    <h3 class="help-sub-h">What Your Report Looks Like</h3>
+    <p class="help-sub-p">Matched sources are highlighted — you see the original URL and similarity percentage</p>
+    <div class="help-rep-card">
+      <div class="help-rep-hdr">
+        <div>
+          <div class="help-rep-title">Similarity Report</div>
+          <div class="help-rep-sources">Checked against <strong>1.2 billion</strong> sources · 347 words analyzed</div>
+        </div>
+        <div class="help-rep-score">
+          <div class="help-rep-score-num">4%</div>
+          <div class="help-rep-score-label">Similarity Score</div>
+        </div>
+      </div>
+      <div class="help-rep-clean">
+        "The transformation of supply chain management over the past decade reflects broader shifts in how companies think about risk, resilience, and the true cost of efficiency."
+        <div class="help-rep-note">✅ Original — no matches found</div>
+      </div>
+      <div class="help-rep-match">
+        "Just-in-time manufacturing principles were first popularized by Toyota in the 1970s as part of the Toyota Production System."
+        <div class="help-rep-note">⚠ 94% match · wikipedia.org/wiki/Just-in-time_manufacturing</div>
+      </div>
+      <div class="help-rep-clean">
+        "Modern supply chains must now balance cost efficiency against the lessons learned from disruptions like the 2021 semiconductor shortage."
+        <div class="help-rep-note">✅ Original — no matches found</div>
+      </div>
+    </div>
+
+    <h3 class="help-sub-h">How It Works</h3>
+    <p class="help-sub-p">Thorough checks done in three simple steps</p>
+    <div class="help-steps-wrap">
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div>
+          <div class="help-step-title">Paste Your Text</div>
+          <div class="help-step-desc">Paste your essay, report, or any piece of writing up to 3,000 words. No file upload required — just paste and go.</div>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div>
+          <div class="help-step-title">We Scan Everything</div>
+          <div class="help-step-desc">Our engine compares your text against billions of sources — websites, academic journals, student essay databases, and published books.</div>
+        </div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div>
+          <div class="help-step-title">Download Your Report</div>
+          <div class="help-step-desc">Receive a color-coded similarity report with matched source URLs and percentage scores. Exportable as a PDF.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="help-sub-h">Everything You Need Before You Submit</h3>
+    <p class="help-sub-p">Comprehensive coverage, honest results</p>
+    <div class="help-feat-grid">
+      <div class="help-feat-card">
+        <div class="help-feat-icon">🌐</div>
+        <div class="help-step-title">Billions of Sources</div>
+        <div class="help-step-desc">Includes web pages, Wikipedia, academic journals (PubMed, IEEE, JSTOR), open-access repositories, and student paper databases.</div>
+      </div>
+      <div class="help-feat-card">
+        <div class="help-feat-icon">🔗</div>
+        <div class="help-step-title">Source URLs Shown</div>
+        <div class="help-step-desc">Every match comes with the exact URL of the original source so you can verify and properly cite the material.</div>
+      </div>
+      <div class="help-feat-card">
+        <div class="help-feat-icon">📄</div>
+        <div class="help-step-title">PDF Report Export</div>
+        <div class="help-step-desc">Download a formatted PDF report to keep for your records or to share with your tutor as proof of originality.</div>
+      </div>
+      <div class="help-feat-card">
+        <div class="help-feat-icon">🔒</div>
+        <div class="help-step-title">Your Work Stays Private</div>
+        <div class="help-step-desc">We never store your text or add it to any database. Your work is scanned and immediately discarded.</div>
+      </div>
+    </div>
+
+    <div class="help-tip help-cta-tip">
+      <div>
+        <strong>Know Before You Submit</strong><br>
+        Stop guessing. Check your work for plagiarism in under 30 seconds.
+      </div>
+      <a class="btn accent" href="{{ url_for('main.plagiarism_checker') }}">Check Your Work →</a>
     </div>
   </div>
 </div>
@@ -652,6 +755,34 @@
 .help-contact-icon  { font-size: 36px; flex-shrink: 0; }
 .help-contact-title { font-size: 16px; font-weight: 700; color: var(--navy-900); margin-bottom: 4px; }
 .help-contact-sub   { font-size: 13px; color: var(--slate-500); }
+
+/* Plagiarism checker section */
+#plagiarism-checker .help-section-body.open { max-height: 5000px; }
+.help-sub-h { font-size: 16px; font-weight: 800; color: var(--navy-900); margin: 28px 0 4px; }
+.help-sub-h:first-child { margin-top: 0; }
+.help-sub-p { font-size: 13px; color: var(--slate-500); margin: 0 0 16px; }
+.help-rep-card {
+  border: 1.5px solid var(--surface-2); background: var(--surface-2);
+  border-radius: 14px; padding: 20px; margin-bottom: 8px;
+}
+.help-rep-hdr { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.help-rep-title { font-size: 15px; font-weight: 700; color: var(--navy-900); margin-bottom: 4px; }
+.help-rep-sources { font-size: 13px; color: var(--slate-500); }
+.help-rep-sources strong { color: var(--navy-900); }
+.help-rep-score { text-align: center; }
+.help-rep-score-num { font-size: 40px; font-weight: 900; color: #16a34a; line-height: 1; }
+.help-rep-score-label { font-size: 12px; color: var(--slate-500); margin-top: 4px; }
+.help-rep-clean, .help-rep-match {
+  border-radius: 8px; padding: 12px 16px; font-size: 13px; line-height: 1.6; margin-bottom: 8px;
+}
+.help-rep-clean { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.35); color: var(--navy-900); }
+.help-rep-match { background: rgba(234,179,8,.14); border: 1px solid rgba(234,179,8,.45); color: var(--navy-900); }
+.help-rep-note { font-size: 12px; color: var(--slate-500); margin-top: 4px; }
+.help-feat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.help-feat-card { border: 1.5px solid var(--surface-2); border-radius: 12px; padding: 16px 18px; background: var(--surface-2); }
+.help-feat-icon { font-size: 24px; margin-bottom: 8px; }
+.help-cta-tip { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 24px; }
+@media(max-width:560px) { .help-feat-grid { grid-template-columns: 1fr; } .help-cta-tip .btn { width: 100%; text-align: center; } }
 
 @media(max-width:560px) {
   .help-section-header { padding: 16px; }

@@ -19,11 +19,4 @@
     </div>
   </div>
 </section>
-
-<h2 class="dx-h">Services</h2>
-<div class="dx-tiles dx-tiles-wide">
-  {% for ic, title, desc, endpoint in tiles %}
-  <a class="dx-tile{% if loop.first %} lead{% endif %}" href="{{ url_for(endpoint) }}"><span class="ic">{{ icon(ic) }}</span><b>{{ title }}</b><span>{{ desc }}</span></a>
-  {% endfor %}
-</div>
 {% endblock %}

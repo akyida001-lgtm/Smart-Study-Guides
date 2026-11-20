@@ -35,10 +35,42 @@
 .lp-btn-secondary{padding:14px 32px;background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:600;border-radius:10px;text-decoration:none;border:1.5px solid rgba(255,255,255,.15);transition:.15s;}
 .lp-btn-secondary:hover{background:rgba(255,255,255,.13);}
 .lp-badge{display:inline-block;background:rgba(0,188,212,.15);color:#00bcd4;font-size:12px;font-weight:700;letter-spacing:.5px;padding:6px 14px;border-radius:20px;border:1px solid rgba(0,188,212,.3);margin-bottom:20px;text-transform:uppercase;}
-.lp-social{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:44px;padding:0 24px 40px;}
-.lp-social-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;text-align:center;min-width:130px;}
-.lp-social-num{font-size:24px;font-weight:900;color:#16a34a;}
-.lp-social-label{font-size:12px;color:#64748b;margin-top:2px;}
+/* Stats: 2 x 2 premium cards */
+.lp-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:520px;margin:44px auto 0;padding:0 20px 44px;}
+.lp-stat{--mx:50%;--my:50%;position:relative;overflow:hidden;isolation:isolate;text-align:center;padding:26px 16px 22px;border-radius:18px;
+  background:linear-gradient(160deg,rgba(255,255,255,.96),rgba(240,253,244,.92));
+  border:1px solid rgba(22,163,74,.18);
+  box-shadow:0 1px 2px rgba(15,23,42,.05),0 10px 30px -12px rgba(22,163,74,.25);
+  opacity:0;transform:translateY(22px) scale(.97);
+  transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s ease,border-color .45s ease,opacity .7s ease;
+  transition-delay:calc(var(--d,0) * 90ms),0s,0s,calc(var(--d,0) * 90ms);}
+.lp-stats.is-in .lp-stat{opacity:1;transform:none;}
+.lp-stats.is-in .lp-stat:hover{transform:translateY(-6px) scale(1.025);transition-delay:0s;border-color:rgba(22,163,74,.5);
+  box-shadow:0 2px 4px rgba(15,23,42,.06),0 22px 44px -14px rgba(22,163,74,.45);}
+/* soft spotlight that follows the cursor */
+.lp-stat::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .4s ease;
+  background:radial-gradient(180px circle at var(--mx) var(--my),rgba(34,197,94,.20),transparent 70%);}
+.lp-stat:hover::before{opacity:1;}
+/* light sweep */
+.lp-stat::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;z-index:-1;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);}
+.lp-stat:hover::after{left:130%;transition:left .9s ease;}
+.lp-stat-num{font-size:clamp(28px,7vw,38px);font-weight:900;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;
+  background:linear-gradient(135deg,#15803d,#22c55e 60%,#86efac);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.lp-stat-line{width:28px;height:3px;border-radius:3px;margin:10px auto 10px;background:linear-gradient(90deg,#22c55e,#86efac);
+  transition:width .45s cubic-bezier(.2,.8,.2,1);}
+.lp-stat:hover .lp-stat-line{width:56px;}
+.lp-stat-label{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:#64748b;}
+html[data-theme="dark"] .lp-stat{background:linear-gradient(160deg,rgba(30,42,58,.92),rgba(18,27,41,.92));border:1px solid rgba(133,224,166,.16);
+  box-shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px -14px rgba(0,0,0,.7);}
+html[data-theme="dark"] .lp-stats.is-in .lp-stat:hover{border-color:rgba(133,224,166,.55);
+  box-shadow:0 2px 4px rgba(0,0,0,.4),0 22px 48px -14px rgba(52,211,153,.35);}
+html[data-theme="dark"] .lp-stat::before{background:radial-gradient(180px circle at var(--mx) var(--my),rgba(133,224,166,.16),transparent 70%);}
+html[data-theme="dark"] .lp-stat::after{background:linear-gradient(100deg,transparent,rgba(255,255,255,.10),transparent);}
+html[data-theme="dark"] .lp-stat-num{background:linear-gradient(135deg,#6ee7b7,#85e0a6 55%,#d1fae5);-webkit-background-clip:text;background-clip:text;color:transparent;}
+html[data-theme="dark"] .lp-stat-label{color:#93a5bf;}
+@media(max-width:380px){.lp-stats{gap:12px;padding:0 14px 40px;}.lp-stat{padding:22px 10px 18px;}}
+@media(prefers-reduced-motion:reduce){.lp-stat{opacity:1;transform:none;transition:none;}.lp-stat::after{display:none;}}
 .lp-report{background:#f8fafc;padding:60px 24px;}
 .lp-report-inner{max-width:720px;margin:0 auto;text-align:center;}
 .lp-report-inner h2{font-size:clamp(22px,3.5vw,34px);font-weight:800;color:#0f172a;margin:0 0 8px;}
@@ -92,12 +124,47 @@
 </section>
 
 <!-- Social proof -->
-<div class="lp-social">
-  <div class="lp-social-card"><div class="lp-social-num">1B+</div><div class="lp-social-label">Sources checked against</div></div>
-  <div class="lp-social-card"><div class="lp-social-num">99.2%</div><div class="lp-social-label">Detection accuracy</div></div>
-  <div class="lp-social-card"><div class="lp-social-num">30K+</div><div class="lp-social-label">Reports generated</div></div>
-  <div class="lp-social-card"><div class="lp-social-num">PDF</div><div class="lp-social-label">Exportable report</div></div>
+<div class="lp-stats" id="lp-stats">
+  <div class="lp-stat" style="--d:0"><div class="lp-stat-num" data-count="1" data-suffix="B+">1B+</div><div class="lp-stat-line"></div><div class="lp-stat-label">Sources checked against</div></div>
+  <div class="lp-stat" style="--d:1"><div class="lp-stat-num" data-count="99.2" data-decimals="1" data-suffix="%">99.2%</div><div class="lp-stat-line"></div><div class="lp-stat-label">Detection accuracy</div></div>
+  <div class="lp-stat" style="--d:2"><div class="lp-stat-num" data-count="30" data-suffix="K+">30K+</div><div class="lp-stat-line"></div><div class="lp-stat-label">Reports generated</div></div>
+  <div class="lp-stat" style="--d:3"><div class="lp-stat-num">PDF</div><div class="lp-stat-line"></div><div class="lp-stat-label">Exportable report</div></div>
 </div>
+<script>
+(function(){
+  var box=document.getElementById('lp-stats'); if(!box) return;
+  var cards=box.querySelectorAll('.lp-stat');
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countUp(el){
+    var end=parseFloat(el.dataset.count), dec=parseInt(el.dataset.decimals||'0',10), suf=el.dataset.suffix||'';
+    if(reduce){return;}
+    var t0=null, dur=1400;
+    function step(t){
+      if(!t0) t0=t; var p=Math.min((t-t0)/dur,1), e=1-Math.pow(1-p,3);
+      el.textContent=(end*e).toFixed(dec)+suf;
+      if(p<1) requestAnimationFrame(step); else el.textContent=end.toFixed(dec)+suf;
+    }
+    requestAnimationFrame(step);
+  }
+  function play(){
+    box.classList.add('is-in');
+    box.querySelectorAll('[data-count]').forEach(countUp);
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      if(es[0].isIntersecting){play(); io.disconnect();}
+    },{threshold:.25});
+    io.observe(box);
+  } else { play(); }
+  cards.forEach(function(c){
+    c.addEventListener('pointermove',function(e){
+      var r=c.getBoundingClientRect();
+      c.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      c.style.setProperty('--my',(e.clientY-r.top)+'px');
+    });
+  });
+})();
+</script>
 
 <!-- Sample report -->
 <section class="lp-report">

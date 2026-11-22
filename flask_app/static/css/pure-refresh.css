@@ -272,7 +272,7 @@ html[data-theme="dark"] .landing-hero {
     /* premium glass panel */
     border-radius: 20px !important;
     border: 1px solid rgba(255, 255, 255, 0.65) !important;
-    background: rgba(255, 255, 255, 0.82) !important;
+    background: #ffffff !important;
     backdrop-filter: blur(18px) saturate(1.4);
     -webkit-backdrop-filter: blur(18px) saturate(1.4);
     box-shadow: 0 24px 60px rgba(0, 40, 40, 0.30),
@@ -325,7 +325,7 @@ html[data-theme="dark"] .landing-hero {
 
   /* dark mode: smoky glass */
   html[data-theme="dark"] .gn-links {
-    background: rgba(13, 22, 40, 0.88) !important;
+    background: #0d1628 !important;
     border-color: rgba(94, 234, 212, 0.22) !important;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55),
                 0 1px 0 rgba(94, 234, 212, 0.14) inset,

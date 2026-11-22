@@ -121,11 +121,13 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
 .container.landing-fill .landing-hero{flex:1 0 auto;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
 .container.landing-fill .landing-hero-inner{width:100%;}
 .container.landing-fill .site-footer{margin-top:0;}
-/* wallpaper photo under a dark blue veil so the text stays easy to read */
-html body .container.landing-fill .landing-hero{
-  background:linear-gradient(180deg,rgba(7,16,44,.80) 0%,rgba(9,22,56,.60) 42%,rgba(7,16,44,.88) 100%),
-             url("{{ url_for('static', filename='img/hero-books.jpg') }}") center 30%/cover no-repeat #0d1e3a !important;
-  animation:none !important;
+/* wallpaper photo: phones only, under a dark blue veil so the text stays easy to read */
+@media(max-width:700px){
+  html body .container.landing-fill .landing-hero{
+    background:linear-gradient(180deg,rgba(7,16,44,.80) 0%,rgba(9,22,56,.60) 42%,rgba(7,16,44,.88) 100%),
+               url("{{ url_for('static', filename='img/hero-books.jpg') }}") center 30%/cover no-repeat #0d1e3a !important;
+    animation:none !important;
+  }
 }
 /* quick-link tiles */
 .lh-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:440px;margin:30px auto 0;}

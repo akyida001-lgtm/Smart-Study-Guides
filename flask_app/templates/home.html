@@ -121,11 +121,11 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
 .container.landing-fill .landing-hero{flex:1 0 auto;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
 .container.landing-fill .landing-hero-inner{width:100%;}
 .container.landing-fill .site-footer{margin-top:0;}
-/* wallpaper: phones only. Light theme = the bright desk wall, dark theme = the books photo. Text and tiles follow the toggle. */
+/* wallpaper: phones + dark theme only. Light theme keeps the original blue card. */
 @media(max-width:700px){
-  html body .container.landing-fill .landing-hero{animation:none !important;}
   /* ── dark ── */
   html[data-theme="dark"] body .container.landing-fill .landing-hero{
+    animation:none !important;
     background:linear-gradient(180deg,rgba(7,16,44,.82) 0%,rgba(9,22,56,.66) 42%,rgba(7,16,44,.90) 100%),
                url("{{ url_for('static', filename='img/hero-books.jpg') }}") center 30%/cover no-repeat #0d1e3a !important;
   }
@@ -135,22 +135,6 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
   html[data-theme="dark"] body .container.landing-fill .landing-hero .landing-eyebrow{color:#ffe08a !important;font-weight:700 !important;background:rgba(255,255,255,.10) !important;}
   html[data-theme="dark"] body .container.landing-fill .landing-hero .btn.ghost-light{color:#fff !important;font-weight:700 !important;border:1.5px solid rgba(255,255,255,.65) !important;}
   html[data-theme="dark"] body .container.landing-fill .landing-hero .lh-lb{color:#fff !important;}
-  /* ── light ── */
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero{
-    background:linear-gradient(180deg,rgba(255,252,246,.72) 0%,rgba(255,252,246,.60) 40%,rgba(255,252,246,.84) 100%),
-               url("{{ url_for('static', filename='img/hero-desk.jpg') }}") center 35%/cover no-repeat #f6f1e8 !important;
-    color:#0b1b3a !important;
-    box-shadow:0 14px 40px rgba(90,70,40,.18) !important;
-  }
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero h1{color:#040c1f !important;font-weight:800 !important;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-sub{color:#0b1b3a !important;font-weight:500 !important;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-note{color:#0b1b3a !important;font-weight:500 !important;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-eyebrow{background:#ffffff !important;color:#004d40 !important;font-weight:700 !important;border-color:rgba(0,77,64,.40) !important;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .btn.ghost-light{background:#ffffff !important;color:#0b1b3a !important;font-weight:700 !important;border:1.5px solid rgba(11,27,58,.45) !important;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-tile{background:rgba(255,255,255,.94);border-color:rgba(11,27,58,.18);color:#0b1b3a !important;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-tile:hover{background:#fff;border-color:rgba(0,150,136,.6);box-shadow:0 14px 30px -12px rgba(0,60,70,.35),0 0 0 1px rgba(0,150,136,.3);}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-ic{background:rgba(0,150,136,.18);color:#00695c;}
-  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-lb{color:#0b1b3a !important;}
 }
 /* quick-link tiles */
 .lh-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:440px;margin:30px auto 0;}

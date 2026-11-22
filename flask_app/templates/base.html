@@ -314,6 +314,13 @@
 {% else %}
 <!-- ── Guest: one header (brand, pages, sign in / sign up) ── -->
 {% from "_icons.html" import icon %}
+<style>
+/* Mobile menu panel is always solid, set here so a cached stylesheet can never make it see-through */
+@media(max-width:900px){
+  .nav-guest .gn-links{background:#ffffff !important;opacity:1;}
+  html[data-theme="dark"] .nav-guest .gn-links{background:#0d1628 !important;}
+}
+</style>
 <nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">

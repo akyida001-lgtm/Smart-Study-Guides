@@ -19,16 +19,15 @@
   <meta name="theme-color" content="#00bcd4" />
   <meta name="color-scheme" content="light dark" />
   <script>
-  /* Light / dark theme: follows the phone's setting until the person chooses one with the moon/sun button. */
+  /* Light / dark theme: dark by default. Stays dark until the person chooses light with the moon/sun button (their choice is remembered). */
   (function () {
     var KEY = 'ssg-theme', root = document.documentElement, meta = document.querySelector('meta[name="theme-color"]');
     var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
     function stored() { try { var t = localStorage.getItem(KEY); return t === 'dark' || t === 'light' ? t : null; } catch (e) { return null; } }
     function apply(t) { root.setAttribute('data-theme', t); if (meta) meta.setAttribute('content', t === 'dark' ? '#043d44' : '#00bcd4'); }
-    apply(stored() || (mq && mq.matches ? 'dark' : 'light'));
+    apply(stored() || 'dark');
     window.ssgSetTheme = function (t) { try { localStorage.setItem(KEY, t); } catch (e) {} apply(t); };
     window.ssgToggleTheme = function () { window.ssgSetTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
-    if (mq && mq.addEventListener) mq.addEventListener('change', function (e) { if (!stored()) apply(e.matches ? 'dark' : 'light'); });
     document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.theme-btn')) window.ssgToggleTheme(); });
   })();
   </script>

@@ -326,20 +326,21 @@
 .gn-main .gn-txt{display:flex;flex-direction:column;line-height:1.2;}
 .gn-main .gn-sub{display:none;}
 @media(max-width:900px){
-  .gn-links{padding-bottom:6px;}
-  .gn-links .gn-main{margin:10px 8px 4px !important;padding:12px 14px !important;border-radius:16px !important;gap:14px !important;
+  /* never taller than the screen: scrolls inside if the phone is very short */
+  .nav-guest .gn-links{padding-bottom:4px;max-height:calc(100vh - 76px);max-height:calc(100dvh - 76px);overflow-y:auto !important;overscroll-behavior:contain;}
+  .gn-links .gn-main{margin:8px 8px 2px !important;padding:8px 12px !important;border-radius:14px !important;gap:12px !important;
     background:linear-gradient(135deg,rgba(0,191,165,.20),rgba(64,196,255,.12)) !important;border:1px solid rgba(0,191,165,.45);
     box-shadow:0 10px 24px -14px rgba(0,191,165,.7);}
-  .gn-links .gn-main .gn-ic{width:44px !important;height:44px !important;border-radius:13px !important;background:linear-gradient(135deg,#00bfa5,#00897b) !important;color:#fff !important;}
-  .gn-links .gn-main .gn-title{font-size:17px;font-weight:800;}
-  .gn-links .gn-main .gn-sub{display:block;font-size:12px;font-weight:500;opacity:.75;margin-top:2px;}
+  .gn-links .gn-main .gn-ic{width:38px !important;height:38px !important;border-radius:11px !important;background:linear-gradient(135deg,#00bfa5,#00897b) !important;color:#fff !important;}
+  .gn-links .gn-main .gn-title{font-size:16.5px;font-weight:800;}
   .gn-links .gn-main::after{content:"→";margin-left:auto;font-size:18px;opacity:.8;}
   .gn-links .gn-main.is-active{background:linear-gradient(135deg,#00bfa5,#00897b) !important;}
   .gn-links .gn-main.is-active .gn-ic{background:rgba(255,255,255,.22) !important;}
-  .gn-label{display:block;padding:12px 18px 4px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b;}
-  .gn-links .gn-link:not(.gn-main){margin:0 6px;}
-  .gn-foot{display:block;margin-top:8px;padding:12px 12px 8px;border-top:1px solid rgba(100,116,139,.28);}
-  .gn-signin-btn{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:15px;text-decoration:none;
+  .gn-label{display:block;padding:8px 18px 2px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b;}
+  .gn-links .gn-link:not(.gn-main){margin:0 6px;padding-top:5px !important;padding-bottom:5px !important;}
+  .gn-links .gn-link:not(.gn-main) .gn-ic{width:32px;height:32px;}
+  .gn-foot{display:block;margin-top:4px;padding:10px 12px 6px;border-top:1px solid rgba(100,116,139,.28);}
+  .gn-signin-btn{display:flex;align-items:center;justify-content:center;gap:10px;height:46px;border-radius:14px;text-decoration:none;
     color:#fff !important;font-weight:800;font-size:16px;letter-spacing:.01em;
     background:linear-gradient(180deg,#e2512c 0%,#c93a17 100%);
     box-shadow:0 12px 24px -10px rgba(226,81,44,.75),0 2px 0 rgba(255,255,255,.28) inset,0 -2px 0 rgba(0,0,0,.14) inset;
@@ -359,7 +360,7 @@
 <nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">
-    <a class="gn-link gn-main{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-txt"><span class="gn-title">Dashboard</span><span class="gn-sub">Your main workspace</span></span></a>
+    <a class="gn-link gn-main{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-title">Dashboard</span></a>
     <div class="gn-label">Tools</div>
     <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
     <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>

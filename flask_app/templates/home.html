@@ -111,7 +111,16 @@
 }
 </script>
 {% endblock %}
+{% block container_class %}{% if not (user and user.is_authenticated) %}landing-fill{% endif %}{% endblock %}
 {% block content %}
+<style>
+/* Signed-out home: hero card stretches to fill the screen, footer sits at the bottom */
+body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+.container.landing-fill{flex:1 0 auto;width:100%;box-sizing:border-box;display:flex;flex-direction:column;}
+.container.landing-fill .landing-hero{flex:1 0 auto;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.container.landing-fill .landing-hero-inner{width:100%;}
+.container.landing-fill .site-footer{margin-top:0;}
+</style>
 <section class="landing-hero">
   <div class="landing-hero-inner">
     <span class="landing-eyebrow">Assignment &amp; homework help • Plagiarism-clean</span>

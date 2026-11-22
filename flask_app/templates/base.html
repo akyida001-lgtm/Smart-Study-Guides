@@ -320,18 +320,56 @@
   .nav-guest .gn-links{background:#ffffff !important;opacity:1;}
   html[data-theme="dark"] .nav-guest .gn-links{background:#0d1628 !important;}
 }
+
+/* ── Mobile menu hierarchy: featured Dashboard, grouped links, Sign in as its own button ── */
+.gn-label,.gn-foot{display:none;}
+.gn-main .gn-txt{display:flex;flex-direction:column;line-height:1.2;}
+.gn-main .gn-sub{display:none;}
+@media(max-width:900px){
+  .gn-links{padding-bottom:6px;}
+  .gn-links .gn-main{margin:10px 8px 4px !important;padding:12px 14px !important;border-radius:16px !important;gap:14px !important;
+    background:linear-gradient(135deg,rgba(0,191,165,.20),rgba(64,196,255,.12)) !important;border:1px solid rgba(0,191,165,.45);
+    box-shadow:0 10px 24px -14px rgba(0,191,165,.7);}
+  .gn-links .gn-main .gn-ic{width:44px !important;height:44px !important;border-radius:13px !important;background:linear-gradient(135deg,#00bfa5,#00897b) !important;color:#fff !important;}
+  .gn-links .gn-main .gn-title{font-size:17px;font-weight:800;}
+  .gn-links .gn-main .gn-sub{display:block;font-size:12px;font-weight:500;opacity:.75;margin-top:2px;}
+  .gn-links .gn-main::after{content:"→";margin-left:auto;font-size:18px;opacity:.8;}
+  .gn-links .gn-main.is-active{background:linear-gradient(135deg,#00bfa5,#00897b) !important;}
+  .gn-links .gn-main.is-active .gn-ic{background:rgba(255,255,255,.22) !important;}
+  .gn-label{display:block;padding:12px 18px 4px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b;}
+  .gn-links .gn-link:not(.gn-main){margin:0 6px;}
+  .gn-foot{display:block;margin-top:8px;padding:12px 12px 8px;border-top:1px solid rgba(100,116,139,.28);}
+  .gn-signin-btn{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:15px;text-decoration:none;
+    color:#fff !important;font-weight:800;font-size:16px;letter-spacing:.01em;
+    background:linear-gradient(180deg,#e2512c 0%,#c93a17 100%);
+    box-shadow:0 12px 24px -10px rgba(226,81,44,.75),0 2px 0 rgba(255,255,255,.28) inset,0 -2px 0 rgba(0,0,0,.14) inset;
+    transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease;}
+  .gn-signin-btn:hover,.gn-signin-btn:focus-visible{transform:translateY(-2px);}
+  .gn-signin-btn:active{transform:scale(.98);}
+  .gn-signin-btn .gn-ic{width:auto !important;height:auto !important;background:none !important;color:#fff !important;}
+  .gn-signin-btn .gn-ic svg{width:19px;height:19px;}
+  html[data-theme="dark"] .gn-links .gn-main{color:#fff !important;border-color:rgba(94,234,212,.45);
+    background:linear-gradient(135deg,rgba(0,191,165,.26),rgba(64,196,255,.10)) !important;}
+  html[data-theme="dark"] .gn-label{color:#8fa3c2;}
+  html[data-theme="dark"] .gn-foot{border-top-color:rgba(255,255,255,.12);}
+  .gn-links.open .gn-label,.gn-links.open .gn-foot{animation:gnFade .35s ease both .12s;}
+  @keyframes gnFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
 </style>
 <nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">
-    <a class="gn-link{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span>Dashboard</span></a>
+    <a class="gn-link gn-main{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-txt"><span class="gn-title">Dashboard</span><span class="gn-sub">Your main workspace</span></span></a>
+    <div class="gn-label">Tools</div>
     <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
     <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>
     <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Free Resources"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Free Resources</span></a>
+    <div class="gn-label">More</div>
+    <a class="gn-link{% if request.endpoint == 'main.services' %} is-active{% endif %}" href="{{ url_for('main.services') }}" title="Our Services"><span class="gn-ic">{{ icon('cap') }}</span><span>Services</span></a>
+    <a class="gn-link{% if request.path == '/updates' %} is-active{% endif %}" href="/updates" title="Updates &amp; Offers"><span class="gn-ic">{{ icon('bell') }}</span><span>Updates</span></a>
     <a class="gn-link{% if request.endpoint == 'main.pricing' %} is-active{% endif %}" href="{{ url_for('main.pricing') }}" title="Pricing"><span class="gn-ic">{{ icon('card') }}</span><span>Pricing</span></a>
     <a class="gn-link{% if request.endpoint == 'main.help_page' %} is-active{% endif %}" href="{{ url_for('main.help_page') }}" title="Help"><span class="gn-ic">{{ icon('help') }}</span><span>Help</span></a>
-    <a class="gn-link{% if request.path == '/updates' %} is-active{% endif %}" href="/updates" title="Updates &amp; Offers"><span class="gn-ic">{{ icon('bell') }}</span><span>Updates</span></a>
-    <a class="gn-link gn-only-m" href="{{ url_for('auth.login') }}"><span class="gn-ic">{{ icon('user') }}</span><span>Sign in</span></a>
+    <div class="gn-foot"><a class="gn-signin-btn" href="{{ url_for('auth.login') }}"><span class="gn-ic">{{ icon('user') }}</span><span>Sign in</span></a></div>
   </div>
   <div class="gn-auth">
     <a class="gn-signin" href="{{ url_for('auth.login') }}">Sign in</a>

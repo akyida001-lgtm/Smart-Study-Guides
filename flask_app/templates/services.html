@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Our Services — Smart Study Guides{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+
+{% set order_url = url_for('main.assignment_order') %}
+{% set services = [
+  {'key':'essays','icon':'✍️','title':'Essays',
+   'intro':'Argumentative, analytical, descriptive, narrative and reflective essays on any topic, written to your instructions.',
+   'points':['A clear thesis and a logical, well-structured argument','Real research sources with proper in-text citations','Your choice of referencing style, such as APA, MLA, Harvard or Chicago','Delivered as an editable Word document']},
+  {'key':'thesis','icon':'🎓','title':'Thesis',
+   'intro':'Support for undergraduate, master\'s and doctoral theses, whether you need one chapter or the full document.',
+   'points':['Chapter-by-chapter drafting: introduction, literature review, methodology, discussion and conclusion','Academic sources cited consistently throughout','A clear structure that follows your department\'s guidelines','A human writer can be requested for in-depth, subject-specific work']},
+  {'key':'assignments','icon':'📝','title':'Assignments',
+   'intro':'Homework and coursework across subjects, written around your brief and marking rubric.',
+   'points':['Follows your instructions, word count and rubric','Researched content with citations','Ready in minutes when generated with AI','Delivered as a Word document you can edit and submit']},
+  {'key':'projects','icon':'🧩','title':'Projects',
+   'intro':'Individual and group project write-ups, planned and structured around your objectives.',
+   'points':['A clear plan, aims and structure','Research-backed content with references','Findings, conclusions and recommendations written clearly','A polished Word document you can adapt']},
+  {'key':'reports','icon':'📊','title':'Reports',
+   'intro':'Business, technical, lab and research reports in the format your course expects.',
+   'points':['Standard report structure: summary, method, findings and conclusion','Data and results explained in plain, professional language','Properly referenced sources','Consistent formatting throughout']},
+  {'key':'term-papers','icon':'📚','title':'Term papers',
+   'intro':'Long-form papers that cover a course topic in depth, to your required length.',
+   'points':['In-depth research and a logical flow of sections','Citations and a complete reference list','Length and format matched to your requirements','Delivered as an editable Word document']},
+  {'key':'research-proposals','icon':'🔬','title':'Research proposals',
+   'intro':'Clear, convincing proposals that are ready for your supervisor to review.',
+   'points':['Problem statement, aims and research questions','Background drawn from real academic sources','Methodology outline and proposed timeline','Correct referencing in your required style']},
+  {'key':'case-studies','icon':'🗂️','title':'Case studies',
+   'intro':'Real-world case analyses built on evidence and a clear approach.',
+   'points':['Background and problem identification','Analysis using relevant frameworks and theory','Practical, well-argued recommendations','Cited sources behind every key point']},
+  {'key':'online-tests','icon':'🖥️','title':'Online Tests',
+   'intro':'Preparation and study support for online tests and quizzes.',
+   'points':['Revision notes that cover the key topics','Practice questions with worked explanations','Help understanding the concepts you find difficult','Available whenever you need it']}
+] %}
+{% set guarantees = [
+  {'key':'quality','icon':'✅','title':'High-quality work',
+   'intro':'Every piece is built on real research and written to your exact instructions.',
+   'points':['Real sources and proper citations','Clear structure and professional language','Follows your brief, rubric and word count','Written in the referencing style you choose'],
+   'cta':'Start an order','url':order_url},
+  {'key':'on-time','icon':'⏱️','title':'On-time delivery',
+   'intro':'No more last-minute panic. Your work arrives when you need it.',
+   'points':['AI-generated documents are ready in minutes','Download straight away as a Word document','For human-writer orders, tell the writer your due date when you place the order','No waiting for office hours'],
+   'cta':'Start an order','url':order_url},
+  {'key':'affordable','icon':'💰','title':'Affordability',
+   'intro':'Simple pricing with no surprises.',
+   'points':['7 days of access for just $25 with the Weekly Pass','One payment, no auto-renewal','Nothing renews behind your back'],
+   'cta':'See pricing','url':url_for('main.pricing')},
+  {'key':'always-on','icon':'🕐','title':'24/7 availability',
+   'intro':'Study on your schedule, not ours.',
+   'points':['Place an order any time, day or night','AI generation is available around the clock','Works on your phone, tablet or computer'],
+   'cta':'Start an order','url':order_url},
+  {'key':'zero-plagiarism','icon':'🛡️','title':'Zero% plagiarism',
+   'intro':'Original work, and the proof to back it up.',
+   'points':['Every document is written fresh for you','Run it through our built-in Plagiarism &amp; AI Check','Get a similarity report with matched sources highlighted','Download the report as a PDF for your records'],
+   'cta':'Check my work','url':url_for('main.plagiarism_checker')}
+] %}
+
+<section class="sv-hero">
+  <span class="sv-eyebrow">Smart Study Guides</span>
+  <h1>We offer you the most proficient services on your:</h1>
+  <p>Tap any card to see exactly what's included.</p>
+</section>
+
+<div class="sv-grid sv-grid-services">
+  {% for s in services %}
+  <button type="button" class="sv-card" data-key="{{ s.key }}" style="--i:{{ loop.index0 }}">
+    <span class="sv-ic">{{ s.icon }}</span>
+    <span class="sv-name">{{ s.title }}</span>
+    <span class="sv-more">Details <i>→</i></span>
+  </button>
+  {% endfor %}
+</div>
+
+<h2 class="sv-h2">We guarantee:</h2>
+
+<div class="sv-grid sv-grid-guar">
+  {% for g in guarantees %}
+  <button type="button" class="sv-card sv-card-g" data-key="{{ g.key }}" style="--i:{{ loop.index0 }}">
+    <span class="sv-ic">{{ g.icon }}</span>
+    <span class="sv-name">{{ g.title }}</span>
+    <span class="sv-more">Details <i>→</i></span>
+  </button>
+  {% endfor %}
+</div>
+
+<!-- Detail content (read by the popup; also stays in the page for search engines) -->
+<div id="sv-data" hidden>
+  {% for s in services %}
+  <section data-key="{{ s.key }}" data-icon="{{ s.icon }}" data-title="{{ s.title }}" data-cta="Order this now" data-url="{{ order_url }}">
+    <p>{{ s.intro }}</p>
+    <ul>{% for p in s.points %}<li>{{ p }}</li>{% endfor %}</ul>
+  </section>
+  {% endfor %}
+  {% for g in guarantees %}
+  <section data-key="{{ g.key }}" data-icon="{{ g.icon }}" data-title="{{ g.title }}" data-cta="{{ g.cta }}" data-url="{{ g.url }}">
+    <p>{{ g.intro }}</p>
+    <ul>{% for p in g.points %}<li>{{ p|safe }}</li>{% endfor %}</ul>
+  </section>
+  {% endfor %}
+</div>
+
+<!-- Popup -->
+<div class="sv-modal" id="sv-modal" aria-hidden="true">
+  <div class="sv-backdrop" data-close></div>
+  <div class="sv-dialog" role="dialog" aria-modal="true" aria-labelledby="sv-m-title" tabindex="-1">
+    <button type="button" class="sv-x" data-close aria-label="Close">×</button>
+    <div class="sv-m-head">
+      <span class="sv-m-ic" id="sv-m-ic"></span>
+      <h3 id="sv-m-title"></h3>
+    </div>
+    <div class="sv-m-body" id="sv-m-body"></div>
+    <div class="sv-m-foot">
+      <a class="sv-m-cta" id="sv-m-cta" href="#"><span></span><i>→</i></a>
+      <button type="button" class="sv-m-close" data-close>Close</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.sv-hero{text-align:center;max-width:720px;margin:6px auto 26px;}
+.sv-eyebrow{display:inline-block;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent);background:var(--surface-2);margin-bottom:14px;}
+.sv-hero h1{font-size:clamp(24px,5.6vw,38px);line-height:1.18;font-weight:800;color:var(--navy-900);margin:0 0 10px;}
+.sv-hero p{margin:0;color:var(--slate-500);font-size:15px;}
+.sv-h2{text-align:center;font-size:clamp(22px,5vw,30px);font-weight:800;color:var(--navy-900);margin:44px 0 20px;}
+
+.sv-grid{display:grid;gap:14px;max-width:980px;margin:0 auto;}
+.sv-grid-services{grid-template-columns:repeat(2,minmax(0,1fr));}
+.sv-grid-guar{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:36px;}
+.sv-grid-services .sv-card:last-child:nth-child(odd),
+.sv-grid-guar .sv-card:last-child:nth-child(odd){grid-column:1 / -1;}
+@media(min-width:760px){
+  .sv-grid{gap:18px;}
+  .sv-grid-services{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .sv-grid-services .sv-card:last-child:nth-child(odd){grid-column:auto;}
+  .sv-grid-guar{grid-template-columns:repeat(6,minmax(0,1fr));}
+  .sv-grid-guar .sv-card{grid-column:span 2;}
+  .sv-grid-guar .sv-card:nth-child(4){grid-column:2 / span 2;}
+  .sv-grid-guar .sv-card:nth-child(5){grid-column:4 / span 2;}
+  .sv-grid-guar .sv-card:last-child:nth-child(odd){grid-column:4 / span 2;}
+}
+
+.sv-card{position:relative;overflow:hidden;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:12px;
+  text-align:left;font:inherit;cursor:pointer;padding:20px 18px 16px;border-radius:18px;
+  background:var(--surface);border:1.5px solid var(--surface-2);color:var(--navy-900);
+  box-shadow:0 1px 2px rgba(15,23,42,.06),0 12px 28px -18px rgba(15,23,42,.35);
+  opacity:0;transform:translateY(16px);animation:svUp .55s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i) * 60ms);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease;}
+.sv-card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;transform:scaleX(0);transform-origin:left;
+  background:linear-gradient(90deg,var(--accent),#22c55e);transition:transform .35s ease;}
+.sv-card::after{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .35s ease;
+  background:radial-gradient(160px circle at 85% 0%,rgba(34,197,94,.16),transparent 70%);}
+.sv-card:hover,.sv-card:focus-visible{transform:translateY(-5px);border-color:var(--accent);box-shadow:0 20px 40px -18px rgba(34,197,94,.45);outline:none;}
+.sv-card:hover::before,.sv-card:focus-visible::before{transform:scaleX(1);}
+.sv-card:hover::after,.sv-card:focus-visible::after{opacity:1;}
+.sv-card:active{transform:scale(.98);}
+.sv-ic{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--surface-2);transition:transform .3s ease;}
+.sv-card:hover .sv-ic{transform:scale(1.1) rotate(-5deg);}
+.sv-name{font-size:clamp(15px,4vw,18px);font-weight:800;line-height:1.2;}
+.sv-more{margin-top:auto;font-size:12.5px;font-weight:700;color:var(--accent);display:inline-flex;gap:6px;align-items:center;}
+.sv-more i{font-style:normal;transition:transform .25s ease;}
+.sv-card:hover .sv-more i{transform:translateX(5px);}
+.sv-card-g .sv-ic{background:rgba(34,197,94,.14);}
+@keyframes svUp{to{opacity:1;transform:none;}}
+
+/* popup */
+.sv-modal{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;
+  visibility:hidden;pointer-events:none;transition:visibility 0s linear .3s;}
+.sv-modal.open{visibility:visible;pointer-events:auto;transition:none;}
+.sv-backdrop{position:absolute;inset:0;background:rgba(5,10,25,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .3s ease;}
+.sv-modal.open .sv-backdrop{opacity:1;}
+.sv-dialog{position:relative;width:100%;max-width:520px;max-height:88vh;max-height:88dvh;overflow:auto;border-radius:24px;padding:26px 24px 20px;
+  background:var(--surface);color:var(--navy-900);border:1px solid var(--surface-2);
+  box-shadow:0 40px 90px -20px rgba(0,0,0,.6);outline:none;
+  opacity:0;transform:translateY(24px) scale(.92);
+  transition:opacity .22s ease,transform .42s cubic-bezier(.34,1.45,.5,1);}
+.sv-modal.open .sv-dialog{opacity:1;transform:none;}
+.sv-x{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;cursor:pointer;font-size:24px;line-height:1;
+  background:var(--surface-2);color:var(--navy-900);transition:transform .2s ease,background .2s ease;}
+.sv-x:hover{transform:rotate(90deg);}
+.sv-m-head{display:flex;align-items:center;gap:14px;margin:0 38px 14px 0;}
+.sv-m-ic{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;background:var(--surface-2);flex-shrink:0;}
+.sv-m-head h3{margin:0;font-size:22px;font-weight:800;line-height:1.2;color:var(--navy-900);}
+.sv-m-body p{margin:0 0 14px;font-size:15px;line-height:1.6;color:var(--slate-500);}
+.sv-m-body ul{list-style:none;margin:0 0 6px;padding:0;display:grid;gap:10px;}
+.sv-m-body li{position:relative;padding:11px 14px 11px 44px;border-radius:12px;background:var(--surface-2);font-size:14.5px;line-height:1.45;color:var(--navy-900);}
+.sv-m-body li::before{content:"✓";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#22c55e,#15803d);}
+.sv-m-foot{display:flex;gap:10px;margin-top:18px;}
+.sv-m-cta{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:15px;text-decoration:none;font-weight:800;font-size:15.5px;
+  color:#fff !important;background:linear-gradient(180deg,#e2512c 0%,#c93a17 100%);
+  box-shadow:0 12px 24px -10px rgba(226,81,44,.7),0 2px 0 rgba(255,255,255,.28) inset,0 -2px 0 rgba(0,0,0,.14) inset;
+  transition:transform .25s cubic-bezier(.2,.8,.2,1);}
+.sv-m-cta:hover{transform:translateY(-2px);}
+.sv-m-cta i{font-style:normal;transition:transform .25s ease;}
+.sv-m-cta:hover i{transform:translateX(5px);}
+.sv-m-close{height:50px;padding:0 20px;border-radius:15px;cursor:pointer;font:inherit;font-weight:700;font-size:15px;
+  background:transparent;color:var(--navy-900);border:1.5px solid var(--surface-2);}
+.sv-m-close:hover{border-color:var(--accent);}
+@media(max-width:600px){
+  .sv-modal{align-items:flex-end;padding:0;}
+  .sv-dialog{max-width:none;border-radius:26px 26px 0 0;padding:24px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(60px);}
+  .sv-m-head h3{font-size:20px;}
+}
+@media(prefers-reduced-motion:reduce){.sv-card{animation:none;opacity:1;transform:none;}.sv-dialog,.sv-backdrop,.sv-card,.sv-ic{transition:none;}}
+</style>
+
+<script>
+(function(){
+  var modal=document.getElementById('sv-modal'), dialog=modal.querySelector('.sv-dialog');
+  var data=document.getElementById('sv-data');
+  var mIc=document.getElementById('sv-m-ic'), mTitle=document.getElementById('sv-m-title'),
+      mBody=document.getElementById('sv-m-body'), mCta=document.getElementById('sv-m-cta');
+  var lastFocus=null;
+
+  function openCard(key,trigger){
+    var s=data.querySelector('section[data-key="'+key+'"]'); if(!s) return;
+    mIc.textContent=s.dataset.icon; mTitle.textContent=s.dataset.title;
+    mBody.innerHTML=s.innerHTML;
+    mCta.querySelector('span').textContent=s.dataset.cta; mCta.href=s.dataset.url;
+    lastFocus=trigger||document.activeElement;
+    modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow='hidden';
+    try{ history.replaceState(null,'','#'+key); }catch(e){}
+    setTimeout(function(){ dialog.focus(); },30);
+  }
+  function closeCard(){
+    modal.classList.remove('open'); modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow='';
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.querySelectorAll('.sv-card').forEach(function(c){
+    c.addEventListener('click',function(){ openCard(c.dataset.key,c); });
+  });
+  modal.querySelectorAll('[data-close]').forEach(function(el){ el.addEventListener('click',closeCard); });
+  document.addEventListener('keydown',function(e){
+    if(!modal.classList.contains('open')) return;
+    if(e.key==='Escape'){ closeCard(); return; }
+    if(e.key==='Tab'){
+      var f=dialog.querySelectorAll('a[href],button:not([disabled])'); if(!f.length) return;
+      var first=f[0], last=f[f.length-1];
+      if(e.shiftKey && (document.activeElement===first||document.activeElement===dialog)){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+  });
+  /* a link like /services#essays opens that card straight away */
+  var h=(location.hash||'').replace('#','');
+  if(h && data.querySelector('section[data-key="'+h+'"]')) setTimeout(function(){ openCard(h,null); },350);
+})();
+</script>
+
+{% endblock %}

@@ -327,6 +327,7 @@ def register_routes(app):
         pages = [
             ("https://smart-study-guides.com/",                 "1.0",  "weekly"),
             ("https://smart-study-guides.com/pricing",          "0.9",  "weekly"),
+            ("https://smart-study-guides.com/services",         "0.8",  "monthly"),
             ("https://smart-study-guides.com/check-plagiarism", "0.85", "monthly"),
             ("https://smart-study-guides.com/help",             "0.7",  "monthly"),
             ("https://smart-study-guides.com/help/getting-started", "0.6", "monthly"),
@@ -2005,6 +2006,10 @@ def register_routes(app):
     @require_login
     def buy_credits():
         return redirect(url_for("main.pricing"))
+
+    @main.route("/services")
+    def services():
+        return render_template("services.html", user=current_user)
 
     @main.route("/pricing")
     def pricing():

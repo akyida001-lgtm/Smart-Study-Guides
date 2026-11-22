@@ -141,9 +141,6 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
                url("{{ url_for('static', filename='img/hero-desk.jpg') }}") center 35%/cover no-repeat #f6f1e8 !important;
     color:#0b1b3a !important;
     box-shadow:0 14px 40px rgba(90,70,40,.18) !important;
-  }}") center 30%/cover no-repeat #eef6f8 !important;
-    color:#0b1b3a !important;
-    box-shadow:0 14px 40px rgba(0,60,70,.16) !important;
   }
   html:not([data-theme="dark"]) body .container.landing-fill .landing-hero h1{color:#040c1f !important;font-weight:800 !important;}
   html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-sub{color:#0b1b3a !important;font-weight:500 !important;}
@@ -166,10 +163,10 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
 .lh-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(94,234,212,.16);color:#5eead4;transition:transform .3s ease,background .3s ease;}
 .lh-ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .lh-tile:hover .lh-ic{transform:scale(1.1) rotate(-5deg);background:rgba(94,234,212,.28);}
-.lh-lb{font-size:11.5px;font-weight:700;letter-spacing:.01em;line-height:1.2;text-align:center;}
+.lh-lb{font-size:clamp(9px,2.9vw,11.5px);font-weight:700;letter-spacing:0;line-height:1.2;text-align:center;white-space:nowrap;}
 @keyframes lhUp{to{opacity:1;transform:none;}}
 @media(min-width:700px){.lh-tiles{max-width:560px;gap:14px;}.lh-tile{padding:18px 6px 16px;}.lh-lb{font-size:13px;}.lh-ic{width:48px;height:48px;}}
-@media(max-width:340px){.lh-tiles{gap:7px;}.lh-lb{font-size:10.5px;}.lh-ic{width:36px;height:36px;}}
+@media(max-width:340px){.lh-tiles{gap:6px;}.lh-tile{padding:12px 1px 10px;}.lh-ic{width:34px;height:34px;}}
 @media(prefers-reduced-motion:reduce){.lh-tile{animation:none;opacity:1;transform:none;transition:none;}}
 </style>
 <section class="landing-hero">

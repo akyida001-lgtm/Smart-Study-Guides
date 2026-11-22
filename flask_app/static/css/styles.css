@@ -5044,10 +5044,10 @@ html[data-theme="dark"] .sub,html[data-theme="dark"] .tool-sub,html[data-theme="
 .auth-submit-btn:hover,.btn-sm.accent:hover{background:#b83a1b !important}
 
 /* ───── footer: strong, readable text (no light-weight greys) ───── */
-.sf-compact .sf-mini a{color:#0b1b3a !important;font-weight:700}
+.sf-compact .sf-mini a{color:#0b1b3a !important;font-weight:500}
 .sf-compact .sf-mini a:hover{color:#00796b !important}
 .sf-compact .sf-logo-sm{color:#0b1b3a !important}
-.sf-compact .sf-copy{color:#0b1b3a !important;font-weight:600}
+.sf-compact .sf-copy{color:#0b1b3a !important;font-weight:400}
 html[data-theme="dark"] .sf-compact .sf-mini a{color:#bcd0ff !important}
 html[data-theme="dark"] .sf-compact .sf-mini a:hover{color:#fff !important}
 html[data-theme="dark"] .sf-compact .sf-logo-sm{color:#fff !important}

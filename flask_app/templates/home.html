@@ -121,13 +121,29 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
 .container.landing-fill .landing-hero{flex:1 0 auto;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
 .container.landing-fill .landing-hero-inner{width:100%;}
 .container.landing-fill .site-footer{margin-top:0;}
-/* wallpaper photo: phones only, under a dark blue veil so the text stays easy to read */
+/* wallpaper photo: phones only. The veil, text and tiles follow the light / dark toggle. */
 @media(max-width:700px){
-  html body .container.landing-fill .landing-hero{
+  html body .container.landing-fill .landing-hero{animation:none !important;}
+  /* dark */
+  html[data-theme="dark"] body .container.landing-fill .landing-hero{
     background:linear-gradient(180deg,rgba(7,16,44,.80) 0%,rgba(9,22,56,.60) 42%,rgba(7,16,44,.88) 100%),
                url("{{ url_for('static', filename='img/hero-books.jpg') }}") center 30%/cover no-repeat #0d1e3a !important;
-    animation:none !important;
   }
+  /* light */
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero{
+    background:linear-gradient(180deg,rgba(255,255,255,.80) 0%,rgba(244,250,252,.62) 42%,rgba(255,255,255,.90) 100%),
+               url("{{ url_for('static', filename='img/hero-books.jpg') }}") center 30%/cover no-repeat #eef6f8 !important;
+    color:#0b1b3a !important;
+    box-shadow:0 14px 40px rgba(0,60,70,.16) !important;
+  }
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero h1{color:#0b1b3a !important;}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-sub{color:#2c3e5c !important;}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-note{color:#2c3e5c !important;}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .landing-eyebrow{background:rgba(0,121,107,.12) !important;color:#00695c !important;border-color:rgba(0,121,107,.25) !important;}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .btn.ghost-light{background:rgba(255,255,255,.75) !important;color:#0b1b3a !important;border:1.5px solid rgba(11,27,58,.22) !important;}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-tile{background:rgba(255,255,255,.78);border-color:rgba(11,27,58,.12);color:#0b1b3a !important;}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-tile:hover{background:#fff;border-color:rgba(0,150,136,.55);box-shadow:0 14px 30px -12px rgba(0,60,70,.35),0 0 0 1px rgba(0,150,136,.25);}
+  html:not([data-theme="dark"]) body .container.landing-fill .landing-hero .lh-ic{background:rgba(0,150,136,.14);color:#00796b;}
 }
 /* quick-link tiles */
 .lh-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:440px;margin:30px auto 0;}
@@ -164,7 +180,7 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
     {% if not (user and user.is_authenticated) %}
       <p class="landing-note">Weekly Pass — $25 for 7 days. No auto-renewal.</p>
       <nav class="lh-tiles" aria-label="Quick links">
-        <a class="lh-tile" style="--i:0" href="{{ url_for('main.assignment_order') }}"><span class="lh-ic">{{ icon('assign') }}</span><span class="lh-lb">Assignment</span></a>
+        <a class="lh-tile" style="--i:0" href="{{ url_for('main.assignment_order') }}"><span class="lh-ic">{{ icon('assign') }}</span><span class="lh-lb">Order</span></a>
         <a class="lh-tile" style="--i:1" href="{{ url_for('main.plagiarism_checker') }}"><span class="lh-ic">{{ icon('files') }}</span><span class="lh-lb">Plagiarism</span></a>
         <a class="lh-tile" style="--i:2" href="/updates"><span class="lh-ic">{{ icon('bell') }}</span><span class="lh-lb">Updates</span></a>
         <a class="lh-tile" style="--i:3" href="{{ url_for('main.help_page') }}"><span class="lh-ic">{{ icon('help') }}</span><span class="lh-lb">Help</span></a>

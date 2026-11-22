@@ -136,6 +136,37 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
   html[data-theme="dark"] body .container.landing-fill .landing-hero .btn.ghost-light{color:#fff !important;font-weight:700 !important;border:1.5px solid rgba(255,255,255,.65) !important;}
   html[data-theme="dark"] body .container.landing-fill .landing-hero .lh-lb{color:#fff !important;}
 }
+/* call-to-action cards: one wide primary + two equal secondary, evenly spaced */
+.lh-cta{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:380px;margin:28px auto 0;}
+.lh-cta a{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;justify-content:center;text-decoration:none;
+  color:#fff !important;font-weight:700;opacity:0;transform:translateY(14px);
+  animation:lhUp .6s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(.05s + var(--i) * .09s);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s ease,border-color .3s ease,background .3s ease;}
+.lh-cta a::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;z-index:-1;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-18deg);}
+.lh-cta a:hover::after,.lh-cta a:focus-visible::after{left:130%;transition:left .8s ease;}
+.lh-cta a:active{transform:scale(.98);}
+.lh-cta-main{grid-column:1 / -1;gap:12px;height:56px;border-radius:18px;font-size:16px;letter-spacing:.01em;
+  background:linear-gradient(180deg,#e2512c 0%,#c93a17 100%);
+  box-shadow:0 14px 28px -10px rgba(226,81,44,.75),0 2px 0 rgba(255,255,255,.28) inset,0 -2px 0 rgba(0,0,0,.14) inset;}
+.lh-cta-main:hover,.lh-cta-main:focus-visible{transform:translateY(-3px);box-shadow:0 20px 36px -10px rgba(226,81,44,.85),0 2px 0 rgba(255,255,255,.32) inset,0 -2px 0 rgba(0,0,0,.14) inset;}
+.lh-arrow{font-style:normal;font-size:19px;line-height:1;transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+.lh-cta-main:hover .lh-arrow{transform:translateX(6px);}
+.lh-cta-sub{gap:9px;height:52px;border-radius:16px;font-size:clamp(12.5px,3.6vw,14.5px);
+  background:linear-gradient(180deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.07) 100%);
+  border:1px solid rgba(255,255,255,.30);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  box-shadow:0 12px 24px -12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.28) inset;}
+.lh-cta-sub:hover,.lh-cta-sub:focus-visible{transform:translateY(-3px);border-color:rgba(94,234,212,.7);
+  background:linear-gradient(180deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,.10) 100%);
+  box-shadow:0 18px 30px -12px rgba(0,0,0,.6),0 0 0 1px rgba(94,234,212,.25),0 1px 0 rgba(255,255,255,.3) inset;}
+.lh-cta-ic{display:inline-flex;width:28px;height:28px;border-radius:9px;align-items:center;justify-content:center;background:rgba(94,234,212,.18);color:#5eead4;transition:transform .3s ease;}
+.lh-cta-ic svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.lh-cta-sub:hover .lh-cta-ic{transform:scale(1.12) rotate(-6deg);}
+.landing-hero .lh-cta + .landing-note{margin-top:20px;}
+@media(min-width:700px){.lh-cta{max-width:440px;gap:14px;}.lh-cta-main{height:60px;font-size:17px;}.lh-cta-sub{height:56px;font-size:15px;}}
+@media(max-width:340px){.lh-cta{gap:10px;}.lh-cta-ic{display:none;}.lh-cta-main{height:52px;font-size:15px;}.lh-cta-sub{height:48px;}}
+@media(prefers-reduced-motion:reduce){.lh-cta a{animation:none;opacity:1;transform:none;transition:none;}.lh-cta a::after{display:none;}}
 /* quick-link tiles */
 .lh-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:440px;margin:30px auto 0;}
 .lh-tile{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 4px 12px;border-radius:16px;text-decoration:none;
@@ -158,16 +189,18 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
     <span class="landing-eyebrow">Assignment &amp; homework help • Plagiarism-clean</span>
     <h1>Assignment &amp; Homework Help for Students</h1>
     <p class="landing-sub">Essays, discussion posts and presentations with real research sources and proper citations. Delivered as a Word document in minutes.</p>
+    {% if user and user.is_authenticated %}
     <div class="landing-cta-row">
-      {% if user and user.is_authenticated %}
-        <a class="btn accent" href="{{ url_for('main.dashboard') }}">Open my dashboard</a>
-        <a class="btn ghost-light" href="{{ url_for('main.new_assignment') }}">Create new assignment</a>
-      {% else %}
-        <a class="btn accent" href="{{ url_for('main.dashboard') }}">Browse our services</a>
-        <a class="btn ghost-light" href="{{ url_for('auth.signup') }}">Sign up free</a>
-        <a class="btn ghost-light" href="{{ url_for('auth.login') }}">Sign in</a>
-      {% endif %}
+      <a class="btn accent" href="{{ url_for('main.dashboard') }}">Open my dashboard</a>
+      <a class="btn ghost-light" href="{{ url_for('main.new_assignment') }}">Create new assignment</a>
     </div>
+    {% else %}
+    <div class="lh-cta">
+      <a class="lh-cta-main" style="--i:0" href="{{ url_for('main.dashboard') }}"><span>Browse our services</span><i class="lh-arrow" aria-hidden="true">→</i></a>
+      <a class="lh-cta-sub" style="--i:1" href="{{ url_for('auth.signup') }}"><span class="lh-cta-ic">{{ icon('cap') }}</span><span>Sign up free</span></a>
+      <a class="lh-cta-sub" style="--i:2" href="{{ url_for('auth.login') }}"><span class="lh-cta-ic">{{ icon('user') }}</span><span>Sign in</span></a>
+    </div>
+    {% endif %}
     {% if not (user and user.is_authenticated) %}
       <p class="landing-note">Weekly Pass — $25 for 7 days. No auto-renewal.</p>
       <nav class="lh-tiles" aria-label="Quick links">

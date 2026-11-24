@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}Smart Study Guides — Assignment &amp; Homework Help for Students{% endblock %}
+{% block title %}{% if user and user.is_authenticated %}Dashboard — Smart Study Guides{% else %}Smart Study Guides — Assignment &amp; Homework Help for Students{% endif %}{% endblock %}
 {% block meta_description %}Assignment and homework help for students. Essays, discussion posts and presentations with real sources and proper citations, delivered as a Word file.{% endblock %}
 {% block og_title %}Smart Study Guides — Assignment &amp; Homework Help for Students{% endblock %}
 {% block og_description %}Assignment and homework help for students: essays, discussion posts and presentations with real citations, delivered as a Word file.{% endblock %}
@@ -113,11 +113,11 @@
 </script>
 {% endblock %}
 {% block canonical %}https://smart-study-guides.com/{% endblock %}
-{% block container_class %}{% if not (user and user.is_authenticated) %}landing-fill{% endif %}{% endblock %}
+{% block container_class %}landing-fill{% if user and user.is_authenticated %} dash-app{% endif %}{% endblock %}
 {% block content %}
 <style>
 /* Signed-out home: hero card stretches to fill the screen, footer sits at the bottom */
-body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+body:has(.container.landing-fill:not(.dash-app)){display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
 .container.landing-fill{flex:1 0 auto;width:100%;box-sizing:border-box;display:flex;flex-direction:column;}
 .container.landing-fill .landing-hero{flex:1 0 auto;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
 .container.landing-fill .landing-hero-inner{width:100%;}
@@ -243,7 +243,121 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
 @media(min-width:901px) and (max-height:540px){
   html body .container.landing-fill .landing-eyebrow{display:none !important;}
 }
+
+/* ── Signed-in Dashboard: same design, plus recent work and plan details ── */
+.app-main:has(.container.dash-app){min-height:100vh;min-height:100dvh;}
+.app-content:has(.container.dash-app){display:flex;flex-direction:column;padding:12px 16px 6px !important;margin-left:auto;margin-right:auto;}
+.container.dash-app{padding-left:0 !important;padding-right:0 !important;}
+.landing-note a{color:#5eead4 !important;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(94,234,212,.45);}
+.landing-note strong{font-weight:700;}
+.dash-right{display:flex;flex-direction:column;gap:12px;}
+.dash-recent{border-radius:20px;padding:12px 14px;color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+.dr-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;margin-bottom:4px;}
+.dr-head a{font-size:12.5px;font-weight:700;color:#5eead4 !important;text-decoration:none;}
+.dr-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,.12);}
+.dr-main{flex:1;min-width:0;}
+.dr-t{font-size:13.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dr-m{font-size:11.5px;color:rgba(255,255,255,.72);}
+.dr-st{font-size:11px;font-weight:700;text-transform:capitalize;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;white-space:nowrap;}
+.dr-complete{background:rgba(34,197,94,.28);}
+.dr-failed{background:rgba(239,68,68,.32);}
+.dr-act{font-size:12px;font-weight:700;color:#fff !important;border:1px solid rgba(255,255,255,.38);border-radius:10px;padding:5px 11px;text-decoration:none;white-space:nowrap;transition:background .2s ease,border-color .2s ease;}
+.dr-act:hover{background:rgba(255,255,255,.16);border-color:#5eead4;}
+.dr-empty{padding:12px 0 6px;font-size:13px;color:rgba(255,255,255,.85);}
+.dr-empty a{color:#5eead4 !important;font-weight:700;}
+.dash-ref{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:rgba(255,255,255,.85);padding:2px 2px 0;}
+.dr-copy{flex:none;font:inherit;font-weight:700;font-size:12px;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:5px 12px;cursor:pointer;transition:background .2s ease;}
+.dr-copy:hover{background:rgba(255,255,255,.26);}
+/* phones: tiles only; recent work and referral appear when the screen is tall enough */
+@media(max-width:700px){
+  .dash-recent{display:none;}
+  .dash-ref{display:none;}
+  .dash-right{gap:0;}
+}
+@media(max-width:700px) and (min-height:800px){
+  .dash-ref{display:flex;margin-top:12px;}
+}
+@media(min-width:901px){
+  html body .container.landing-fill .landing-hero-inner > .dash-right{grid-column:2 !important;grid-row:1 / span 6;gap:clamp(10px,1.8vh,16px);}
+  html body .container.landing-fill .landing-hero-inner .dash-right .lh-tiles{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:10px !important;}
+  html body .container.landing-fill .dash-right .lh-tile{padding:clamp(10px,1.8vh,16px) 6px !important;border-radius:16px;gap:7px;}
+  html body .container.landing-fill .dash-right .lh-tile .lh-ic{width:clamp(34px,5vh,44px);height:clamp(34px,5vh,44px);border-radius:12px;}
+  html body .container.landing-fill .dash-right .lh-tile .lh-lb{font-size:clamp(12px,1.7vh,14px);}
+}
+@media(min-width:901px) and (max-height:700px){.dr-row:nth-of-type(n+4){display:none;}}
+@media(min-width:901px) and (max-height:600px){.dash-ref{display:none;}}
 </style>
+{% if user and user.is_authenticated %}
+<section class="landing-hero dash-hero">
+  <div class="landing-hero-inner">
+    <span class="landing-eyebrow">{% if active_sub %}{{ active_sub.plan_label }} · {{ days_left }} day{{ '' if days_left == 1 else 's' }} left{% else %}No active plan{% endif %}</span>
+    <h1><span id="dx-greet">Welcome back</span>, {{ user.first_name or user.display_name }}</h1>
+    <p class="landing-sub">
+      {% if in_progress %}{{ in_progress }} assignment{{ '' if in_progress == 1 else 's' }} in progress.
+      {% elif active_sub and daily_limit %}You have {{ daily_limit - today_count }} of {{ daily_limit }} assignments left today.
+      {% elif active_sub %}Unlimited assignments today.
+      {% else %}Get a plan to start writing.{% endif %}
+    </p>
+    <div class="lh-cta">
+      <a class="lh-cta-main" style="--i:0" href="{{ url_for('main.new_assignment') }}"><span>New assignment</span><i class="lh-arrow" aria-hidden="true">→</i></a>
+      <a class="lh-cta-sub" style="--i:1" href="{{ url_for('main.remove_ai') }}"><span class="lh-cta-ic">{{ icon('removeai') }}</span><span>Send to writer</span></a>
+      <a class="lh-cta-sub" style="--i:2" href="{{ url_for('main.my_assignments') }}"><span class="lh-cta-ic">{{ icon('briefcase') }}</span><span>My work</span></a>
+    </div>
+    <p class="landing-note">
+      {% if active_sub %}<strong>{{ days_left }} day{{ '' if days_left == 1 else 's' }} left</strong>, until {{ active_sub.end_date.strftime('%d %b') }}.
+        {% if daily_limit %}Today: {{ today_count }} of {{ daily_limit }} used.{% else %}Unlimited per day.{% endif %}
+        <a href="{{ url_for('main.subscription_manage') }}">Manage</a>
+      {% else %}The Weekly Pass is $25 for 7 days. <a href="{{ url_for('main.pricing') }}">See the Weekly Pass</a>{% endif %}
+    </p>
+    <div class="dash-right">
+      <aside class="dash-recent" aria-label="Recent work">
+        <div class="dr-head"><span>Recent work</span><a href="{{ url_for('main.my_assignments') }}">View all</a></div>
+        {% if assignments %}
+          {% for a in assignments[:3] %}
+          <div class="dr-row">
+            <div class="dr-main">
+              <div class="dr-t">{{ a.topic }}</div>
+              <div class="dr-m">{{ a.pages }} page{{ '' if a.pages == 1 else 's' }} · {{ a.created_at.strftime('%d %b') }}</div>
+            </div>
+            <span class="dr-st dr-{{ a.status }}">{{ a.status }}</span>
+            {% if a.status == 'complete' and a.docx_url %}<a class="dr-act" href="{{ a.docx_url }}" download>Download</a>
+            {% elif a.status in ('queued','running') %}<a class="dr-act" href="{{ url_for('main.assignment_progress', aid=a.id) }}">View</a>
+            {% elif a.status == 'failed' %}<a class="dr-act" href="{{ url_for('main.assignment_progress', aid=a.id) }}">Details</a>
+            {% else %}<a class="dr-act" href="{{ url_for('main.assignment_sources', aid=a.id) }}">Continue</a>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="dr-empty">Nothing here yet. <a href="{{ url_for('main.new_assignment') }}">Start your first assignment</a>.</div>
+        {% endif %}
+      </aside>
+      <nav class="lh-tiles" aria-label="Quick links">
+        <a class="lh-tile" style="--i:0" href="{{ url_for('main.assignment_order') }}"><span class="lh-ic">{{ icon('assign') }}</span><span class="lh-lb">Order</span></a>
+        <a class="lh-tile" style="--i:1" href="{{ url_for('main.plagiarism_checker') }}"><span class="lh-ic">{{ icon('files') }}</span><span class="lh-lb">Plagiarism</span></a>
+        <a class="lh-tile" style="--i:2" href="/updates"><span class="lh-ic">{{ icon('bell') }}</span><span class="lh-lb">Updates</span></a>
+        <a class="lh-tile" style="--i:3" href="{{ url_for('main.help_page') }}"><span class="lh-ic">{{ icon('help') }}</span><span class="lh-lb">Help</span></a>
+      </nav>
+      {% if referral_link %}
+      <div class="dash-ref"><span>Refer a friend: they get 10% off their first pass.</span><button type="button" class="dr-copy" data-link="{{ referral_link }}">Copy link</button></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  var h=new Date().getHours(),e=document.getElementById('dx-greet');
+  if(e)e.textContent=h<5?'Working late':h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  var b=document.querySelector('.dr-copy');
+  if(b)b.addEventListener('click',function(){
+    var done=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy link';},1800);};
+    if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.link).then(done);else done();
+  });
+})();
+</script>
+{% if show_review %}
+{% include "_review_prompt.html" %}
+{% endif %}
+{% else %}
 <section class="landing-hero">
   <div class="landing-hero-inner">
     <span class="landing-eyebrow">Assignment &amp; homework help • Plagiarism-clean</span>
@@ -272,5 +386,6 @@ body:has(.container.landing-fill){display:flex;flex-direction:column;min-height:
     {% endif %}
   </div>
 </section>
+{% endif %}
 
 {% endblock %}

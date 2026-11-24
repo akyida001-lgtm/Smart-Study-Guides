@@ -1,0 +1,47 @@
+<!-- ── Review prompt modal ── -->
+<div id="review-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--card-bg);border-radius:18px;padding:32px 28px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center;">
+    <div style="font-size:36px;margin-bottom:12px;">🎉</div>
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy-900);margin:0 0 8px;">How was your experience?</h2>
+    <p style="font-size:14px;color:var(--slate-500);margin:0 0 24px;line-height:1.5;">Your first assignment is ready. We'd love to hear how it went — takes 10 seconds.</p>
+
+    <!-- Star rating -->
+    <div id="star-row" style="display:flex;justify-content:center;gap:10px;margin-bottom:20px;font-size:32px;">
+      {% for i in range(1,6) %}
+      <span class="rv-star" data-v="{{ i }}" style="cursor:pointer;opacity:.35;transition:.15s;" onclick="setRating({{ i }})">★</span>
+      {% endfor %}
+    </div>
+
+    <textarea id="rv-comment" placeholder="Optional — tell us more (what worked, what could be better)" rows="3"
+      style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--navy-900);background:var(--surface-2);resize:none;margin-bottom:16px;"></textarea>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="submitReview()" class="btn accent" style="flex:1;padding:11px;">Submit Review</button>
+      <button onclick="dismissReview()" class="btn" style="padding:11px 16px;color:var(--slate-500);">Skip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _rv_rating = 0;
+function setRating(v){
+  _rv_rating = v;
+  document.querySelectorAll('.rv-star').forEach(function(s){
+    s.style.opacity = parseInt(s.dataset.v) <= v ? '1' : '.35';
+    s.style.color   = parseInt(s.dataset.v) <= v ? '#f59e0b' : '';
+  });
+}
+function dismissReview(){
+  fetch('/api/review/dismiss', {method:'POST', headers:{'Content-Type':'application/json'}});
+  document.getElementById('review-overlay').style.display='none';
+}
+function submitReview(){
+  if(!_rv_rating){ alert('Please select a star rating.'); return; }
+  var comment = document.getElementById('rv-comment').value;
+  fetch('/api/review/submit', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({rating: _rv_rating, comment: comment})
+  }).then(function(){ document.getElementById('review-overlay').style.display='none'; });
+}
+</script>

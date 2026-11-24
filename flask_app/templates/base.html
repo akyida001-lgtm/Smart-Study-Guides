@@ -264,7 +264,7 @@
       <button class="topbar-menu-btn" id="topbar-menu-btn" aria-label="Open menu" type="button">
         <span></span><span></span><span></span>
       </button>
-      <a class="tb-brand" href="{{ url_for('main.dashboard') }}"><span class="lm-pair"><img class="logo-mark lm-on-dark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="30" height="30" decoding="async"><img class="logo-mark lm-on-light" src="{{ url_for('static', filename='img/logo-mark-dark.png') }}" alt="" width="30" height="30" decoding="async"></span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
+      <a class="tb-brand" href="{{ url_for('main.dashboard') }}"><img class="logo-mark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="30" height="30" decoding="async"><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
       <div class="topbar-right">
         <!-- ── Notification bell ── -->
         <div class="ntf-wrap" id="ntf-wrap">
@@ -392,7 +392,6 @@
 .logo-mark{display:block;width:32px;height:32px;object-fit:contain;flex:none;}
 .nav-guest .brand{gap:9px;}
 .nav-guest .logo-mark{filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));}
-.tb-brand{display:inline-flex;align-items:center;gap:9px;}
 .tb-brand .logo-mark{width:30px;height:30px;}
 .sidebar-brand a{display:inline-flex;align-items:center;gap:9px;}
 .sidebar-brand .logo-mark{width:30px;height:30px;}

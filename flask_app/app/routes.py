@@ -432,6 +432,8 @@ def register_routes(app):
         ref = request.args.get("ref")
         if ref:
             session["referral_code"] = ref.strip().upper()
+        if current_user.is_authenticated:
+            return redirect(url_for("main.dashboard"))
         return render_template("home.html", user=current_user)
 
     @main.route("/dashboard")
@@ -468,7 +470,7 @@ def register_routes(app):
                        and not _is_owner(current_user))
 
         return render_template(
-            "dashboard.html",
+            "home.html",
             user=current_user,
             assignments=assignments,
             words_per_page=WORDS_PER_PAGE,

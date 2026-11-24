@@ -378,6 +378,15 @@
   html[data-theme="dark"] .gn-links .gn-grid .gn-link:hover{background:rgba(94,234,212,.12) !important;}
   html[data-theme="dark"] .gn-links .gn-grid .gn-link.is-active{background:linear-gradient(135deg,#00bfa5,#00897b) !important;}
 }
+
+/* Desktop top bar, dark theme: the current page is a soft teal pill with readable icon and name (was white-on-white) */
+@media(min-width:901px){
+  html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active{
+    background:rgba(94,234,212,.14) !important;color:#5eead4 !important;
+    box-shadow:inset 0 0 0 1px rgba(94,234,212,.40),0 0 18px -6px rgba(94,234,212,.55) !important;}
+  html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active span,
+  html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active .gn-ic{color:#5eead4 !important;}
+}
 </style>
 <nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>

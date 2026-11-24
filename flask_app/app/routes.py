@@ -435,7 +435,7 @@ def register_routes(app):
         return render_template("home.html", user=current_user)
 
     @main.route("/dashboard")
-    @public_or_login(lambda: render_template("dashboard_guest.html", user=current_user, tiles=GUEST_TILES))
+    @public_or_login(lambda: render_template("home.html", user=current_user))
     def dashboard():
         if current_user.is_writer or session.get("admin_writer_preview"):
             return redirect(url_for("main.writer_available"))

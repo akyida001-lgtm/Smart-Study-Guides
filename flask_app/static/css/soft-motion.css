@@ -1,0 +1,53 @@
+/* ───────────────────────────────────────────────────────────
+   Soft motion: a gentle, live feel across the whole site.
+   Everything here is low-specificity (:where) so any page's own animation wins.
+   ─────────────────────────────────────────────────────────── */
+
+html { scroll-behavior: smooth; }
+
+/* ── Page-to-page crossfade (Chrome, Edge, Safari 18+; other browsers just load normally) ── */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: ssgFadeOut .18s ease both; }
+::view-transition-new(root) { animation: ssgFadeIn .34s cubic-bezier(.2,.8,.2,1) both; }
+.nav-guest { view-transition-name: ssg-gnav; }          /* header stays put while the page changes */
+@keyframes ssgFadeOut { to   { opacity: 0; } }
+@keyframes ssgFadeIn  { from { opacity: 0; transform: translateY(8px); } }
+
+/* ── Content eases in on every page ── */
+:where(.container > *:not(script):not(style):not(.sv-modal):not([hidden])) {
+  animation: ssgRise .5s cubic-bezier(.2,.8,.2,1) both;
+}
+:where(.container > *:nth-child(2)) { animation-delay: .05s; }
+:where(.container > *:nth-child(3)) { animation-delay: .10s; }
+:where(.container > *:nth-child(4)) { animation-delay: .15s; }
+:where(.container > *:nth-child(5)) { animation-delay: .20s; }
+:where(.container > *:nth-child(n+6)) { animation-delay: .25s; }
+@keyframes ssgRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ── Cards that scroll into view ease up softly (added by a small script in base.html) ── */
+.rv { opacity: 0; transform: translateY(18px); }
+.rv.rv-in {
+  opacity: 1; transform: none;
+  transition: opacity .6s ease, transform .6s cubic-bezier(.2,.8,.2,1);
+}
+
+/* ── Soft hover / press on everything clickable (unless a page defines its own) ── */
+:where(a, button, .btn, .card, input, select, textarea, summary) {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease,
+              box-shadow .25s ease, transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
+}
+:where(.btn, button):active { transform: scale(.97); }
+
+/* ── Smooth light / dark switch ── */
+html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
+  transition: background-color .4s ease, color .4s ease, border-color .4s ease,
+              box-shadow .4s ease, fill .4s ease, stroke .4s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  :where(.container > *) { animation: none !important; }
+  .rv { opacity: 1; transform: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  html.theme-anim, html.theme-anim * { transition: none !important; }
+}

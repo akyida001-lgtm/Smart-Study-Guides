@@ -112,6 +112,7 @@
 }
 </script>
 {% endblock %}
+{% block canonical %}https://smart-study-guides.com/{% endblock %}
 {% block container_class %}{% if not (user and user.is_authenticated) %}landing-fill{% endif %}{% endblock %}
 {% block content %}
 <style>

@@ -26,7 +26,7 @@
     function stored() { try { var t = localStorage.getItem(KEY); return t === 'dark' || t === 'light' ? t : null; } catch (e) { return null; } }
     function apply(t) { root.setAttribute('data-theme', t); if (meta) meta.setAttribute('content', t === 'dark' ? '#043d44' : '#00bcd4'); }
     apply(stored() || 'dark');
-    window.ssgSetTheme = function (t) { try { localStorage.setItem(KEY, t); } catch (e) {} apply(t); };
+    window.ssgSetTheme = function (t) { try { localStorage.setItem(KEY, t); } catch (e) {} root.classList.add('theme-anim'); apply(t); clearTimeout(window.__ssgTA); window.__ssgTA = setTimeout(function () { root.classList.remove('theme-anim'); }, 550); };
     window.ssgToggleTheme = function () { window.ssgSetTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); };
     document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.theme-btn')) window.ssgToggleTheme(); });
   })();
@@ -60,6 +60,7 @@
   <link rel="stylesheet" href="{{ asset_url('css/contrast-fix.css') }}" />
   <link rel="stylesheet" href="{{ asset_url('css/dark-extra.css') }}" />
   <link rel="stylesheet" href="{{ asset_url('css/pure-refresh.css') }}" />
+  <link rel="stylesheet" href="{{ asset_url('css/soft-motion.css') }}" />
 
   <!-- ── Instant pages: every main page is loaded in the background as soon as someone arrives ── -->
   <script>window.ssgWhenActive = function (f) { if (document.prerendering) { document.addEventListener('prerenderingchange', f, { once: true }); } else { f(); } };</script>
@@ -381,7 +382,7 @@
 <nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">
-    <a class="gn-link gn-main{% if request.endpoint == 'main.dashboard' %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-title">Dashboard</span></a>
+    <a class="gn-link gn-main{% if request.endpoint in ('main.dashboard', 'main.index') %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-title">Dashboard</span></a>
     <div class="gn-label">Tools</div>
     <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
     <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>
@@ -1260,5 +1261,26 @@ body.is-admin .no-copy *::selection { background: highlight; }
 })();
 </script>
 {% endif %}
-</body></body>
+<script>
+/* Cards below the fold ease up softly as they scroll into view */
+(function () {
+  if (!('IntersectionObserver' in window) || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  function init() {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target; io.unobserve(el); el.classList.add('rv-in');
+        setTimeout(function () { el.classList.remove('rv', 'rv-in'); }, 800);   /* hand control back to the element's own hover styles */
+      });
+    }, { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+    document.querySelectorAll('.card, .stat-card, .hc-card, [data-reveal]').forEach(function (el) {
+      if (el.closest('.sv-modal, [hidden]')) return;
+      if (el.getBoundingClientRect().top < window.innerHeight) return;       /* already on screen: leave it alone */
+      el.classList.add('rv'); io.observe(el);
+    });
+  }
+  if (window.ssgWhenActive) window.ssgWhenActive(init); else init();
+})();
+</script>
+</body>
 </html>

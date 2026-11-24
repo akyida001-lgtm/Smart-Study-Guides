@@ -119,7 +119,7 @@
   <div class="sidebar-overlay" id="sidebar-overlay" role="presentation"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <a href="{{ url_for('main.index') }}">Smart Study<span class="dot">.</span>Guides</a>
+      <a href="{{ url_for('main.index') }}"><img class="logo-mark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="30" height="30" decoding="async"><span>Smart Study<span class="dot">.</span>Guides</span></a>
       <button class="sidebar-close" id="sidebar-close-btn" aria-label="Close" type="button">×</button>
     </div>
 
@@ -264,7 +264,7 @@
       <button class="topbar-menu-btn" id="topbar-menu-btn" aria-label="Open menu" type="button">
         <span></span><span></span><span></span>
       </button>
-      <a class="tb-brand" href="{{ url_for('main.dashboard') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
+      <a class="tb-brand" href="{{ url_for('main.dashboard') }}"><span class="lm-pair"><img class="logo-mark lm-on-dark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="30" height="30" decoding="async"><img class="logo-mark lm-on-light" src="{{ url_for('static', filename='img/logo-mark-dark.png') }}" alt="" width="30" height="30" decoding="async"></span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
       <div class="topbar-right">
         <!-- ── Notification bell ── -->
         <div class="ntf-wrap" id="ntf-wrap">
@@ -387,9 +387,25 @@
   html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active span,
   html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active .gn-ic{color:#5eead4 !important;}
 }
+
+/* ── Brand logo mark: transparent PNG, sits on whatever background it is placed on ── */
+.logo-mark{display:block;width:32px;height:32px;object-fit:contain;flex:none;}
+.nav-guest .brand{gap:9px;}
+.nav-guest .logo-mark{filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));}
+.tb-brand{display:inline-flex;align-items:center;gap:9px;}
+.tb-brand .logo-mark{width:30px;height:30px;}
+.sidebar-brand a{display:inline-flex;align-items:center;gap:9px;}
+.sidebar-brand .logo-mark{width:30px;height:30px;}
+.sf-logo-sm{display:inline-flex !important;align-items:center;gap:8px;}
+.sf-logo-sm .logo-mark{width:22px;height:22px;}
+.lm-pair{display:inline-flex;flex:none;}
+.lm-pair .lm-on-light{display:none;}
+html:not([data-theme="dark"]) .lm-pair .lm-on-dark{display:none;}
+html:not([data-theme="dark"]) .lm-pair .lm-on-light{display:block;}
+@media(max-width:700px){.nav-guest .logo-mark{width:30px;height:30px;}}
 </style>
 <nav class="nav nav-guest" aria-label="Main">
-  <a class="brand" href="{{ url_for('main.index') }}"><span class="tb-mark">{{ icon('book') }}</span><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
+  <a class="brand" href="{{ url_for('main.index') }}"><img class="logo-mark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="32" height="32" decoding="async"><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
   <div class="gn-links" id="gn-links">
     <a class="gn-link gn-main{% if request.endpoint in ('main.dashboard', 'main.index') %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-title">Dashboard</span></a>
     <div class="gn-label">Tools</div>
@@ -429,7 +445,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')setMenu(fals
 {% block content %}{% endblock %}
 
 <footer class="site-footer sf-compact">
-  <a class="sf-logo-sm" href="{{ url_for('main.index') }}">Smart Study<span class="sf-logo-dot">.</span>Guides</a>
+  <a class="sf-logo-sm" href="{{ url_for('main.index') }}"><span class="lm-pair"><img class="logo-mark lm-on-dark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="22" height="22" decoding="async"><img class="logo-mark lm-on-light" src="{{ url_for('static', filename='img/logo-mark-dark.png') }}" alt="" width="22" height="22" decoding="async"></span><span class="sf-word">Smart Study<span class="sf-logo-dot">.</span>Guides</span></a>
   <nav class="sf-mini" aria-label="Footer">
     <a href="{{ url_for('main.pricing') }}">Pricing</a>
     <a href="{{ url_for('main.help_page') }}">Help</a>

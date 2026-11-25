@@ -106,7 +106,15 @@ button.gn-signin-btn{border:0;width:100%;cursor:pointer;font-family:inherit;}
   .nav-guest > .gn-links{justify-self:center;}
   .nav-guest > .gn-auth{justify-self:end;}
 }
-@media(max-width:900px){.nav-guest{min-height:50px;}}
+/* Phones: the header is FIXED to the top of the screen (not sticky), so it can never scroll away */
+@media(max-width:900px){
+  :root{--navh:56px;}
+  .nav-guest{position:fixed !important;top:0;left:0;right:0;width:100%;box-sizing:border-box;height:var(--navh);min-height:0 !important;
+    padding-top:0 !important;padding-bottom:0 !important;align-items:center;z-index:300;}
+  body:not(:has(.app-layout)){padding-top:var(--navh);box-sizing:border-box;}
+  .app-main:has(> .nav-guest){padding-top:var(--navh);box-sizing:border-box;}
+}
+@media(max-width:360px){:root{--navh:50px;}}
 </style>
 <nav class="nav nav-guest" aria-label="Main">
   <a class="brand" href="{{ url_for('main.dashboard') if signed_in else url_for('main.index') }}"><img class="logo-mark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="32" height="32" decoding="async"><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
@@ -182,3 +190,8 @@ if(m){m.classList.remove('open');document.body.style.overflow='';}if(b)b.setAttr
 var t=document.getElementById('topbar-menu-btn');if(t)t.click();});})();
 </script>
 {% endif %}
+<script>
+/* --vh = the screen height you can actually see (the address bar is not counted) */
+(function(){function f(){document.documentElement.style.setProperty('--vh',(window.innerHeight*0.01)+'px');}
+f();window.addEventListener('resize',f);window.addEventListener('orientationchange',f);})();
+</script>

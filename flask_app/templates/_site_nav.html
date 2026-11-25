@@ -1,0 +1,184 @@
+{% from "_icons.html" import icon %}
+<style>
+/* Mobile menu panel is always solid, set here so a cached stylesheet can never make it see-through */
+@media(max-width:900px){
+  .nav-guest .gn-links{background:#ffffff !important;opacity:1;}
+  html[data-theme="dark"] .nav-guest .gn-links{background:#0d1628 !important;}
+}
+
+/* ── Mobile menu hierarchy: featured Dashboard, grouped links, Sign in as its own button ── */
+.gn-label,.gn-foot{display:none;}
+.gn-main .gn-txt{display:flex;flex-direction:column;line-height:1.2;}
+.gn-main .gn-sub{display:none;}
+@media(max-width:900px){
+  /* never taller than the screen: scrolls inside if the phone is very short */
+  .nav-guest .gn-links{padding-bottom:4px;max-height:calc(100vh - 76px);max-height:calc(100dvh - 76px);overflow-y:auto !important;overscroll-behavior:contain;}
+  .gn-links .gn-main{margin:8px 8px 2px !important;padding:8px 12px !important;border-radius:14px !important;gap:12px !important;
+    background:linear-gradient(135deg,rgba(0,191,165,.20),rgba(64,196,255,.12)) !important;border:1px solid rgba(0,191,165,.45);
+    box-shadow:0 10px 24px -14px rgba(0,191,165,.7);}
+  .gn-links .gn-main .gn-ic{width:38px !important;height:38px !important;border-radius:11px !important;background:linear-gradient(135deg,#00bfa5,#00897b) !important;color:#fff !important;}
+  .gn-links .gn-main .gn-title{font-size:16.5px;font-weight:800;}
+  .gn-links .gn-main::after{content:"→";margin-left:auto;font-size:18px;opacity:.8;}
+  .gn-links .gn-main.is-active{background:linear-gradient(135deg,#00bfa5,#00897b) !important;}
+  .gn-links .gn-main.is-active .gn-ic{background:rgba(255,255,255,.22) !important;}
+  .gn-label{display:block;padding:8px 18px 2px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b;}
+  .gn-links .gn-link:not(.gn-main){margin:0 6px;padding-top:5px !important;padding-bottom:5px !important;}
+  .gn-links .gn-link:not(.gn-main) .gn-ic{width:32px;height:32px;}
+  .gn-foot{display:block;margin-top:4px;padding:10px 12px 6px;border-top:1px solid rgba(100,116,139,.28);}
+  .gn-signin-btn{display:flex;align-items:center;justify-content:center;gap:10px;height:46px;border-radius:14px;text-decoration:none;
+    color:#fff !important;font-weight:800;font-size:16px;letter-spacing:.01em;
+    background:linear-gradient(180deg,#e2512c 0%,#c93a17 100%);
+    box-shadow:0 12px 24px -10px rgba(226,81,44,.75),0 2px 0 rgba(255,255,255,.28) inset,0 -2px 0 rgba(0,0,0,.14) inset;
+    transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease;}
+  .gn-signin-btn:hover,.gn-signin-btn:focus-visible{transform:translateY(-2px);}
+  .gn-signin-btn:active{transform:scale(.98);}
+  .gn-signin-btn .gn-ic{width:auto !important;height:auto !important;background:none !important;color:#fff !important;}
+  .gn-signin-btn .gn-ic svg{width:19px;height:19px;}
+  html[data-theme="dark"] .gn-links .gn-main{color:#fff !important;border-color:rgba(94,234,212,.45);
+    background:linear-gradient(135deg,rgba(0,191,165,.26),rgba(64,196,255,.10)) !important;}
+  html[data-theme="dark"] .gn-label{color:#8fa3c2;}
+  html[data-theme="dark"] .gn-foot{border-top-color:rgba(255,255,255,.12);}
+  .gn-links.open .gn-label,.gn-links.open .gn-foot{animation:gnFade .35s ease both .12s;}
+  @keyframes gnFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+
+/* "More" links: 2 x 2 cards on phones (stay one inline row on desktop) */
+.gn-grid{display:contents;}
+@media(max-width:900px){
+  .gn-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:4px 10px 4px;}
+  .gn-links .gn-grid .gn-link{margin:0 !important;padding:8px 10px !important;gap:10px !important;border-radius:14px !important;min-width:0;
+    background:rgba(0,191,165,.08);border:1px solid rgba(0,191,165,.22);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1),background .2s ease,border-color .2s ease,opacity .22s ease;}
+  .gn-links .gn-grid .gn-link:hover,.gn-links .gn-grid .gn-link:active{transform:translateY(-2px);border-color:rgba(0,191,165,.6);}
+  .gn-links .gn-grid .gn-link span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14.5px;}
+  .gn-links .gn-grid .gn-link.is-active{border-color:transparent;}
+  @media(max-width:340px){
+    .gn-grid{gap:6px;padding:4px 8px;}
+    .gn-links .gn-grid .gn-link{padding:6px 8px !important;gap:7px !important;}
+    .gn-links .gn-grid .gn-ic{width:26px !important;height:26px !important;}
+    .gn-links .gn-grid .gn-link span:last-child{font-size:13.5px;}
+  }
+  html[data-theme="dark"] .gn-links .gn-grid .gn-link{background:rgba(255,255,255,.05);border-color:rgba(94,234,212,.20);}
+  html[data-theme="dark"] .gn-links .gn-grid .gn-link:hover{background:rgba(94,234,212,.12) !important;}
+  html[data-theme="dark"] .gn-links .gn-grid .gn-link.is-active{background:linear-gradient(135deg,#00bfa5,#00897b) !important;}
+}
+
+/* Desktop top bar, dark theme: the current page is a soft teal pill with readable icon and name (was white-on-white) */
+@media(min-width:901px){
+  html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active{
+    background:rgba(94,234,212,.14) !important;color:#5eead4 !important;
+    box-shadow:inset 0 0 0 1px rgba(94,234,212,.40),0 0 18px -6px rgba(94,234,212,.55) !important;}
+  html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active span,
+  html[data-theme="dark"] .nav-guest .gn-links .gn-link.is-active .gn-ic{color:#5eead4 !important;}
+}
+
+/* ── Brand logo mark: transparent PNG, sits on whatever background it is placed on ── */
+.logo-mark{display:block;width:32px;height:32px;object-fit:contain;flex:none;}
+.nav-guest .brand{gap:9px;}
+.nav-guest .logo-mark{filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));}
+.tb-brand .logo-mark{width:30px;height:30px;}
+.sidebar-brand a{display:inline-flex;align-items:center;gap:9px;}
+.sidebar-brand .logo-mark{width:30px;height:30px;}
+.sf-logo-sm{display:inline-flex !important;align-items:center;gap:8px;}
+.sf-logo-sm .logo-mark{width:22px;height:22px;}
+.lm-pair{display:inline-flex;flex:none;}
+.lm-pair .lm-on-light{display:none;}
+html:not([data-theme="dark"]) .lm-pair .lm-on-dark{display:none;}
+html:not([data-theme="dark"]) .lm-pair .lm-on-light{display:block;}
+@media(max-width:700px){.nav-guest .logo-mark{width:30px;height:30px;}}
+
+/* ── Signed-in items that sit where "Sign in" is ── */
+.nav-guest .ntf-bell{width:38px;height:38px;padding:0;border-radius:12px;border:0;cursor:pointer;background:rgba(255,255,255,.16);color:#fff;display:inline-grid;place-items:center;position:relative;}
+.nav-guest .ntf-bell:hover{background:rgba(255,255,255,.28);}
+.nav-guest .topbar-credits{background:rgba(255,255,255,.2);color:#fff !important;padding:7px 13px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;opacity:1;}
+.nav-guest .topbar-credits:hover{background:rgba(255,255,255,.32);}
+.nav-guest .topbar-plan-none{background:#d3411f !important;}
+.nav-guest .tb-avatar{border:0;cursor:pointer;font-family:inherit;}
+.nav-guest .gn-auth{display:flex;align-items:center;}
+button.gn-signin-btn{border:0;width:100%;cursor:pointer;font-family:inherit;}
+@media(max-width:440px){.nav-guest .topbar-credits{display:none;}}
+@media(max-width:360px){.nav-guest .ntf-bell,.nav-guest .tb-avatar{width:34px;height:34px;}}
+.app-main:has(> .nav-guest) > .app-content{margin-left:auto;margin-right:auto;}
+/* Same header, same positions: the menu is centred on the page and never moves, whatever sits on the right */
+@media(min-width:901px){
+  .nav-guest{display:grid !important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:12px;min-height:56px;}
+  .nav-guest > .brand{justify-self:start;}
+  .nav-guest > .gn-links{justify-self:center;}
+  .nav-guest > .gn-auth{justify-self:end;}
+}
+@media(max-width:900px){.nav-guest{min-height:50px;}}
+</style>
+<nav class="nav nav-guest" aria-label="Main">
+  <a class="brand" href="{{ url_for('main.dashboard') if signed_in else url_for('main.index') }}"><img class="logo-mark" src="{{ url_for('static', filename='img/logo-mark.png') }}" alt="" width="32" height="32" decoding="async"><span class="tb-word">Smart Study<span class="dot">.</span>Guides</span></a>
+  <div class="gn-links" id="gn-links">
+    <a class="gn-link gn-main{% if request.endpoint in ('main.dashboard', 'main.index') %} is-active{% endif %}" href="{{ url_for('main.dashboard') }}" title="Dashboard"><span class="gn-ic">{{ icon('dashboard') }}</span><span class="gn-title">Dashboard</span></a>
+    <div class="gn-label">Tools</div>
+    <a class="gn-link{% if request.endpoint in ('main.assignment_order', 'main.new_assignment', 'main.remove_ai', 'main.remove_ai_status') %} is-active{% endif %}" href="{{ url_for('main.assignment_order') }}" title="Assignment Order"><span class="gn-ic">{{ icon('assign') }}</span><span>Assignment Order</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.plagiarism_checker' %} is-active{% endif %}" href="{{ url_for('main.plagiarism_checker') }}" title="Plagiarism &amp; AI Check"><span class="gn-ic">{{ icon('files') }}</span><span>Plagiarism &amp; AI</span></a>
+    <a class="gn-link{% if request.endpoint == 'main.job_docs' %} is-active{% endif %}" href="{{ url_for('main.job_docs') }}" title="Free Resources"><span class="gn-ic">{{ icon('briefcase') }}</span><span>Free Resources</span></a>
+    <div class="gn-label">More</div>
+    <div class="gn-grid">
+    <a class="gn-link{% if request.endpoint == 'main.services' %} is-active{% endif %}" href="{{ url_for('main.services') }}" title="Our Services"><span class="gn-ic">{{ icon('cap') }}</span><span>Services</span></a>
+      <a class="gn-link{% if request.path == '/updates' %} is-active{% endif %}" href="/updates" title="Updates &amp; Offers"><span class="gn-ic">{{ icon('bell') }}</span><span>Updates</span></a>
+      <a class="gn-link{% if request.endpoint == 'main.pricing' %} is-active{% endif %}" href="{{ url_for('main.pricing') }}" title="Pricing"><span class="gn-ic">{{ icon('card') }}</span><span>Pricing</span></a>
+      <a class="gn-link{% if request.endpoint == 'main.help_page' %} is-active{% endif %}" href="{{ url_for('main.help_page') }}" title="Help"><span class="gn-ic">{{ icon('help') }}</span><span>Help</span></a>
+    </div>
+    <div class="gn-foot">
+      {% if signed_in %}<button class="gn-signin-btn gn-account-btn" id="gn-account-btn" type="button"><span class="gn-ic">{{ icon('user') }}</span><span>Account</span></button>
+      {% else %}<a class="gn-signin-btn" href="{{ url_for('auth.login') }}"><span class="gn-ic">{{ icon('user') }}</span><span>Sign in</span></a>{% endif %}
+    </div>
+  </div>
+  <div class="gn-auth">
+    {% if signed_in %}
+    <div class="ntf-wrap" id="ntf-wrap">
+          <button class="ntf-bell" id="ntf-bell" onclick="ntfToggle()" aria-label="Notifications" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="ntf-dot" id="ntf-dot" style="display:none;"></span>
+          </button>
+
+          <!-- floating panel -->
+          <div class="ntf-panel" id="ntf-panel" style="display:none;">
+            <div class="ntf-panel-head">
+              <span class="ntf-panel-title">Notifications</span>
+              <button class="ntf-mark-all" id="ntf-mark-all" onclick="ntfMarkAll()" type="button">Mark all read</button>
+            </div>
+            <div class="ntf-list" id="ntf-list">
+              <div class="ntf-empty" id="ntf-empty" style="display:none;">No notifications yet.</div>
+            </div>
+          </div>
+        </div>
+    {% if not current_user.is_writer and not session.get('admin_writer_preview') %}
+          {% if active_plan == "admin" %}
+            <span class="topbar-credits topbar-plan-admin" title="Admin account">⚙ Admin</span>
+          {% elif active_plan %}
+            <a class="topbar-credits topbar-plan-{{ active_plan }}" href="{{ url_for('main.subscription_manage') }}" title="Manage subscription">{{ active_plan | capitalize }}</a>
+          {% else %}
+            <a class="topbar-credits topbar-plan-none" href="{{ url_for('main.pricing') }}" title="Get a plan">Subscribe</a>
+          {% endif %}
+        {% endif %}
+    <button class="tb-avatar" id="topbar-menu-btn" type="button" aria-label="Account menu" title="Account">{{ ((current_user.first_name or current_user.display_name or '?')[:1])|upper }}</button>
+    {% else %}<a class="gn-signin" href="{{ url_for('auth.login') }}">Sign in</a>{% endif %}
+    <button class="theme-btn gn-theme" type="button" aria-label="Switch between light and dark mode" title="Light / dark"><span class="ti-moon">{{ icon('moon') }}</span><span class="ti-sun">{{ icon('sun') }}</span></button>
+    <button class="gn-burger" id="gn-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="gn-links">{{ icon('menu') }}</button>
+  </div>
+</nav>
+<script>
+(function(){var b=document.getElementById('gn-burger'),m=document.getElementById('gn-links');if(!b||!m)return;
+function setMenu(o){m.classList.toggle('open',o);b.setAttribute('aria-expanded',o);document.body.style.overflow=o?'hidden':'';}
+b.addEventListener('click',function(e){e.stopPropagation();setMenu(!m.classList.contains('open'));});
+document.addEventListener('click',function(e){if(!m.contains(e.target)&&!b.contains(e.target))setMenu(false);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')setMenu(false);});})();
+</script>
+{% if signed_in %}
+<script>
+window.__ssgTopNav=true;
+(function(){var a=document.getElementById('gn-account-btn');if(!a)return;
+a.addEventListener('click',function(){var m=document.getElementById('gn-links'),b=document.getElementById('gn-burger');
+if(m){m.classList.remove('open');document.body.style.overflow='';}if(b)b.setAttribute('aria-expanded','false');
+var t=document.getElementById('topbar-menu-btn');if(t)t.click();});})();
+</script>
+{% endif %}

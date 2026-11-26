@@ -24,8 +24,9 @@ from .native_auth import require_login
 feed_bp = Blueprint("feed", __name__)
 
 MAX_BODY, MAX_COMMENT, MAX_IMAGES = 2000, 500, 4
-# Fly.io has no small request limit, so photos and videos (up to 25 MB) are uploaded through the server.
-MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 27 * 1024 * 1024
+# Hosting is Vercel (see CLAUDE.md): a function request body can't exceed ~4.5 MB, so anything bigger goes
+# straight from the browser to Cloudflare R2 with a presigned URL (the R2 bucket therefore needs CORS for PUT).
+MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 4_200_000
 POSTS_PER_HOUR, POSTS_PER_DAY, COMMENTS_PER_HOUR, REPORTS_TO_HIDE = 5, 20, 30, 3
 
 _ADJ = ["Curious", "Sleepy", "Brave", "Quiet", "Clever", "Cheerful", "Gentle", "Witty", "Calm", "Bold", "Lucky", "Swift",
@@ -138,8 +139,8 @@ def _store(data, ext, ctype):
     try:
         if supabase_storage.configured():
             return supabase_storage.upload_file(f"feed/{name}", data, ctype)
-        if os.environ.get("FLY_APP_NAME"):
-            # On the live site the disk is wiped at every deploy, so saving there would silently lose uploads.
+        if os.environ.get("VERCEL"):
+            # On Vercel the disk is read-only / temporary, so saving there would silently lose uploads.
             current_app.logger.error("Feed upload refused: storage settings missing: %s", ", ".join(supabase_storage.missing_settings()))
             raise StorageUnavailable()
         with open(os.path.join(_media_dir(), name), "wb") as f:      # local development only

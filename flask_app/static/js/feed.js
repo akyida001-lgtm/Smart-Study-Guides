@@ -267,7 +267,7 @@
     updatePost();
   }
   function updatePost() { var n = q('#fd-body').value.trim().length; q('#fd-count').textContent = q('#fd-body').value.length + '/2000'; q('#fd-post').disabled = !(n || files.length); }
-  var SMALL_VIDEO = 25 * 1048576, MAX_BODY = 26 * 1048576;   // everything goes through the server (Fly.io has no small body limit)
+  var SMALL_VIDEO = 3.5 * 1048576, MAX_BODY = 3.9 * 1048576;   // Vercel rejects request bodies over ~4.5 MB; bigger videos go straight to R2
   function isVid(f) { return f.type.indexOf('video') === 0; }
   function shrink(f) {            // resize + re-encode photos in the browser so they stay small (also drops hidden metadata)
     return new Promise(function (res) {

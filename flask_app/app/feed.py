@@ -24,8 +24,8 @@ from .native_auth import require_login
 feed_bp = Blueprint("feed", __name__)
 
 MAX_BODY, MAX_COMMENT, MAX_IMAGES = 2000, 500, 4
-# Vercel (and most serverless hosts) reject request bodies over ~4.5 MB, so anything bigger goes straight to storage.
-MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 4_200_000
+# Fly.io has no small request limit, so photos and videos (up to 25 MB) are uploaded through the server.
+MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 27 * 1024 * 1024
 POSTS_PER_HOUR, POSTS_PER_DAY, COMMENTS_PER_HOUR, REPORTS_TO_HIDE = 5, 20, 30, 3
 
 _ADJ = ["Curious", "Sleepy", "Brave", "Quiet", "Clever", "Cheerful", "Gentle", "Witty", "Calm", "Bold", "Lucky", "Swift",
@@ -138,9 +138,15 @@ def _store(data, ext, ctype):
     try:
         if supabase_storage.configured():
             return supabase_storage.upload_file(f"feed/{name}", data, ctype)
+        if os.environ.get("FLY_APP_NAME"):
+            # On the live site the disk is wiped at every deploy, so saving there would silently lose uploads.
+            current_app.logger.error("Feed upload refused: storage settings missing: %s", ", ".join(supabase_storage.missing_settings()))
+            raise StorageUnavailable()
         with open(os.path.join(_media_dir(), name), "wb") as f:      # local development only
             f.write(data)
         return f"/updates/media/{name}"
+    except StorageUnavailable:
+        raise
     except Exception:
         current_app.logger.exception("Feed upload could not be saved")
         raise StorageUnavailable()
@@ -288,6 +294,10 @@ def api_create_post():
     except ValueError as e:
         return _err(str(e))
     except StorageUnavailable:
+        from .services import supabase_storage as _st
+        miss = _st.missing_settings()
+        if _is_admin() and miss:      # only staff see the technical reason
+            return _err("Uploads aren't set up: these settings are missing on the server: " + ", ".join(miss) + ".", 503)
         return _err("Uploads aren't available right now. Please try again later.", 503)
     if not body and not media:
         return _err("Write something or add a photo or video.")
@@ -307,6 +317,8 @@ def api_video_upload():
         return _err("You can't post right now.", 403)
     from .services import supabase_storage as st
     if not st.configured():
+        if _is_admin():
+            return _err("Uploads aren't set up: these settings are missing on the server: " + ", ".join(st.missing_settings()) + ".", 503)
         return _err("Video uploads aren't set up yet.", 503)
     data = request.get_json(silent=True) or {}
     ext = {"video/mp4": "mp4", "video/quicktime": "mp4", "video/webm": "webm"}.get((data.get("type") or "").lower())

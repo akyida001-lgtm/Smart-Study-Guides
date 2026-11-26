@@ -60,6 +60,10 @@ def upload_id_scan(user_id: str, file_bytes: bytes, content_type: str) -> str:
 
 
 # ── helpers for direct browser uploads (used by the Updates feed on serverless hosts) ──
+def missing_settings() -> list:
+    """Names of the R2 settings that are not set (empty list = all set)."""
+    return [k for k in ("R2_ENDPOINT_URL", "R2_PUBLIC_URL", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY") if not os.environ.get(k)]
+
 def configured() -> bool:
     return all(os.environ.get(k) for k in ("R2_ENDPOINT_URL", "R2_PUBLIC_URL", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"))
 

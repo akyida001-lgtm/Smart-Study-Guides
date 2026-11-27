@@ -328,6 +328,7 @@ def register_routes(app):
             ("https://smart-study-guides.com/",                 "1.0",  "weekly"),
             ("https://smart-study-guides.com/pricing",          "0.9",  "weekly"),
             ("https://smart-study-guides.com/services",         "0.8",  "monthly"),
+            ("https://smart-study-guides.com/questions",        "0.7",  "weekly"),
             ("https://smart-study-guides.com/check-plagiarism", "0.85", "monthly"),
             ("https://smart-study-guides.com/help",             "0.7",  "monthly"),
             ("https://smart-study-guides.com/help/getting-started", "0.6", "monthly"),

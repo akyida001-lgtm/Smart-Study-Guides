@@ -27,6 +27,9 @@ MAX_BODY, MAX_COMMENT, MAX_IMAGES = 2000, 500, 4
 # Hosting is Vercel (see CLAUDE.md): a function request body can't exceed ~4.5 MB, so anything bigger goes
 # straight from the browser to Cloudflare R2 with a presigned URL (the R2 bucket therefore needs CORS for PUT).
 MAX_IMG_BYTES, MAX_VIDEO_BYTES, MAX_REQUEST_BYTES = 10 * 1024 * 1024, 25 * 1024 * 1024, 4_200_000
+# Admin ("official") posts: testimonial screenshots, posters and screen recordings. Everything goes straight to R2 at full quality.
+ADMIN_MAX_VIDEO, ADMIN_MAX_IMG, ADMIN_MAX_IMAGES = 200 * 1024 * 1024, 25 * 1024 * 1024, 10
+_DIRECT_KEY = r"feed/[a-f0-9]{32}\.(mp4|webm|jpg|png|webp|gif)"
 POSTS_PER_HOUR, POSTS_PER_DAY, COMMENTS_PER_HOUR, REPORTS_TO_HIDE = 5, 20, 30, 3
 
 _ADJ = ["Curious", "Sleepy", "Brave", "Quiet", "Clever", "Cheerful", "Gentle", "Witty", "Calm", "Bold", "Lucky", "Swift",
@@ -164,19 +167,61 @@ def _direct_video(key):
             st.delete(key)
         except Exception:
             pass
+    cap = ADMIN_MAX_VIDEO if _is_admin() else MAX_VIDEO_BYTES
     try:
         size = int(st.head(key).get("ContentLength", 0))
-        head = st.read_range(key, 16) if 0 < size <= MAX_VIDEO_BYTES else b""
+        head = st.read_range(key, 16) if 0 < size <= cap else b""
     except Exception:
         raise ValueError("We couldn't find your uploaded video. Please try again.")
-    if size <= 0 or size > MAX_VIDEO_BYTES:
+    if size <= 0 or size > cap:
         drop()
-        raise ValueError("Videos can be up to 25 MB.")
+        raise ValueError(f"Videos can be up to {cap // 1048576} MB.")
     kind = _sniff(head)
     if kind not in ("mp4", "webm") or (kind == "webm") != key.endswith(".webm"):
         drop()
         raise ValueError("That file isn't a supported video (MP4, MOV or WebM).")
     return "video", [{"url": st.public_url(key), "type": "video", "w": 0, "h": 0}]
+
+def _direct_media(keys, dims):
+    """Admin only: photos (or one video) the browser uploaded straight to storage. Checked before they can be posted."""
+    from .services import supabase_storage as st
+    if not st.configured():
+        raise StorageUnavailable()
+    if not isinstance(keys, list) or not keys or len(keys) > ADMIN_MAX_IMAGES:
+        raise ValueError(f"Add up to {ADMIN_MAX_IMAGES} photos or one video.")
+    media, kinds, seen = [], set(), set()
+    for i, key in enumerate(keys):
+        if not isinstance(key, str) or not re.fullmatch(_DIRECT_KEY, key) or key in seen:
+            raise ValueError("That upload isn't valid. Please try again.")
+        seen.add(key)
+        if FeedPost.query.filter(FeedPost.media.like(f"%{key}%")).first():
+            raise ValueError("One of those files was already used in another post.")
+        is_vid = key.endswith((".mp4", ".webm"))
+        cap = ADMIN_MAX_VIDEO if is_vid else ADMIN_MAX_IMG
+        try:
+            size = int(st.head(key).get("ContentLength", 0))
+            head = st.read_range(key, 16) if 0 < size <= cap else b""
+        except Exception:
+            raise ValueError("We couldn't find an uploaded file. Please try again.")
+        def drop():
+            try:
+                st.delete(key)
+            except Exception:
+                pass
+        if size <= 0 or size > cap:
+            drop()
+            raise ValueError(f"{'Videos' if is_vid else 'Photos'} can be up to {cap // 1048576} MB.")
+        kind = _sniff(head)
+        if not ((not is_vid and kind == "image") or (is_vid and kind in ("mp4", "webm") and (kind == "webm") == key.endswith(".webm"))):
+            drop()
+            raise ValueError("One of those files isn't a supported photo or video.")
+        kinds.add("video" if is_vid else "image")
+        w, h = (dims[i] if isinstance(dims, list) and i < len(dims) and isinstance(dims[i], (list, tuple)) and len(dims[i]) == 2 else (0, 0))
+        clamp = lambda v: v if isinstance(v, int) and 0 <= v <= 20000 else 0
+        media.append({"url": st.public_url(key), "type": "video" if is_vid else "image", "w": clamp(w), "h": clamp(h)})
+    if len(kinds) > 1 or (kinds == {"video"} and len(media) > 1):
+        raise ValueError(f"Add either up to {ADMIN_MAX_IMAGES} photos or one video, not both.")
+    return kinds.pop(), media
 
 def _process_files(files):
     """Validate and store uploads. Returns (kind, media list). Up to 4 photos, or one video."""
@@ -285,8 +330,20 @@ def api_create_post():
             return _err("You're posting too fast. Please try again a bit later.", 429)
     files = [f for f in request.files.getlist("files") if f and f.filename]
     video_key = (request.form.get("video_key") or "").strip()
+    media_keys_raw = (request.form.get("media_keys") or "").strip()
     try:
-        if video_key:
+        if media_keys_raw:
+            if not admin:
+                return _err("Only admins can upload this way.", 403)
+            if files or video_key:
+                return _err("Add either photos or one video, not both.")
+            try:
+                keys = json.loads(media_keys_raw)
+                dims = json.loads(request.form.get("dims") or "[]")
+            except ValueError:
+                raise ValueError("That upload isn't valid. Please try again.")
+            kind, media = _direct_media(keys, dims)
+        elif video_key:
             if files:
                 return _err("Add either up to 4 photos or one video, not both.")
             kind, media = _direct_video(video_key)
@@ -322,16 +379,23 @@ def api_video_upload():
             return _err("Uploads aren't set up: these settings are missing on the server: " + ", ".join(st.missing_settings()) + ".", 503)
         return _err("Video uploads aren't set up yet.", 503)
     data = request.get_json(silent=True) or {}
-    ext = {"video/mp4": "mp4", "video/quicktime": "mp4", "video/webm": "webm"}.get((data.get("type") or "").lower())
+    admin = _is_admin()
+    t = (data.get("type") or "").lower()
+    img_ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
     try:
         size = int(data.get("size") or 0)
     except (TypeError, ValueError):
         size = 0
-    if not ext:
-        return _err("Only MP4, MOV or WebM videos can be uploaded.")
-    if size <= 0 or size > MAX_VIDEO_BYTES:
-        return _err("Videos can be up to 25 MB.")
-    ctype = "video/webm" if ext == "webm" else "video/mp4"
+    if admin and t in img_ext:                       # photos, at full quality (screenshots, posters)
+        ext, ctype, cap, what = img_ext[t], t, ADMIN_MAX_IMG, "Photos"
+    else:
+        ext = {"video/mp4": "mp4", "video/quicktime": "mp4", "video/webm": "webm"}.get(t)
+        ctype = "video/webm" if ext == "webm" else "video/mp4"
+        cap, what = (ADMIN_MAX_VIDEO if admin else MAX_VIDEO_BYTES), "Videos"
+        if not ext:
+            return _err("Only MP4, MOV or WebM videos can be uploaded.")
+    if size <= 0 or size > cap:
+        return _err(f"{what} can be up to {cap // 1048576} MB.")
     key = f"feed/{uuid.uuid4().hex}.{ext}"
     try:
         url = st.presign_put(key, ctype, size)

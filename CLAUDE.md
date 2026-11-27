@@ -20,3 +20,11 @@
 - The signed-out Dashboard and the signed-in Dashboard are the same page (`templates/home.html`). It must fit one screen with no scrolling.
 - Signed-in and signed-out users share one header and menu (`templates/_site_nav.html`). Only the Sign in spot differs.
 - The header is fixed on phones. The brand name is not repeated inside page bodies (it is already in the header and footer).
+
+## Uploads (admin)
+- **Updates (`/updates`)**: admin ("staff") posts can have up to 10 full-quality photos (25 MB each) or one video (200 MB). Photos and videos go from the
+  browser straight to R2 (`/api/feed/video-upload` presign, then `media_keys` on the post). Normal members keep the old small limits.
+- **Past Questions (`/questions`)**: admins upload screenshots, PDF, Word (.docx) or screen recordings (`app/questions.py`, table `past_questions`,
+  created automatically by `db.create_all()`). Everyone can search and view; hidden items are visible to admins only.
+- Both need the four `R2_*` variables in Vercel **and CORS on the R2 bucket** (allow `PUT` from the site origin with any header).
+

@@ -54,7 +54,7 @@
           <input type="file" id="fd-file" multiple hidden></div>
       </div>
       <div class="fd-err" id="fd-err" role="alert"></div>
-      <div class="fd-foot"><small><span id="fd-count">0/2000</span><br>Up to 4 photos or 1 video (25 MB). Admins can see who posted, only for moderation.</small>
+      <div class="fd-foot"><small><span id="fd-count">0/2000</span><br>Up to {{ 10 if is_admin else 4 }} photos or 1 video ({{ 200 if is_admin else 25 }} MB). Admins can see who posted, only for moderation.</small>
         <button type="submit" id="fd-post" disabled>Post</button></div>
     </form>
   </div>

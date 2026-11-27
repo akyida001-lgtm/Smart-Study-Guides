@@ -526,3 +526,18 @@ class FeedBan(db.Model):
     user_id    = db.Column(db.String(64), primary_key=True)
     reason     = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class PastQuestion(db.Model):
+    """A question that was covered before (uploaded by an admin): screenshots, PDFs, documents or a screen recording."""
+    __tablename__ = "past_questions"
+
+    id           = db.Column(db.Integer, primary_key=True)
+    title        = db.Column(db.String(200), nullable=False)
+    subject      = db.Column(db.String(80), nullable=False, default="", index=True)
+    body         = db.Column(db.Text, nullable=False, default="")
+    files        = db.Column(db.Text, nullable=False, default="[]")      # JSON: [{url,key,type,name,size}]
+    is_published = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    created_by   = db.Column(db.String(64), nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+

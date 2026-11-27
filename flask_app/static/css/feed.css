@@ -114,3 +114,6 @@ body.fd-lock{overflow:hidden}
 @media(max-width:560px){.fd-post,.fd-composer{border-radius:12px}.fd-modal{align-items:flex-end;padding:0}.fd-modal .fd-dlg{border-radius:18px 18px 0 0}.fd-reels{height:78vh}}
 @media(prefers-reduced-motion:reduce){.fd-burst,.sk-l,.sk-b,.fd-act.js-like.on .fd-i{animation:none}.fd-toast{transition:none}}
 .fd :focus-visible{outline:2px solid #00bfa5;outline-offset:2px}
+/* official posts: screenshots and posters are shown whole (never cropped) */
+.fd-fit img{object-fit:contain;background:#0b1f24}
+.fd-car.fd-fit img{aspect-ratio:4/5}

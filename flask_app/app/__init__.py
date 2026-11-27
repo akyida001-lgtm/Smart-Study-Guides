@@ -44,7 +44,7 @@ def create_app():
                              HumanOrder, HumanOrderMessage, HumanOrderFile,
                              JobDocument, OAuth,
                              Subscription, DailyUsage,
-                             Post, PostMedia)
+                             Post, PostMedia, PastQuestion)
         db.create_all()
         # Add identity columns if upgrading from an older schema
         from sqlalchemy import inspect as sa_inspect, text
@@ -271,6 +271,8 @@ def create_app():
     app.register_blueprint(content_bp)
     from .feed import feed_bp
     app.register_blueprint(feed_bp)
+    from .questions import questions_bp
+    app.register_blueprint(questions_bp)
 
     # ── Sign out after 4 hours of inactivity ───────────────────────────────────
     IDLE_TIMEOUT_SECONDS = 4 * 60 * 60

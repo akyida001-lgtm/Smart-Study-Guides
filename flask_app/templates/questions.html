@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Past Questions — Smart Study Guides{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+
+<section class="pq-hero">
+  <h1>Questions we've covered before</h1>
+  <p>Search by subject or keyword. Found yours? Order it in minutes.</p>
+  <form class="pq-search" method="get" action="{{ url_for('questions.list_page') }}" role="search">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search questions…" aria-label="Search questions" maxlength="80">
+    {% if subject %}<input type="hidden" name="subject" value="{{ subject }}">{% endif %}
+    <button type="submit">Search</button>
+  </form>
+  {% if is_admin %}<button type="button" class="pq-add" id="pq-add">+ Add questions</button>{% endif %}
+</section>
+
+{% if subjects %}
+<div class="pq-chips" aria-label="Filter by subject">
+  <a class="pq-chip{% if not subject %} on{% endif %}" href="{{ url_for('questions.list_page', q=q or None) }}">All</a>
+  {% for s, n in subjects %}
+  <a class="pq-chip{% if subject == s %} on{% endif %}" href="{{ url_for('questions.list_page', subject=s, q=q or None) }}">{{ s }} <small>{{ n }}</small></a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if items %}
+<div class="pq-grid">
+  {% for it in items %}
+  <article class="pq-card{% if not it.published %} off{% endif %}" style="--i:{{ loop.index0 }}">
+    <a class="pq-link" href="{{ url_for('questions.detail', qid=it.id) }}">
+      <div class="pq-thumb">
+        {% if it.thumb %}<img src="{{ it.thumb }}" alt="" loading="lazy" decoding="async">
+        {% else %}<span class="pq-doc">{% if it.files and it.files[0].type == 'video' %}🎬{% elif it.files and it.files[0].type == 'pdf' %}📄{% elif it.files %}📝{% else %}❓{% endif %}</span>{% endif %}
+        {% if it.files|length > 1 %}<span class="pq-count">{{ it.files|length }} files</span>{% endif %}
+        {% if not it.published %}<span class="pq-hidden">Hidden</span>{% endif %}
+      </div>
+      <div class="pq-info">
+        {% if it.subject %}<span class="pq-sub">{{ it.subject }}</span>{% endif %}
+        <h3>{{ it.title }}</h3>
+        {% if it.body %}<p>{{ it.body[:110] }}{% if it.body|length > 110 %}…{% endif %}</p>{% endif %}
+        <span class="pq-date">{{ it.created.strftime('%d %b %Y') }}</span>
+      </div>
+    </a>
+  </article>
+  {% endfor %}
+</div>
+{% if pages > 1 %}
+<nav class="pq-pages" aria-label="Pages">
+  {% if page > 1 %}<a href="{{ url_for('questions.list_page', page=page-1, q=q or None, subject=subject or None) }}">← Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a href="{{ url_for('questions.list_page', page=page+1, q=q or None, subject=subject or None) }}">Next →</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="pq-empty">
+  <div class="pq-empty-ic">🔎</div>
+  <h3>{% if q or subject %}No questions match that search{% else %}Nothing here yet{% endif %}</h3>
+  <p>{% if q or subject %}Try another word, or <a href="{{ url_for('questions.list_page') }}">see everything</a>.{% else %}Past questions will appear here soon.{% endif %}</p>
+  <a class="pq-cta" href="{{ url_for('main.assignment_order') }}">Can't find yours? Order it →</a>
+</div>
+{% endif %}
+
+{% if is_admin %}
+<div class="pq-modal" id="pq-modal" aria-hidden="true">
+  <div class="pq-backdrop" data-close></div>
+  <div class="pq-dialog" role="dialog" aria-modal="true" aria-labelledby="pq-m-title" tabindex="-1">
+    <button type="button" class="pq-x" data-close aria-label="Close">×</button>
+    <h3 id="pq-m-title">Add questions</h3>
+    <label class="pq-f">Title <input id="pq-title" maxlength="200" placeholder="e.g. Macroeconomics: inflation essay"></label>
+    <label class="pq-f">Subject <input id="pq-subject" maxlength="80" list="pq-subjects" placeholder="e.g. Economics">
+      <datalist id="pq-subjects">{% for s, n in subjects %}<option value="{{ s }}">{% endfor %}</datalist></label>
+    <label class="pq-f">Notes (optional) <textarea id="pq-body" rows="3" maxlength="5000" placeholder="The question text, level, or any notes"></textarea></label>
+    <div class="pq-drop" id="pq-drop">
+      <input type="file" id="pq-files" multiple hidden accept="image/jpeg,image/png,image/webp,application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,video/quicktime,video/webm">
+      <button type="button" id="pq-pick">Choose files</button>
+      <small>Screenshots, PDF, Word (.docx), or a screen recording. Photos and recordings up to 25 MB and 200 MB.</small>
+    </div>
+    <ul class="pq-list" id="pq-list"></ul>
+    <label class="pq-chk"><input type="checkbox" id="pq-each"> Make one separate entry for each file</label>
+    <label class="pq-chk"><input type="checkbox" id="pq-pub" checked> Visible to everyone</label>
+    <div class="pq-err" id="pq-err" role="alert"></div>
+    <div class="pq-bar"><i id="pq-prog"></i></div>
+    <div class="pq-actions"><button type="button" class="pq-save" id="pq-save">Upload and save</button><button type="button" class="pq-cancel" data-close>Cancel</button></div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.pq-hero{text-align:center;max-width:720px;margin:14px auto 22px;}
+.pq-hero h1{font-size:clamp(24px,5.6vw,36px);line-height:1.18;font-weight:800;color:var(--navy-900);margin:0 0 8px;}
+.pq-hero p{margin:0 0 16px;color:var(--slate-500);font-size:15px;}
+.pq-search{display:flex;gap:8px;max-width:520px;margin:0 auto;}
+.pq-search input{flex:1;min-width:0;height:48px;padding:0 16px;border-radius:14px;border:1.5px solid var(--surface-2);background:var(--surface);color:var(--navy-900);font:inherit;font-size:15px;}
+.pq-search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,197,94,.18);}
+.pq-search button,.pq-add{height:48px;padding:0 20px;border:0;border-radius:14px;cursor:pointer;font:inherit;font-weight:700;color:#fff;background:linear-gradient(180deg,#e2512c,#c93a17);box-shadow:0 10px 22px -10px rgba(226,81,44,.7);transition:transform .2s ease;}
+.pq-search button:hover,.pq-add:hover{transform:translateY(-2px);}
+.pq-add{margin-top:12px;height:44px;background:linear-gradient(180deg,#22c55e,#15803d);box-shadow:0 10px 22px -10px rgba(34,197,94,.7);}
+.pq-chips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;margin:0 auto 10px;max-width:1040px;scrollbar-width:none;}
+.pq-chips::-webkit-scrollbar{display:none;}
+.pq-chip{flex:none;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;background:var(--surface-2);color:var(--navy-900);border:1px solid transparent;transition:background .2s,border-color .2s;}
+.pq-chip small{opacity:.6;margin-left:3px;}
+.pq-chip:hover{border-color:var(--accent);}
+.pq-chip.on{background:var(--accent);color:#fff;}
+.pq-chip.on small{opacity:.85;}
+.pq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:1040px;margin:0 auto;}
+@media(min-width:760px){.pq-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;}}
+.pq-card{border-radius:18px;overflow:hidden;background:var(--surface);border:1.5px solid var(--surface-2);box-shadow:0 1px 2px rgba(15,23,42,.06),0 12px 28px -18px rgba(15,23,42,.35);
+  opacity:0;transform:translateY(14px);animation:pqUp .5s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i) * 45ms);transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s;}
+.pq-card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 20px 40px -18px rgba(34,197,94,.45);}
+.pq-card.off{opacity:.6;}
+.pq-link{display:block;color:inherit;text-decoration:none;}
+.pq-thumb{position:relative;aspect-ratio:4/3;background:#0b1f24;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.pq-thumb img{width:100%;height:100%;object-fit:cover;object-position:top;transition:transform .5s ease;}
+.pq-card:hover .pq-thumb img{transform:scale(1.05);}
+.pq-doc{font-size:44px;}
+.pq-count,.pq-hidden{position:absolute;bottom:8px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;}
+.pq-count{right:8px;}.pq-hidden{left:8px;background:#b45309;}
+.pq-info{padding:12px 14px 14px;}
+.pq-sub{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;}
+.pq-info h3{font-size:15px;line-height:1.3;font-weight:800;color:var(--navy-900);margin:0 0 4px;}
+.pq-info p{font-size:12.5px;line-height:1.45;color:var(--slate-500);margin:0 0 6px;}
+.pq-date{font-size:11.5px;color:var(--slate-500);}
+.pq-pages{display:flex;justify-content:center;align-items:center;gap:16px;margin:26px 0 10px;font-size:14px;color:var(--slate-500);}
+.pq-pages a{font-weight:700;color:var(--accent);text-decoration:none;}
+.pq-empty{text-align:center;max-width:420px;margin:30px auto;}
+.pq-empty-ic{font-size:44px;margin-bottom:6px;}
+.pq-empty h3{margin:0 0 6px;font-size:20px;color:var(--navy-900);}
+.pq-empty p{color:var(--slate-500);margin:0 0 16px;}
+.pq-cta{display:inline-flex;align-items:center;height:48px;padding:0 22px;border-radius:14px;text-decoration:none;font-weight:700;color:#fff !important;background:linear-gradient(180deg,#e2512c,#c93a17);box-shadow:0 10px 22px -10px rgba(226,81,44,.7);}
+@keyframes pqUp{to{opacity:1;transform:none;}}
+/* admin upload popup */
+.pq-modal{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:14px;visibility:hidden;pointer-events:none;}
+.pq-modal.open{visibility:visible;pointer-events:auto;}
+.pq-backdrop{position:absolute;inset:0;background:rgba(5,10,25,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .3s;}
+.pq-modal.open .pq-backdrop{opacity:1;}
+.pq-dialog{position:relative;width:100%;max-width:520px;max-height:90vh;max-height:90dvh;overflow:auto;border-radius:22px;padding:22px 20px 18px;background:var(--surface);color:var(--navy-900);border:1px solid var(--surface-2);box-shadow:0 40px 90px -20px rgba(0,0,0,.6);outline:none;opacity:0;transform:translateY(20px) scale(.95);transition:opacity .2s,transform .35s cubic-bezier(.34,1.45,.5,1);}
+.pq-modal.open .pq-dialog{opacity:1;transform:none;}
+.pq-dialog h3{margin:0 0 12px;font-size:20px;font-weight:800;}
+.pq-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:0;cursor:pointer;font-size:22px;background:var(--surface-2);color:var(--navy-900);}
+.pq-f{display:block;font-size:12.5px;font-weight:700;margin-bottom:10px;color:var(--slate-500);}
+.pq-f input,.pq-f textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--surface-2);background:var(--surface);color:var(--navy-900);font:inherit;font-size:14.5px;font-weight:500;}
+.pq-f input:focus,.pq-f textarea:focus{outline:none;border-color:var(--accent);}
+.pq-drop{border:2px dashed var(--surface-2);border-radius:14px;padding:14px;text-align:center;margin-bottom:8px;transition:border-color .2s,background .2s;}
+.pq-drop.over{border-color:var(--accent);background:rgba(34,197,94,.08);}
+.pq-drop button{height:40px;padding:0 18px;border-radius:12px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;}
+.pq-drop small{display:block;margin-top:6px;font-size:11.5px;color:var(--slate-500);}
+.pq-list{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:6px;}
+.pq-list li{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:var(--surface-2);font-size:12.5px;}
+.pq-list li span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pq-list li em{font-style:normal;color:var(--slate-500);font-size:11.5px;}
+.pq-list button{border:0;background:none;cursor:pointer;font-size:18px;color:var(--slate-500);}
+.pq-chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;}
+.pq-err{min-height:18px;color:#dc2626;font-size:13px;font-weight:600;margin:6px 0;}
+.pq-bar{height:6px;border-radius:6px;background:var(--surface-2);overflow:hidden;margin-bottom:12px;}
+.pq-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#15803d);transition:width .2s;}
+.pq-actions{display:flex;gap:10px;}
+.pq-save{flex:1;height:48px;border:0;border-radius:14px;cursor:pointer;font:inherit;font-weight:800;color:#fff;background:linear-gradient(180deg,#22c55e,#15803d);}
+.pq-save:disabled{opacity:.6;cursor:wait;}
+.pq-cancel{height:48px;padding:0 18px;border-radius:14px;border:1.5px solid var(--surface-2);background:transparent;color:var(--navy-900);font:inherit;font-weight:700;cursor:pointer;}
+@media(max-width:600px){.pq-modal{align-items:flex-end;padding:0;}.pq-dialog{max-width:none;border-radius:24px 24px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));}}
+@media(prefers-reduced-motion:reduce){.pq-card{animation:none;opacity:1;transform:none;}}
+</style>
+
+{% if is_admin %}
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)}, modal=$('pq-modal'), dialog=modal.querySelector('.pq-dialog'), files=[], busy=false;
+  var MB=1048576, LIMIT={image:25,pdf:50,doc:50,video:200};
+  var DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  function mime(f){var n=(f.name||'').toLowerCase();if(f.type)return f.type;if(/\.pdf$/.test(n))return'application/pdf';if(/\.docx$/.test(n))return DOCX;return'';}
+  function kind(t){return /^image\//.test(t)?'image':t==='application/pdf'?'pdf':t===DOCX?'doc':/^video\//.test(t)?'video':null;}
+  function open(){modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';setTimeout(function(){dialog.focus()},30);}
+  function close(){if(busy)return;modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  function size(n){return n>=MB?(n/MB).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';}
+  function draw(){
+    var ul=$('pq-list');ul.innerHTML='';
+    files.forEach(function(f,i){var li=document.createElement('li'),s=document.createElement('span'),e=document.createElement('em'),b=document.createElement('button');
+      s.textContent=f.name;e.textContent=size(f.size);b.type='button';b.textContent='×';b.setAttribute('aria-label','Remove');b.onclick=function(){if(!busy){files.splice(i,1);draw();}};
+      li.appendChild(s);li.appendChild(e);li.appendChild(b);ul.appendChild(li);});
+  }
+  function add(list){
+    var err=$('pq-err');err.textContent='';
+    Array.prototype.forEach.call(list,function(f){
+      var t=mime(f),k=kind(t);
+      if(!k){err.textContent='"'+f.name+'" is not a supported file. Use JPG, PNG, WebP, PDF, Word (.docx) or MP4/MOV/WebM.';return;}
+      if(f.size>LIMIT[k]*MB){err.textContent='"'+f.name+'" is too large (limit '+LIMIT[k]+' MB for this type).';return;}
+      if(files.length>=20){err.textContent='Up to 20 files at a time.';return;}
+      files.push(f);
+    });
+    draw();
+  }
+  function api(url,body){
+    return fetch(url,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Requested-With':'ssg-q'},body:JSON.stringify(body)})
+      .then(function(r){return r.json().catch(function(){return{}}).then(function(d){if(!r.ok)throw new Error(d.error||'Something went wrong. Please try again.');return d;});});
+  }
+  function put(f,onp){
+    return api('/api/questions/upload-url',{type:mime(f),size:f.size}).then(function(d){
+      return new Promise(function(res,rej){
+        var x=new XMLHttpRequest();x.open('PUT',d.upload_url);x.setRequestHeader('Content-Type',d.content_type);
+        x.upload.onprogress=function(e){if(e.lengthComputable)onp(e.loaded);};
+        x.onload=function(){(x.status>=200&&x.status<300)?res({key:d.key,name:f.name}):rej(new Error('The upload failed. Please try again.'));};
+        x.onerror=function(){rej(new Error('Couldn\'t upload. Check your connection. If it keeps failing, the storage bucket needs CORS turned on for this site (see CLAUDE.md).'));};
+        x.send(f);
+      });
+    });
+  }
+  function save(){
+    if(busy)return;
+    var err=$('pq-err'),btn=$('pq-save'),title=$('pq-title').value.trim(),each=$('pq-each').checked;
+    err.textContent='';
+    if(!files.length&&!$('pq-body').value.trim()){err.textContent='Add at least one file or some notes.';return;}
+    if(!title&&!each){err.textContent='Add a title.';return;}
+    busy=true;btn.disabled=true;btn.textContent='Uploading…';
+    var total=files.reduce(function(n,f){return n+f.size},0)||1,done=0,up=[];
+    var chain=files.reduce(function(p,f){return p.then(function(){var base=done;return put(f,function(l){$('pq-prog').style.width=Math.round((base+l)/total*100)+'%';}).then(function(r){up.push(r);done+=f.size;});});},Promise.resolve());
+    chain.then(function(){
+      var common={subject:$('pq-subject').value.trim(),published:$('pq-pub').checked}, jobs;
+      if(each&&up.length){
+        jobs=up.map(function(u,i){return api('/api/questions',Object.assign({title:title?(title+' ('+(i+1)+')'):u.name.replace(/\.[^.]+$/,''),body:$('pq-body').value.trim(),files:[u]},common));});
+      }else jobs=[api('/api/questions',Object.assign({title:title,body:$('pq-body').value.trim(),files:up},common))];
+      return Promise.all(jobs);
+    }).then(function(){location.reload();})
+    .catch(function(e){busy=false;btn.disabled=false;btn.textContent='Upload and save';$('pq-prog').style.width='0';err.textContent=e.message||'Something went wrong.';});
+  }
+  $('pq-add').addEventListener('click',open);
+  modal.querySelectorAll('[data-close]').forEach(function(el){el.addEventListener('click',close)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.classList.contains('open'))close();});
+  $('pq-pick').addEventListener('click',function(){$('pq-files').click()});
+  $('pq-files').addEventListener('change',function(){add(this.files);this.value='';});
+  var drop=$('pq-drop');
+  ['dragenter','dragover'].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.add('over')})});
+  ['dragleave','drop'].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.remove('over')})});
+  drop.addEventListener('drop',function(e){add(e.dataTransfer.files)});
+  $('pq-save').addEventListener('click',save);
+})();
+</script>
+{% endif %}
+{% endblock %}

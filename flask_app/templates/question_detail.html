@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — Past Questions — Smart Study Guides{% endblock %}
+{% block container_class %}wide{% endblock %}
+{% block content %}
+<a class="qd-back" href="{{ url_for('questions.list_page', subject=item.subject or None) }}">← Past questions</a>
+
+<article class="qd">
+  <header class="qd-head">
+    {% if item.subject %}<span class="qd-sub">{{ item.subject }}</span>{% endif %}
+    <h1>{{ item.title }}</h1>
+    <div class="qd-meta">{{ item.created.strftime('%d %b %Y') }}{% if not item.published %} · <b class="qd-off">Hidden</b>{% endif %}</div>
+  </header>
+
+  {% if item.body %}<p class="qd-body">{{ item.body }}</p>{% endif %}
+
+  {% set images = item.files|selectattr('type', 'equalto', 'image')|list %}
+  {% if images %}
+  <div class="qd-gallery">
+    {% for f in images %}<a href="{{ f.url }}" target="_blank" rel="noopener"><img src="{{ f.url }}" alt="{{ item.title }} (image {{ loop.index }})" loading="lazy" decoding="async"></a>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% for f in item.files if f.type == 'video' %}
+  <video class="qd-video" src="{{ f.url }}#t=0.1" controls playsinline preload="metadata"></video>
+  {% endfor %}
+
+  {% set docs = item.files|rejectattr('type', 'in', ['image', 'video'])|list %}
+  {% if docs %}
+  <div class="qd-docs">
+    {% for f in docs %}
+    <a class="qd-doc" href="{{ f.url }}" target="_blank" rel="noopener">
+      <span class="qd-doc-ic">{% if f.type == 'pdf' %}📄{% else %}📝{% endif %}</span>
+      <span class="qd-doc-name">{{ f.name }}</span>
+      <span class="qd-doc-act">{% if f.type == 'pdf' %}Open{% else %}Download{% endif %} →</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="qd-cta">
+    <div><strong>Need something like this?</strong><br>Order it in minutes, written to your instructions.</div>
+    <a href="{{ url_for('main.assignment_order') }}">Order now →</a>
+  </div>
+
+  {% if is_admin %}
+  <div class="qd-admin">
+    <button type="button" id="qd-toggle">{% if item.published %}Hide from everyone{% else %}Make visible{% endif %}</button>
+    <button type="button" id="qd-delete" class="danger">Delete</button>
+  </div>
+  {% endif %}
+</article>
+
+<style>
+.qd-back{display:inline-flex;gap:8px;font-size:14px;font-weight:600;color:var(--slate-500);text-decoration:none;margin:6px 0 14px;transition:color .15s,gap .2s;}
+.qd-back:hover{color:var(--accent);gap:12px;}
+.qd{max-width:820px;margin:0 auto;background:var(--surface);border:1.5px solid var(--surface-2);border-radius:20px;padding:24px 22px;}
+.qd-sub{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.qd h1{font-size:clamp(22px,5vw,30px);line-height:1.2;font-weight:800;color:var(--navy-900);margin:0 0 6px;}
+.qd-meta{font-size:13px;color:var(--slate-500);margin-bottom:16px;}
+.qd-off{color:#b45309;}
+.qd-body{white-space:pre-wrap;font-size:15.5px;line-height:1.65;color:var(--navy-900);margin:0 0 18px;}
+.qd-gallery{display:grid;gap:12px;margin-bottom:16px;}
+.qd-gallery img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--surface-2);background:#0b1f24;}
+.qd-video{width:100%;max-height:70vh;border-radius:14px;background:#000;margin-bottom:16px;}
+.qd-docs{display:grid;gap:10px;margin-bottom:18px;}
+.qd-doc{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;text-decoration:none;background:var(--surface-2);color:var(--navy-900);border:1.5px solid transparent;transition:border-color .2s,transform .2s;}
+.qd-doc:hover{border-color:var(--accent);transform:translateY(-2px);}
+.qd-doc-ic{font-size:26px;}
+.qd-doc-name{flex:1;min-width:0;font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.qd-doc-act{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap;}
+.qd-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 18px;border-radius:16px;background:linear-gradient(135deg,rgba(34,197,94,.14),rgba(64,196,255,.10));border:1px solid rgba(34,197,94,.35);font-size:14px;color:var(--navy-900);}
+.qd-cta a{display:inline-flex;align-items:center;height:46px;padding:0 20px;border-radius:14px;text-decoration:none;font-weight:800;color:#fff !important;background:linear-gradient(180deg,#e2512c,#c93a17);box-shadow:0 10px 22px -10px rgba(226,81,44,.7);}
+.qd-admin{display:flex;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--surface-2);}
+.qd-admin button{height:42px;padding:0 16px;border-radius:12px;border:1.5px solid var(--surface-2);background:transparent;color:var(--navy-900);font:inherit;font-weight:700;cursor:pointer;}
+.qd-admin .danger{border-color:#dc2626;color:#dc2626;}
+@media(max-width:600px){.qd{padding:18px 14px;}.qd-cta a{width:100%;justify-content:center;}}
+</style>
+
+{% if is_admin %}
+<script>
+(function(){
+  function call(path){return fetch(path,{method:'POST',credentials:'same-origin',headers:{'X-Requested-With':'ssg-q'}}).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'Failed');return d;});});}
+  document.getElementById('qd-toggle').addEventListener('click',function(){call('/api/questions/{{ item.id }}/publish').then(function(){location.reload();}).catch(function(e){alert(e.message)});});
+  document.getElementById('qd-delete').addEventListener('click',function(){if(!confirm('Delete this question and its files for good?'))return;
+    call('/api/questions/{{ item.id }}/delete').then(function(){location.href='{{ url_for("questions.list_page") }}';}).catch(function(e){alert(e.message)});});
+})();
+</script>
+{% endif %}
+{% endblock %}

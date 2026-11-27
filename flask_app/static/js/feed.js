@@ -62,9 +62,10 @@
       return '<div class="fd-media fd-vid"><video src="' + esc(u) + '#t=0.1" preload="metadata" playsinline muted loop></video>' +
         '<button class="fd-mute" data-act="mute" aria-label="Sound">' + ic('mute') + '</button></div>';
     }
-    if (m.length === 1) return '<div class="fd-media"><img src="' + esc(safeUrl(m[0].url)) + '" alt="" loading="lazy" decoding="async" data-i="0"' + (m[0].w ? ' width="' + m[0].w + '" height="' + m[0].h + '"' : '') + '></div>';
+    var fit = p.author && p.author.official ? ' fd-fit' : '';
+    if (m.length === 1) return '<div class="fd-media' + fit + '"><img src="' + esc(safeUrl(m[0].url)) + '" alt="" loading="lazy" decoding="async" data-i="0"' + (m[0].w ? ' width="' + m[0].w + '" height="' + m[0].h + '"' : '') + '></div>';
     for (i = 0; i < m.length; i++) h += '<img src="' + esc(safeUrl(m[i].url)) + '" alt="" loading="lazy" decoding="async" data-i="' + i + '">';
-    return '<div class="fd-media fd-car"><div class="fd-track">' + h + '</div><span class="fd-cnt">1/' + m.length + '</span><div class="fd-dots">' +
+    return '<div class="fd-media fd-car' + fit + '"><div class="fd-track">' + h + '</div><span class="fd-cnt">1/' + m.length + '</span><div class="fd-dots">' +
       m.map(function (_, k) { return '<i' + (k ? '' : ' class="on"') + '></i>'; }).join('') + '</div></div>';
   }
   function actions(p) {
@@ -268,6 +269,7 @@
   }
   function updatePost() { var n = q('#fd-body').value.trim().length; q('#fd-count').textContent = q('#fd-body').value.length + '/2000'; q('#fd-post').disabled = !(n || files.length); }
   var SMALL_VIDEO = 3.5 * 1048576, MAX_BODY = 3.9 * 1048576;   // Vercel rejects request bodies over ~4.5 MB; bigger videos go straight to R2
+  var MB = 1048576, MAX_PHOTOS = cfg.admin ? 10 : 4, MAX_VIDEO = (cfg.admin ? 200 : 25) * MB, MAX_PHOTO = 25 * MB;
   function isVid(f) { return f.type.indexOf('video') === 0; }
   function shrink(f) {            // resize + re-encode photos in the browser so they stay small (also drops hidden metadata)
     return new Promise(function (res) {
@@ -283,29 +285,33 @@
       }).catch(function () { res(f); });
     });
   }
+  function dims(f) {              // admins keep photos untouched; just remember the size for the layout
+    return window.createImageBitmap ? createImageBitmap(f).then(function (b) { f._w = b.width; f._h = b.height; return f; }).catch(function () { return f; }) : Promise.resolve(f);
+  }
   function addFiles(fl) {
     var err = q('#fd-err'), jobs = []; err.textContent = '';
     Array.prototype.forEach.call(fl, function (f) {
       var vid = isVid(f), img = f.type.indexOf('image') === 0;
       if (!vid && !img) { err.textContent = 'Only photos and videos can be added.'; return; }
-      if (f.size > 25 * 1048576) { err.textContent = vid ? 'Videos can be up to 25 MB.' : 'That photo is too large.'; return; }
-      if ((vid && (files.length || jobs.length)) || files.some(isVid)) { err.textContent = 'Add either up to 4 photos or one video.'; return; }
-      if (img && files.length + jobs.length >= 4) { err.textContent = 'You can add up to 4 photos.'; return; }
-      jobs.push(vid ? Promise.resolve(f) : shrink(f));
+      if (vid && f.size > MAX_VIDEO) { err.textContent = 'Videos can be up to ' + (MAX_VIDEO / MB) + ' MB.'; return; }
+      if (img && f.size > MAX_PHOTO) { err.textContent = 'That photo is too large.'; return; }
+      if ((vid && (files.length || jobs.length)) || files.some(isVid)) { err.textContent = 'Add either up to ' + MAX_PHOTOS + ' photos or one video.'; return; }
+      if (img && files.length + jobs.length >= MAX_PHOTOS) { err.textContent = 'You can add up to ' + MAX_PHOTOS + ' photos.'; return; }
+      jobs.push(vid ? Promise.resolve(f) : (cfg.admin ? dims(f) : shrink(f)));
     });
     Promise.all(jobs).then(function (done) {
       var before = files.length; done.forEach(function (f) { files.push(f); });
-      if (!files.some(isVid) && files.reduce(function (n, f) { return n + f.size; }, 0) > MAX_BODY) { files.length = before; err.textContent = 'Those photos are too large together. Try fewer or smaller photos.'; }
+      if (!cfg.admin && !files.some(isVid) && files.reduce(function (n, f) { return n + f.size; }, 0) > MAX_BODY) { files.length = before; err.textContent = 'Those photos are too large together. Try fewer or smaller photos.'; }
       renderPreviews();
     });
   }
-  function directUpload(file, bar) {   // big videos go straight to storage, not through the server
-    return api('/api/feed/video-upload', { method: 'POST', json: { type: file.type || 'video/mp4', size: file.size } }).then(function (d) {
+  function directUpload(file, onProgress) {   // a file goes straight to storage, not through the server
+    return api('/api/feed/video-upload', { method: 'POST', json: { type: file.type || (isVid(file) ? 'video/mp4' : 'image/jpeg'), size: file.size } }).then(function (d) {
       return new Promise(function (res, rej) {
         var x = new XMLHttpRequest(); x.open('PUT', d.upload_url); x.setRequestHeader('Content-Type', d.content_type);
-        x.upload.onprogress = function (e) { if (e.lengthComputable) bar(Math.round(e.loaded / e.total * 100)); };
-        x.onload = function () { (x.status >= 200 && x.status < 300) ? res(d.key) : rej(new Error('The video upload failed. Please try again.')); };
-        x.onerror = function () { rej(new Error('Couldn\'t upload the video. Check your connection and try again.')); };
+        x.upload.onprogress = function (e) { if (e.lengthComputable) onProgress(e.loaded); };
+        x.onload = function () { (x.status >= 200 && x.status < 300) ? res(d.key) : rej(new Error('The upload failed. Please try again.')); };
+        x.onerror = function () { rej(new Error(cfg.admin ? 'Couldn\'t upload. Check your connection. If it keeps failing, the storage bucket needs CORS turned on for this site (see CLAUDE.md).' : 'Couldn\'t upload the video. Check your connection and try again.')); };
         x.send(file);
       });
     });
@@ -315,12 +321,25 @@
     btn.disabled = true; btn.classList.add('busy'); err.textContent = '';
     function bar(n) { btn.style.setProperty('--p', n + '%'); }
     function stop(msg) { btn.classList.remove('busy'); btn.style.removeProperty('--p'); btn.disabled = false; err.textContent = msg; }
-    (vid && vid.size > SMALL_VIDEO ? directUpload(vid, bar) : Promise.resolve(null)).then(function (key) {
-      var fd = new FormData(), x = new XMLHttpRequest();
+    var chain, keys = [], total = files.reduce(function (n, f) { return n + f.size; }, 0), doneBytes = 0;
+    if (cfg.admin && files.length) {          // admins: every photo and video goes straight to storage at full quality
+      chain = files.reduce(function (p, f) {
+        return p.then(function () {
+          var base = doneBytes;
+          return directUpload(f, function (l) { bar(Math.round((base + l) / total * 100)); }).then(function (k) { keys.push(k); doneBytes += f.size; });
+        });
+      }, Promise.resolve()).then(function () { return { media_keys: keys }; });
+    } else if (vid && vid.size > SMALL_VIDEO) {
+      chain = directUpload(vid, function (l) { bar(Math.round(l / vid.size * 100)); }).then(function (k) { return { video_key: k }; });
+    } else chain = Promise.resolve({});
+    chain.then(function (extra) {
+      var fd = new FormData(), x = new XMLHttpRequest(), uploaded = !!(extra.media_keys || extra.video_key);
       fd.append('body', q('#fd-body').value.trim());
-      if (key) fd.append('video_key', key); else files.forEach(function (f) { fd.append('files', f); });
+      if (extra.media_keys) { fd.append('media_keys', JSON.stringify(extra.media_keys)); fd.append('dims', JSON.stringify(files.map(function (f) { return [f._w || 0, f._h || 0]; }))); }
+      else if (extra.video_key) fd.append('video_key', extra.video_key);
+      else files.forEach(function (f) { fd.append('files', f); });
       x.open('POST', '/api/feed/posts'); x.setRequestHeader('X-Requested-With', 'ssg-feed'); x.withCredentials = true;
-      x.upload.onprogress = function (e) { if (!key && e.lengthComputable) bar(Math.round(e.loaded / e.total * 100)); };
+      x.upload.onprogress = function (e) { if (!uploaded && e.lengthComputable) bar(Math.round(e.loaded / e.total * 100)); };
       x.onload = function () {
         var d = {}; try { d = JSON.parse(x.responseText); } catch (e) {}
         if (x.status === 201) {
@@ -333,7 +352,7 @@
       };
       x.onerror = function () { stop('Network problem. Please try again.'); };
       x.send(fd);
-    }).catch(function (e) { stop(e.message || 'Couldn\'t upload the video. Please try again.'); });
+    }).catch(function (e) { stop(e.message || 'Couldn\'t upload. Please try again.'); });
   }
 
   // ── lightbox ───────────────────────────────────────────────────────────────

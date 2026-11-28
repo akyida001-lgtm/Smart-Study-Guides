@@ -16,7 +16,17 @@
   {% set images = item.files|selectattr('type', 'equalto', 'image')|list %}
   {% if images %}
   <div class="qd-gallery">
-    {% for f in images %}<a href="{{ f.url }}" target="_blank" rel="noopener"><img src="{{ f.url }}" alt="{{ item.title }} (image {{ loop.index }})" loading="lazy" decoding="async"></a>{% endfor %}
+    {% for f in images %}
+    <figure class="qd-fig">
+      <a href="{{ f.url }}" target="_blank" rel="noopener"><img src="{{ f.url }}" alt="{{ item.title }} (image {{ loop.index }})" loading="lazy" decoding="async"></a>
+      {% if f.text %}
+      <div class="qd-text">
+        <div class="qd-text-h"><span>Typed text</span><button type="button" class="qd-copy">Copy</button></div>
+        <div class="qd-text-b">{{ f.text }}</div>
+      </div>
+      {% endif %}
+    </figure>
+    {% endfor %}
   </div>
   {% endif %}
 
@@ -28,11 +38,19 @@
   {% if docs %}
   <div class="qd-docs">
     {% for f in docs %}
-    <a class="qd-doc" href="{{ f.url }}" target="_blank" rel="noopener">
-      <span class="qd-doc-ic">{% if f.type == 'pdf' %}📄{% else %}📝{% endif %}</span>
-      <span class="qd-doc-name">{{ f.name }}</span>
-      <span class="qd-doc-act">{% if f.type == 'pdf' %}Open{% else %}Download{% endif %} →</span>
-    </a>
+    <div class="qd-docwrap">
+      <a class="qd-doc" href="{{ f.url }}" target="_blank" rel="noopener">
+        <span class="qd-doc-ic">{% if f.type == 'pdf' %}📄{% else %}📝{% endif %}</span>
+        <span class="qd-doc-name">{{ f.name }}</span>
+        <span class="qd-doc-act">{% if f.type == 'pdf' %}Open{% else %}Download{% endif %} →</span>
+      </a>
+      {% if f.text %}
+      <details class="qd-text qd-dtext" open>
+        <summary><span>Typed text</span><button type="button" class="qd-copy">Copy</button></summary>
+        <div class="qd-text-b">{{ f.text }}</div>
+      </details>
+      {% endif %}
+    </div>
     {% endfor %}
   </div>
   {% endif %}
@@ -59,10 +77,18 @@
 .qd-meta{font-size:13px;color:var(--slate-500);margin-bottom:16px;}
 .qd-off{color:#b45309;}
 .qd-body{white-space:pre-wrap;font-size:15.5px;line-height:1.65;color:var(--navy-900);margin:0 0 18px;}
-.qd-gallery{display:grid;gap:12px;margin-bottom:16px;}
+.qd-gallery{display:grid;gap:18px;margin-bottom:16px;}
+.qd-fig{margin:0;}
 .qd-gallery img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--surface-2);background:#0b1f24;}
 .qd-video{width:100%;max-height:70vh;border-radius:14px;background:#000;margin-bottom:16px;}
-.qd-docs{display:grid;gap:10px;margin-bottom:18px;}
+.qd-docs{display:grid;gap:14px;margin-bottom:18px;}
+.qd-text{margin-top:10px;border-radius:14px;background:var(--surface-2);border:1px solid transparent;overflow:hidden;}
+.qd-text-h,.qd-dtext summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);cursor:default;list-style:none;}
+.qd-dtext summary{cursor:pointer;}
+.qd-dtext summary::-webkit-details-marker{display:none;}
+.qd-text-b{padding:2px 14px 14px;white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.65;color:var(--navy-900);user-select:text;}
+.qd-copy{font:inherit;font-size:12px;font-weight:700;text-transform:none;letter-spacing:0;padding:4px 12px;border-radius:9px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;}
+.qd-copy:hover{background:var(--accent);color:#fff;}
 .qd-doc{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;text-decoration:none;background:var(--surface-2);color:var(--navy-900);border:1.5px solid transparent;transition:border-color .2s,transform .2s;}
 .qd-doc:hover{border-color:var(--accent);transform:translateY(-2px);}
 .qd-doc-ic{font-size:26px;}
@@ -76,6 +102,13 @@
 @media(max-width:600px){.qd{padding:18px 14px;}.qd-cta a{width:100%;justify-content:center;}}
 </style>
 
+<script>
+document.querySelectorAll('.qd-copy').forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();
+  var box=b.closest('.qd-text').querySelector('.qd-text-b');if(!box)return;var t=box.textContent;
+  var done=function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy';},1600);};
+  var legacy=function(){var r=document.createRange();r.selectNodeContents(box);var s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');}catch(x){}done();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,legacy);else legacy();});});
+</script>
 {% if is_admin %}
 <script>
 (function(){

@@ -82,5 +82,12 @@ def head(key: str) -> dict:
 def read_range(key: str, n: int) -> bytes:
     return _client().get_object(Bucket=_bucket(), Key=key, Range=f"bytes=0-{n - 1}")["Body"].read()
 
+def read_all(key: str, limit: int) -> bytes:
+    """Whole file, refusing anything bigger than `limit` bytes."""
+    data = _client().get_object(Bucket=_bucket(), Key=key)["Body"].read(limit + 1)
+    if len(data) > limit:
+        raise ValueError("File too large")
+    return data
+
 def delete(key: str) -> None:
     _client().delete_object(Bucket=_bucket(), Key=key)

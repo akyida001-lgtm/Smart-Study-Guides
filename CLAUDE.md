@@ -27,4 +27,7 @@
 - **Past Questions (`/questions`)**: admins upload screenshots, PDF, Word (.docx) or screen recordings (`app/questions.py`, table `past_questions`,
   created automatically by `db.create_all()`). Everyone can search and view; hidden items are visible to admins only.
 - Both need the four `R2_*` variables in Vercel **and CORS on the R2 bucket** (allow `PUT` from the site origin with any header).
+- **Typed text from files (Past Questions):** when an admin uploads pictures, PDFs or Word files, `POST /api/questions/read-text` types out their text
+  (pictures: OpenAI `gpt-4o` vision with `OPENAI_API_KEY`, long screenshots are read in overlapping slices; PDF: `pypdf`; Word: `python-docx`).
+  The admin can correct the text before saving. It is stored inside each file's JSON (`files[].text`), shown under the picture, and searchable.
 

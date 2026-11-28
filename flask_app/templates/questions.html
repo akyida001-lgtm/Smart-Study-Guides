@@ -37,7 +37,7 @@
       <div class="pq-info">
         {% if it.subject %}<span class="pq-sub">{{ it.subject }}</span>{% endif %}
         <h3>{{ it.title }}</h3>
-        {% if it.body %}<p>{{ it.body[:110] }}{% if it.body|length > 110 %}…{% endif %}</p>{% endif %}
+        {% if it.snippet %}<p>{{ it.snippet }}{% if it.snippet|length >= 110 %}…{% endif %}</p>{% endif %}
         <span class="pq-date">{{ it.created.strftime('%d %b %Y') }}</span>
       </div>
     </a>
@@ -76,11 +76,13 @@
       <small>Screenshots, PDF, Word (.docx), or a screen recording. Photos and recordings up to 25 MB and 200 MB.</small>
     </div>
     <ul class="pq-list" id="pq-list"></ul>
+    <label class="pq-chk"><input type="checkbox" id="pq-ocr" checked> Type out the text from pictures, PDFs and Word files</label>
     <label class="pq-chk"><input type="checkbox" id="pq-each"> Make one separate entry for each file</label>
     <label class="pq-chk"><input type="checkbox" id="pq-pub" checked> Visible to everyone</label>
+    <div class="pq-status" id="pq-status" aria-live="polite"></div>
     <div class="pq-err" id="pq-err" role="alert"></div>
     <div class="pq-bar"><i id="pq-prog"></i></div>
-    <div class="pq-actions"><button type="button" class="pq-save" id="pq-save">Upload and save</button><button type="button" class="pq-cancel" data-close>Cancel</button></div>
+    <div class="pq-actions"><button type="button" class="pq-save" id="pq-save">Upload and read text</button><button type="button" class="pq-cancel" data-close>Cancel</button></div>
   </div>
 </div>
 {% endif %}
@@ -150,6 +152,11 @@
 .pq-list li em{font-style:normal;color:var(--slate-500);font-size:11.5px;}
 .pq-list button{border:0;background:none;cursor:pointer;font-size:18px;color:var(--slate-500);}
 .pq-chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:6px 0;}
+.pq-list li.rev{display:block;padding:10px;}
+.pq-list li.rev b{display:block;font-size:12.5px;margin-bottom:6px;word-break:break-all;}
+.pq-list li.rev textarea{display:block;width:100%;box-sizing:border-box;min-height:110px;padding:9px 11px;border-radius:10px;border:1.5px solid var(--surface);background:var(--surface);color:var(--navy-900);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;}
+.pq-list li.rev small{display:block;margin-top:4px;font-size:11.5px;color:var(--slate-500);}
+.pq-status{min-height:18px;font-size:12.5px;font-weight:600;color:var(--accent);margin:4px 0;}
 .pq-err{min-height:18px;color:#dc2626;font-size:13px;font-weight:600;margin:6px 0;}
 .pq-bar{height:6px;border-radius:6px;background:var(--surface-2);overflow:hidden;margin-bottom:12px;}
 .pq-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22c55e,#15803d);transition:width .2s;}
@@ -169,11 +176,20 @@
   var DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   function mime(f){var n=(f.name||'').toLowerCase();if(f.type)return f.type;if(/\.pdf$/.test(n))return'application/pdf';if(/\.docx$/.test(n))return DOCX;return'';}
   function kind(t){return /^image\//.test(t)?'image':t==='application/pdf'?'pdf':t===DOCX?'doc':/^video\//.test(t)?'video':null;}
-  function open(){modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';setTimeout(function(){dialog.focus()},30);}
+  function open(){stage='pick';up=[];texts=[];files=[];draw();$('pq-status').textContent='';$('pq-save').textContent='Upload and read text';modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';setTimeout(function(){dialog.focus()},30);}
   function close(){if(busy)return;modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
   function size(n){return n>=MB?(n/MB).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';}
+  var stage='pick', up=[], texts=[];
+  var READ={image:1,pdf:1,doc:1};
   function draw(){
     var ul=$('pq-list');ul.innerHTML='';
+    if(stage==='review'){
+      up.forEach(function(u,i){var li=document.createElement('li'),n=document.createElement('b');li.className='rev';n.textContent=u.name;li.appendChild(n);
+        if(READ[u.kind]){var ta=document.createElement('textarea');ta.value=texts[i]||'';ta.placeholder='Type the text here if it wasn\'t read';ta.oninput=function(){texts[i]=ta.value;};li.appendChild(ta);
+          if(u.note){var sm=document.createElement('small');sm.textContent=u.note;li.appendChild(sm);}}
+        ul.appendChild(li);});
+      return;
+    }
     files.forEach(function(f,i){var li=document.createElement('li'),s=document.createElement('span'),e=document.createElement('em'),b=document.createElement('button');
       s.textContent=f.name;e.textContent=size(f.size);b.type='button';b.textContent='×';b.setAttribute('aria-label','Remove');b.onclick=function(){if(!busy){files.splice(i,1);draw();}};
       li.appendChild(s);li.appendChild(e);li.appendChild(b);ul.appendChild(li);});
@@ -204,23 +220,36 @@
       });
     });
   }
+  function create(){
+    var err=$('pq-err'),btn=$('pq-save'),title=$('pq-title').value.trim(),each=$('pq-each').checked,common={subject:$('pq-subject').value.trim(),published:$('pq-pub').checked};
+    var items=up.map(function(u,i){return{key:u.key,name:u.name,text:READ[u.kind]?(texts[i]||''):''};}), jobs;
+    if(each&&items.length)jobs=items.map(function(it,i){return api('/api/questions',Object.assign({title:title?(title+' ('+(i+1)+')'):it.name.replace(/\.[^.]+$/,''),body:$('pq-body').value.trim(),files:[it]},common));});
+    else jobs=[api('/api/questions',Object.assign({title:title,body:$('pq-body').value.trim(),files:items},common))];
+    btn.disabled=true;btn.textContent='Saving…';
+    Promise.all(jobs).then(function(){location.reload();}).catch(function(e){busy=false;btn.disabled=false;btn.textContent='Save question';err.textContent=e.message||'Something went wrong.';});
+  }
   function save(){
     if(busy)return;
-    var err=$('pq-err'),btn=$('pq-save'),title=$('pq-title').value.trim(),each=$('pq-each').checked;
-    err.textContent='';
+    if(stage==='review'){busy=true;create();return;}
+    var err=$('pq-err'),btn=$('pq-save'),st=$('pq-status'),title=$('pq-title').value.trim(),each=$('pq-each').checked,ocr=$('pq-ocr').checked;
+    err.textContent='';st.textContent='';
     if(!files.length&&!$('pq-body').value.trim()){err.textContent='Add at least one file or some notes.';return;}
     if(!title&&!each){err.textContent='Add a title.';return;}
     busy=true;btn.disabled=true;btn.textContent='Uploading…';
-    var total=files.reduce(function(n,f){return n+f.size},0)||1,done=0,up=[];
-    var chain=files.reduce(function(p,f){return p.then(function(){var base=done;return put(f,function(l){$('pq-prog').style.width=Math.round((base+l)/total*100)+'%';}).then(function(r){up.push(r);done+=f.size;});});},Promise.resolve());
+    var total=files.reduce(function(n,f){return n+f.size},0)||1,done=0;up=[];texts=[];
+    var chain=files.reduce(function(p,f){return p.then(function(){var base=done;return put(f,function(l){$('pq-prog').style.width=Math.round((base+l)/total*100)+'%';}).then(function(r){r.kind=kind(mime(f));up.push(r);done+=f.size;});});},Promise.resolve());
     chain.then(function(){
-      var common={subject:$('pq-subject').value.trim(),published:$('pq-pub').checked}, jobs;
-      if(each&&up.length){
-        jobs=up.map(function(u,i){return api('/api/questions',Object.assign({title:title?(title+' ('+(i+1)+')'):u.name.replace(/\.[^.]+$/,''),body:$('pq-body').value.trim(),files:[u]},common));});
-      }else jobs=[api('/api/questions',Object.assign({title:title,body:$('pq-body').value.trim(),files:up},common))];
-      return Promise.all(jobs);
-    }).then(function(){location.reload();})
-    .catch(function(e){busy=false;btn.disabled=false;btn.textContent='Upload and save';$('pq-prog').style.width='0';err.textContent=e.message||'Something went wrong.';});
+      var todo=ocr?up.filter(function(u){return READ[u.kind]}):[];
+      if(!todo.length){stage='review';busy=true;create();return;}
+      btn.textContent='Reading text…';
+      return todo.reduce(function(p,u,n){return p.then(function(){
+        st.textContent='Reading text '+(n+1)+' of '+todo.length+'…';
+        return api('/api/questions/read-text',{key:u.key}).then(function(d){texts[up.indexOf(u)]=d.text||'';u.note=d.text?'':(d.note||'');})
+          .catch(function(e){texts[up.indexOf(u)]='';u.note=e.message;});
+      });},Promise.resolve()).then(function(){
+        stage='review';busy=false;btn.disabled=false;btn.textContent='Save question';st.textContent='Check the typed text below. You can correct it, then save.';$('pq-prog').style.width='0';draw();
+      });
+    }).catch(function(e){busy=false;btn.disabled=false;btn.textContent='Upload and read text';$('pq-prog').style.width='0';err.textContent=e.message||'Something went wrong.';});
   }
   $('pq-add').addEventListener('click',open);
   modal.querySelectorAll('[data-close]').forEach(function(el){el.addEventListener('click',close)});
